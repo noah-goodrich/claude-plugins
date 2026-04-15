@@ -1,0 +1,137 @@
+Jingsonglee, taiyo
+
+, and 1 other highlighted
+
+Niren Kumar
+
+highlighted
+
+François Vienneau Binette and Adrian Betanzos Co.
+
+highlighted
+
+Aaron Porchia
+
+highlighted
+
+Aaron Porchia
+
+highlighted
+
+Adrian Betanzos Co.
+
+highlighted
+
+Adrian Betanzos Co.
+
+highlighted
+
+Snowflake vs Databricks: Revisited
+
+Why Snowflake is the only right choice
+
+Noah Goodrich
+
+6 min read
+
+·
+
+Nov 13, 2023
+
+184
+
+7
+
+Listen
+
+Share
+
+More
+
+Press enter or click to view image in full size
+
+Toyota Hilux crushing it in the Arctic
+
+A few weeks ago, I published an
+
+essay
+
+on how Snowflake and Databricks are like high end Linux PCs and Macs or like Ferraris and American muscle cars. tl;dr — The point I was trying to make is that the cultures around each are fundamentally different and therefore both have their place.
+
+I was wrong. On two counts. First, I was wrong comparing Snowflake to a Ferrari and Databricks to American muscle cars. It would be more accurate to
+
+liken
+
+Snowflake to the trusty Toyota Hilux
+
+and
+
+Databricks to the DeLorean DMC-12
+
+. Yes,
+
+that DeLorean
+
+. Which brings me to t
+
+he second point on which I was wrong. It matters a great deal what data platform you choose and Snowflake is definitely the best in class option. If you can bear with my car analogy a little more, I can explain why my opinion has shifted.
+
+For most of the United States, owning a car to get to work, school, go grocery shopping, etc. is simply a fact of life. Some people can afford to buy really nice cars. Most have to make due with what they can afford. This makes owning a Ford or Toyota a necessity, while owning a Ferrari is a luxury. Either way, no one can afford to spend significant amounts of time with their primary vehicle out of commission. Growing up, my family only owned older, used cars. And it felt like something was always breaking down with them. What I learned at a young age was:
+
+Having a working car was required to live. Both for work and for play. This makes cars a commodity NOT a luxury.
+
+Performing necessary vehicular repairs came at the opportunity cost of other things. For us this meant that we gave up play time as a family since work time wasn’t negotiable.
+
+For businesses in today’s fast changing world, every company MUST come to be data-driven, whether you manufacture widgets or you’re the latest social media darling in Silicon Valley/Slopes/Hills/Mountain. And every decision to spend time on Project A means taking time and resources from Project B. With economic conditions being what they are, we’re seeing tech giants like Google, Meta and Linkedin tightening their belts. And many other companies, whether directly in tech or not, are doing likewise. Budgets are being scrutinized for areas of waste and overspending.
+
+Choosing a Data & Analytics platform then has become just like owning a car
+
+for most Americans:
+
+Platforms like Snowflake, Databricks, and others are no longer luxuries only for enterprises. And companies no longer have the luxury of choosing tools that mainly “fit their culture” over choosing what is cost effective for the business. Data platforms have become a commodity for businesses large and small.
+
+Everything comes with an opportunity cost.
+
+Continuing the car analogy a bit more literally, let’s imagine that we are going to take a trip to the North Pole in a vehicle. Choosing the right vehicle will mean arriving alive and relatively unharmed at our destination while choosing the wrong vehicle could result in our end in a watery, icy grave. When your life is on the line, what are you going to choose? Something that you’ve got to worry about stopping and fixing up every so often or something that you reasonably expect will get you to your destination without requiring major repairs (short of breaking the car through accident or stupidity)? I just finished watching the Top Gear Polar Special and it was pretty awesome. You can see what they chose.
+
+Obviously taking a truck to drive to the North Pole is hardly a typical use-case for the average car buyer, but for businesses the stakes are likely just as high. When the survival of your company is on the line, do you want to pick a tool that requires continual, ongoing maintenance or something that’ll just start up and go and keep running regardless of what you put it through?
+
+To me the answer seems obvious — You should
+
+always pick the tool that will allow you to focus on your business and not maintenance of the tool itself
+
+.
+
+The guys from Top Gear love the Toyota Hilux. Prior to the Polar Special, they tried to destroy a Hilux by, among other tests, putting it in the sea and on top of a building being demolished. After a great deal of punishment, it still drove away.
+
+In life, I choose to drive Toyotas because of their reliability.
+
+At work, I’ve used both Databricks and Snowflake.
+
+It was early 2022 and I had just taken a position to lead data engineering for a data science team that desperately needed to update their infrastructure and processes that hadn’t seen any meaningful changes since 2012. The company had been using Snowflake and I did have prior experience with it as well. The VP of Data Science had been talking to Databricks and they had a great sales pitch about being an all-in-one solution for data science and data engineering. I remember observing, “they are both enterprise platforms and I would expect that cost and performance would likely be comparable.” Ultimately
+
+we decided to run with Databricks based on the promise of being able to manage all of our processes in a single platform
+
+.
+
+Thus began what was some of the worst three months of my life. We got our data pipelines all hooked up and started to work on ingestion and processing of the data at scale and that’s when everything fell apart. One dataset in particular consisted of billions of rows and terabytes of data. During testing we had limited ourselves to a few million rows and it worked fine then. Once we tried to turn the spigot on full, we didn’t even get linear performance decreases. We reworked the pipeline and reworked it and reworked it. Again and again we tried to restructure the data ingestion and processing and structure of the tables in Delta Lake to make something, ANYTHING work at all. Nothing worked. We were meeting every few days with our team from Databricks to no avail. At one point I was working six days a week, twelve and thirteen hours a day to try and get past the technical challenges. The closest I ever got to something workable took constant babysitting over a full weekend to run.
+
+Having
+
+finally decided that I needed to try something else to at least validate the difficulties we were facing, I spent a Sunday rewriting all of our queries and getting the non-Snowflake native data sets loaded into Snowflake. By the end of that Sunday I was able to run our entire process, end-to-end in about two hours. TWO HOURS. And it took me ONE DAY to build. Needless to say, we spent the next week getting things polished up and then moved on to solving the actual business problems we needed to tackle.
+
+Interestingly, it was shortly after my Snowflake “experiment” that we finally got feedback from an expert at Databricks. Their suggestions involved a bunch of things I could do to
+
+optimize the partitions and z-indexes initially
+
+and that would then require automation to re-optimize on a continual basis.
+
+Needless to say, when I pointed out that I had a pipeline in Snowflake that met our required SLA and required no maintenance work at all to manage, we made the switch and never looked back.
+
+Interestingly it was at about this same time I was interviewing a data engineer whose team worked exclusively with Databricks and Delta Lake and who generally had a good opinion of the platform. I asked them about how much time they spent re-optimizing their tables in Delta and their response was roughly 20% of the team’s time. In terms of people, if they had a five member team, that was one whole person to just manage their data in Delta Lake.
+
+If Snowflake is the Toyota Hilux of the data world, then exactly how bad is Databricks? Much like the DeLorean DMC-12 it has been vastly over-hyped and under-delivers in pretty much every way possible.
+
+And
+
+on that bombshell…..good luck with your data projects!

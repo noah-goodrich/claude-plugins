@@ -1,0 +1,34 @@
+{
+  "name": "noah-local",
+  "description": "Noah's local Claude Code plugins",
+  "owner": {
+    "name": "Noah Goodrich"
+  },
+  "plugins": [
+    {
+      "name": "dev-tools",
+      "description": "Development environment tools: project scaffolding, devcontainer bootstrapping, repository review and documentation generation.",
+      "source": "./dev-tools"
+    },
+    {
+      "name": "noah-content-tools",
+      "description": "Content creation skills for LinkedIn posts and Snowflake Builders Blog articles.",
+      "source": "./noah-content-tools"
+    },
+    {
+      "name": "noah-strategy",
+      "description": "Strategic analysis and executive brief production. Build-vs-buy evaluations, competitive landscape analysis, technology assessments, and architecture decision records.",
+      "source": "./noah-strategy"
+    },
+    {
+      "name": "noah-writing-voice",
+      "description": "Noah Goodrich's writing voice enforcement and AI detection scoring.",
+      "source": "./noah-writing-voice"
+    },
+    {
+      "name": "token-cost",
+      "description": "Lightweight token cost estimation appended to every response.",
+      "source": "./token-cost"
+    }
+  ]
+}
