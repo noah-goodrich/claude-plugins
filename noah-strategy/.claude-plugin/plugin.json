@@ -1,0 +1,9 @@
+{
+  "name": "noah-strategy",
+  "version": "0.1.10",
+  "description": "Strategic analysis and executive brief production. Build-vs-buy evaluations, competitive landscape analysis, technology assessments, and architecture decision records.",
+  "author": {
+    "name": "Noah Goodrich"
+  },
+  "keywords": ["strategy", "analysis", "executive-brief", "build-vs-buy", "competitive-analysis"]
+}

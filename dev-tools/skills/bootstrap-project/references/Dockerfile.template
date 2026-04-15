@@ -1,0 +1,21 @@
+# Extends the shared base devcontainer image.
+# Base provides: zsh, neovim, tmux, git, ssh, claude-code CLI.
+#
+# To rebuild the base locally:
+#   docker build -f ~/.config/dotfiles/devcontainer/Dockerfile.base -t devcontainer-base:local .
+FROM devcontainer-base:local
+
+# ── Project-specific deps ────────────────────────────────────────────────────
+# Uncomment / adjust as needed for your project:
+#
+# Python image libs (Pillow):
+#   RUN apt-get update && apt-get install -y --no-install-recommends \
+#       libjpeg62-turbo-dev libpng-dev libtiff-dev libwebp-dev zlib1g-dev \
+#       && apt-get clean && rm -rf /var/lib/apt/lists/*
+#
+# Snowflake auth keyring:
+#   RUN pip install --no-cache-dir keyrings.alt
+#
+# If no extra deps are needed, this file can just be the FROM + WORKDIR lines.
+
+WORKDIR /workspace

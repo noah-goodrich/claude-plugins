@@ -1,0 +1,9 @@
+{
+  "name": "dev-tools",
+  "version": "0.2.13",
+  "description": "Development environment tools: project scaffolding, devcontainer bootstrapping, repository review and documentation generation, and workflow automation.",
+  "author": {
+    "name": "Noah Goodrich"
+  },
+  "keywords": ["devcontainer", "docker", "bootstrap", "scaffold", "project", "dev", "repo-review", "documentation", "onboarding", "readme", "architecture"]
+}

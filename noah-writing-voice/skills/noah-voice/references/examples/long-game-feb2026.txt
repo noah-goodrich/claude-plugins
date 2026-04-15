@@ -1,0 +1,153 @@
+The Long Game
+
+Leadership, Stewardship, and the Heart of a Data Superhero
+
+Noah Goodrich
+
+5 min read
+
+·
+
+Feb 4, 2026
+
+52
+
+Listen
+
+Share
+
+More
+
+Press enter or click to view image in full size
+
+Yesterday, Snowflake announced the
+
+2026 Data Superheroes
+
+. It is a profound honor to be named to this cohort, but as the excitement settles, I find myself reflecting on what that title actually represents. In a world obsessed with
+
+“Super” leadership performance
+
+and
+
+“Heroic” effort
+
+, we often miss the core of the role.
+
+The word “Superhero” is a double-edged sword. It implies capes and the “Hero” fallacy: the person who stays up all night putting out fires. But real leadership isn’t about the adrenaline of the rescue; it’s about the quiet, often invisible discipline of the fire-warden who ensures the fire never starts in the first place. To truly understand the role, we have to look past the badge and recognize a fundamental chain:
+
+To be a Data Superhero is to be a Leader, and to be a Leader is to be a Steward.
+
+The Hypothesis of the Long Game
+
+In the business world, we are trained to worship the “Next.” Next quarter’s profits, next week’s sprint velocity, or the next election cycle. We reward those who spike near-term performance, hailing them as great leaders.
+
+But there is a fundamental flaw in this metric.
+
+The real test of leadership is not measured by the state of the system while you are in command, but by the health, culture, and resilience of that system ten, twenty, or fifty years after you are gone. Real leadership is
+
+Stewardship,
+
+the act of building something that doesn’t just survive your departure but thrives because of the foundations you laid.
+
+The Ultimate Leadership Lab: The Home
+
+Press enter or click to view image in full size
+
+Nowhere is this long game more visible than in my own home. I am in a unique position to observe the ripple effects of stewardship in real-time. I have a nineteen-year-old daughter, a three-year-old son, and a six-month-old daughter.
+
+I see my early parenting mistakes playing out with my oldest, and I get the rare chance to adjust my approach with my younger two. In the daily grind of dishes and bills, it is almost always faster to just do it ourselves. We choose short-term efficiency over the inefficient work of teaching.
+
+We forget that the goal isn’t just a clean house today; it’s building happy, healthy people who will one day be parents and leaders themselves. Whether it is hand-holding my three-year-old through picking up his toys or watching him haul a trash bag taller than himself to the curb, these moments are the only way he learns the weight of responsibility.
+
+The Labors of a Wild Robot
+
+This struggle is captured beautifully in
+
+The Wild Robot
+
+. The story of Roz and Brightbill demonstrates the grueling labor of stewardship — the trials, the bond of love, and the difficult reality that a parent must let their child struggle and fail so they can grow. The real leadership in that story isn’t Roz’s survival; it is the bond she creates and the fact that her values become the very thing that saves the island when she is unable to intervene. She took ownership of training the next generation, recognizing that an inefficient investment today is the only way to save the future.
+
+From the Home to the Submarine
+
+This philosophy scales directly into the professional world. In
+
+Turn the Ship Around
+
+, Captain David Marquet realized that the miracle of the USS
+
+Santa Fe
+
+wasn’t that they became the best-performing crew in the fleet under his command. The miracle was what happened after he left: the culture of leader-leader was so deeply soldered into the crew that they continued to produce an unprecedented number of successful commanders for years to come.
+
+The framework survived the man. That is the gold standard of stewardship.
+
+What it Means to be a Data Superhero
+
+If we want to be real leaders, we have to reject the common misconceptions about what this title actually means.
+
+Being a Leader or a Data Superhero is NOT about:
+
+Auditioning to be the smartest person in the room
+
+: Leadership is not a performance art. If you are the only one with the answers, you haven’t led — you’ve created a bottleneck.
+
+Hoarding solutions
+
+: It is about building the frameworks so others can find the path themselves.
+
+Heroic firefighting
+
+: Constant crises are a sign of poor stewardship, not great talent.
+
+Instead, being a Data Superhero is about being a
+
+two-way bridge
+
+. It is about taking the bruises and lessons from the trenches and feeding them back to Snowflake to improve the product. It is about acting as a steward for the community, helping those new to the Data Cloud avoid expensive pitfalls, and ensuring they have a world-class experience from day one.
+
+We lead by recognizing that we are at a crossroads. While some choose to use AI as an excuse to do “the same with less,” the mission of a Data Superhero is to help build the leaders of tomorrow who will
+
+do more with more.
+
+Mastering the Snowflake platform in this era doesn’t just make you a coder; it makes you an indispensable architect. You aren’t just moving data; you are delivering the AI products that will define the next decade.
+
+Take Command of the Future
+
+If we want to be real Stewards, we have to change our evaluation of success:
+
+Prioritize Culture over Velocity
+
+: Ask: “If I left tomorrow, would the team still make the right architectural decisions?”
+
+Value “Inefficient” Teaching
+
+: The time spent mentoring a junior is a down-payment on the future health of your organization.
+
+Build Frameworks for Wisdom
+
+: Use tools and guidelines to bake your wisdom into the pipeline, allowing others to learn from experience without paying the high price you had to pay.
+
+The real test of my time as a Data Superhero won’t be the articles I wrote in 2026. It will be the quality of the architects who take my place in 2036.
+
+Join the Mission
+
+Leadership is a team sport, and stewardship starts with community.
+
+Find Your Local Heroes
+
+: I encourage you to
+
+find your local Snowflake User Group
+
+and connect with the Data Superheroes in your area. They are there to be your bridge.
+
+Connect with Me
+
+: If you are a junior engineer looking for guidance or a leader trying to build better guardrails for your team,
+
+reach out to me on LinkedIn
+
+. Let’s talk about how we can build the next generation of leaders together.
+
+Next Up: Part 2 — The Wisdom Gap: Why Knowledge is Not the Same as Experience.

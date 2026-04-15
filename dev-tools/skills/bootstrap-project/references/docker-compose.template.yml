@@ -1,0 +1,60 @@
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      # --- project files ---
+      - ..:/workspace:cached
+
+      # --- standard dotfile mounts (keep in sync with dotfiles/devcontainer/docker-compose.base.yml) ---
+      - ~/.zshrc:/home/dev/.zshrc:cached
+      - ~/.p10k.zsh:/home/dev/.p10k.zsh:cached
+      - ~/.config/zsh:/home/dev/.config/zsh:cached
+      - ~/.config/nvim:/home/dev/.config/nvim:cached
+      - ~/.ssh:/home/dev/.ssh:cached
+      - ~/.gitconfig:/home/dev/.gitconfig:cached
+      - /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock
+      - ~/.claude:/home/dev/.claude:cached
+      - ~/.config/borg:/home/dev/.config/borg:cached
+      # host home read-only — postStartCommand copies .claude.json fresh each start
+      # (avoids stale inode from Claude Code's atomic file replacement)
+      - ~/:/host-home:ro
+
+      # --- project-specific mounts (uncomment as needed) ---
+      # - ~/.gemini:/home/dev/.gemini:cached
+
+    working_dir: /workspace
+    user: dev
+    command: sleep infinity
+    environment:
+      SSH_AUTH_SOCK: /run/host-services/ssh-auth.sock
+      # --- project-specific env vars ---
+      # PYTHONDONTWRITEBYTECODE: "1"
+      # PYTHONUNBUFFERED: "1"
+
+    # --- uncomment if project has extra services ---
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+# --- Example: PostgreSQL with pgvector ---
+#   db:
+#     image: pgvector/pgvector:pg17
+#     container_name: project-db
+#     environment:
+#       POSTGRES_DB: mydb
+#       POSTGRES_USER: myuser
+#       POSTGRES_PASSWORD: mypass_dev
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - db_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U myuser"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+
+# volumes:
+#   db_data:
