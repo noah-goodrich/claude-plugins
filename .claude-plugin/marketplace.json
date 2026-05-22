@@ -26,6 +26,11 @@
       "source": "./noah-writing-voice"
     },
     {
+      "name": "research-tools",
+      "description": "Systematic research methodology — source evaluation, evidence classification, inclusion/exclusion decisions, and documentation standards.",
+      "source": "./research-tools"
+    },
+    {
       "name": "token-cost",
       "description": "Lightweight token cost estimation appended to every response.",
       "source": "./token-cost"
