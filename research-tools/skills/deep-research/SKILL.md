@@ -18,16 +18,28 @@ extends them into a unified end-to-end pipeline that no single existing framewor
 
 ## Before You Begin
 
-Read these reference documents. They are the operating manual — this SKILL.md is the overview.
+**Reference loading is mandatory.** Before doing any research — before Phase 1, before
+any search, before any source evaluation — load ALL SEVEN reference documents into
+context. The references are not optional reading; they are the operational contract. If
+you skip a reference because the task "feels small" or "is obvious," you will skip the
+structure that reference enforces, and the deliverable will fail the Phase 6 manifest
+check.
 
-1. `references/source-evaluation-rubric.md` — 10-dimension scoring system with anchors
-2. `references/evidence-hierarchy.md` — 9-level evidence classification
-3. `references/source-card-template.md` — per-source evaluation card format
-4. `references/inclusion-decision-matrix.md` — keep/throw decision tree with override rules
-5. `references/research-document-template.md` — final document structure and language guide
-6. `references/methodology-section-template.md` — "show your work" section structure
-7. `references/example-evaluation.md` — worked example evaluating Morgan Housel's
-   "The Psychology of Money"
+Verify each reference has been read before proceeding:
+
+- [ ] 1. `references/source-evaluation-rubric.md` — 10-dimension scoring system with anchors
+- [ ] 2. `references/evidence-hierarchy.md` — 9-level evidence classification
+- [ ] 3. `references/source-card-template.md` — per-source evaluation card format
+- [ ] 4. `references/inclusion-decision-matrix.md` — keep/throw decision tree with override
+      rules
+- [ ] 5. `references/research-document-template.md` — final document structure and language
+      guide
+- [ ] 6. `references/methodology-section-template.md` — "show your work" section structure
+- [ ] 7. `references/example-evaluation.md` — worked example evaluating Morgan Housel's
+      "The Psychology of Money"
+
+Do not start Phase 1 until every box above is checked. SKILL.md is the overview; the
+references are the manual.
 
 ---
 
@@ -94,7 +106,14 @@ all 5 source categories have at least some representation for each major topic a
 ### Phase 3: Source Evaluation
 
 For every source pulled from discovery, complete a source evaluation card (see
-`references/source-card-template.md`).
+`references/source-card-template.md`) and write it to disk at
+`[project]/docs/research/sources/<topic>-<slug>.md`.
+
+**Gate — do not proceed to Phase 4 until every evaluated source has a card file on disk
+at `[project]/docs/research/sources/<topic>-<slug>.md`, using the template exactly.**
+Inline summaries inside the analysis document do not satisfy this requirement. A subagent
+that "summarized the source in the analysis doc" instead of producing a card has skipped
+the step; go back and produce the card.
 
 **The evaluation process:**
 
@@ -170,16 +189,42 @@ specific source citations.
 
 ### Phase 6: Documentation
 
-Produce the final deliverable using `references/research-document-template.md`.
+Produce the final deliverable at `[project]/docs/research/analysis.md` (or a named
+equivalent under `[project]/docs/research/`) using
+`references/research-document-template.md`.
 
-**Writing order** (not the same as reading order):
-1. Write the Research section first (organized findings by topic)
-2. Write the Analysis section (synthesis, patterns, contradictions)
-3. Write the Framework section if applicable
-4. Write the Methodology section (using `references/methodology-section-template.md`)
-5. Write the Bibliography
-6. Write the Recommendations (what to DO based on all of the above)
-7. Write the Summary LAST (hardest to write — requires distilling everything)
+**The document MUST contain the following top-level headings, in this exact order. Do
+not invent new top-level sections that displace these seven, and do not reorder them:**
+
+1. `## 1. Recommendations` — actionable bullets, each starting with a verb, each
+   referencing the analysis section that backs it. See template L17-30.
+2. `## 2. Summary` — the "tired dad at 4am" version (2-3 pages max). See template L34-44.
+3. `## 3. [Domain-Specific Framework]` — include ONLY if a framework, typology, or model
+   emerged from the research. If no framework emerged, omit this section entirely (do not
+   ship an empty heading). See template L48-61.
+4. `## 4. Analysis` — themes with the research-question / what-the-evidence-says /
+   consensus / contested / gaps / institutional-vs-ground-truth structure. See
+   template L65-92.
+5. `## 5. Research` — full findings by topic area, with per-source citations including
+   composite score and evidence level in brackets. See template L96-106.
+6. `## 6. Methodology` — see `references/methodology-section-template.md`. MUST include
+   all required subsections: research design, search-log table, source-evaluation
+   framework, inclusion/exclusion summary + all four distribution tables (evidence level,
+   source category, credibility score), perspective-balance matrix, bias-guard summary,
+   limitations.
+7. `## 7. Bibliography` — every included source with full citation, composite score,
+   evidence level, inclusion decision, and one-line contribution summary. See template
+   L119-134.
+
+**Writing order** (not the same as reading order — write in this order, then assemble in
+the §1-§7 order above):
+1. Write the Research section (§5) first — organized findings by topic.
+2. Write the Analysis section (§4) — synthesis, patterns, contradictions.
+3. Write the Framework section (§3) if applicable.
+4. Write the Methodology section (§6) using `references/methodology-section-template.md`.
+5. Write the Bibliography (§7).
+6. Write the Recommendations (§1) — what to DO based on all of the above.
+7. Write the Summary (§2) LAST — hardest to write, requires distilling everything.
 
 **Language rules** (from the document template):
 - ELI10 throughout — clear, not condescending
@@ -188,7 +233,45 @@ Produce the final deliverable using `references/research-document-template.md`.
 - Show the tension (where experts disagree is more interesting than where they agree)
 - No orphaned claims — every factual statement has a citation
 
-**Checkpoint:** Present the draft to the user for feedback before finalizing.
+**Bias-guard summary required in the deliverable.** Per-card bias-guard checkboxes are
+not enough. The §6 Methodology section MUST contain a Bias-Guard Summary table reporting
+how many sources fired the agree-with check, how many fired the disagree-with check, and
+how many were neutral (see `references/methodology-section-template.md`). This pulls the
+bias-guard discipline up from per-source bookkeeping to deliverable-level accountability —
+if the agree-with count dwarfs the disagree-with count, the reader can see the asymmetry
+and weight conclusions accordingly.
+
+**Required-artifacts verification (Deliverable Manifest).** Before declaring the research
+complete, verify each item below exists on disk. Do not present the deliverable to the user
+until every box is checked:
+
+- [ ] Final document file at `[project]/docs/research/analysis.md` (or a named equivalent
+      under `[project]/docs/research/`), containing numbered top-level sections
+      **§1 Recommendations, §2 Summary, §3 Framework (if applicable), §4 Analysis,
+      §5 Research, §6 Methodology, §7 Bibliography — in that order**.
+- [ ] One source-card file per evaluated source at
+      `[project]/docs/research/sources/<topic>-<slug>.md`, using the exact template
+      from `references/source-card-template.md` (table format for the 10 scores, bias-guard
+      checkboxes, inclusion-decision section, perspective-category field). Inline summaries
+      inside the analysis document do NOT count.
+- [ ] §6 Methodology contains every required subsection from
+      `references/methodology-section-template.md`: the search-log table, evidence-level
+      distribution table, source-category distribution table, credibility-score distribution
+      table, and perspective-balance matrix. A "Methodology Gaps" / limitations-only section
+      is non-compliant.
+- [ ] §6 Methodology includes a Bias-Guard Summary (counts of sources that fired the
+      agree-with check, the disagree-with check, and the neutral box).
+- [ ] §7 Bibliography lists every included source with composite score, evidence level,
+      inclusion decision, and a one-line contribution summary.
+- [ ] Source counts reconcile: source-card files on disk == sources reported in the
+      methodology counts == sources cited in §5 Research. If the three counts disagree,
+      something was dropped silently — investigate before proceeding.
+
+If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
+user presentation with an unchecked box.
+
+**Checkpoint:** Once the Deliverable Manifest is fully checked, present the draft to the
+user for feedback before finalizing.
 
 ---
 

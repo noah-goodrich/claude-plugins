@@ -6,6 +6,33 @@ A curious reader reads the analysis. A skeptical reader checks the methodology a
 
 ---
 
+## Compliance check — verify before delivery
+
+Run through this checklist before presenting the document to the user. Every box must be
+checked. If a box cannot be checked, return to the relevant phase and fix the gap; do not
+deliver an incomplete document.
+
+- [ ] **§1 Recommendations** present and is the first top-level section.
+- [ ] **§2 Summary** present and is the second top-level section.
+- [ ] **§3 Framework** present if a framework / typology / model emerged; otherwise
+      omitted entirely (no empty heading).
+- [ ] **§4 Analysis** present, organized by theme, with the research-question / consensus
+      / contested / gaps structure for each theme.
+- [ ] **§5 Research** present, organized by topic area, with per-claim citations including
+      author, composite credibility score, and evidence level.
+- [ ] **§6 Methodology** present with ALL required subsections (search-log table,
+      evidence-level distribution table, source-category distribution table,
+      credibility-score distribution table, perspective-balance matrix, bias-guard summary,
+      limitations) — see `methodology-section-template.md`.
+- [ ] **§7 Bibliography** present, listing every included source with composite, evidence
+      level, inclusion decision, and one-line contribution summary.
+- [ ] **No orphaned factual claims** — every factual statement in §4 and §5 has an inline
+      citation pointing to a source-card filename or a numbered reference in §7.
+- [ ] **Section ordering matches §1 → §7 exactly** — no reordering, no invented
+      top-level sections that displace these seven.
+
+---
+
 ```markdown
 # [Research Title]
 

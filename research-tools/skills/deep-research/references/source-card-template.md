@@ -51,8 +51,11 @@ If an override was applied, document it here.]
 **Redundancy check:** [Does this add something not already covered by a stronger source?
 If yes, what? If no, which source supersedes it?]
 
-**Perspective category:** [Academic / Institutional / Practitioner / Boots-on-the-ground /
-Contrarian — which of the 5 required source types does this represent?]
+**Perspective category:** [EXACTLY ONE of: `Academic` / `Institutional` / `Practitioner` /
+`Boots-on-the-ground` / `Contrarian`. No other values. Do not invent hybrid labels
+("Tier-1 journalism," "Industry-benchmark," "Internal," "Practitioner/Boots-on-the-ground,"
+etc.) — if the source spans two categories, pick the primary one and note the secondary
+in the Rationale field above. Any value outside this enum is non-compliant.]
 ```
 
 ---
