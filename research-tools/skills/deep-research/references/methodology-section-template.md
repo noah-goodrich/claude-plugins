@@ -6,6 +6,30 @@ your process and understand every decision.
 
 ---
 
+## Required subsections — all must be present in the final deliverable
+
+A Methodology section that contains only "Methodology Gaps" or a limitations paragraph is
+**non-compliant**. The final §6 Methodology MUST contain every subsection below; bullet
+lists are not substitutes for the required tables.
+
+- [ ] **Research Design** — research questions, scope boundaries (in/out), target audience,
+      methodology version.
+- [ ] **Source Discovery** — search strategy, source-diversity targets, and a **search-log
+      TABLE** (not prose). One row per query.
+- [ ] **Source Evaluation** — evaluation framework reference, evidence-classification
+      reference, and the bias guards applied.
+- [ ] **Inclusion/Exclusion Results** — the summary counts table, the **evidence-level
+      distribution table**, the **source-category distribution table**, and the
+      **credibility-score distribution table**. All four tables required.
+- [ ] **Perspective Balance** — the per-topic matrix table (rows: topic areas, columns:
+      Academic / Institutional / Practitioner / Boots / Contrarian).
+- [ ] **Bias-Guard Summary** — counts of sources where the agree-with box fired, the
+      disagree-with box fired, and neutral. Forces card-level bias guards up to deliverable
+      accountability.
+- [ ] **Limitations** — honest accounting of what this methodology cannot do.
+
+---
+
 ```markdown
 ## 6. Methodology
 
@@ -53,6 +77,15 @@ your process and understand every decision.
 - Confirmation bias check on every source (score harder when agreeing, gentler when
   disagreeing, on dimensions 5, 6, and 8)
 - Triangulation rule: no claim accepted from a single source type
+
+**Bias-Guard Summary** *(required — aggregates per-card bias-guard checkboxes):*
+
+| Bias-guard outcome | Count |
+|--------------------|-------|
+| Agreed with source — scored harder on dims 5, 6, 8 | [N] |
+| Disagreed with source — scored more generously on dims 5, 6, 8 | [N] |
+| Neutral / no strong reaction | [N] |
+| **Total sources evaluated** | [N] |
 
 ### Inclusion/Exclusion Results
 
