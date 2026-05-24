@@ -101,6 +101,34 @@ say it, look for data. This is non-negotiable.
 **When to stop searching:** When new searches are returning sources you've already seen, and
 all 5 source categories have at least some representation for each major topic area.
 
+**Paywall surfacing.** If during source discovery you encounter sources behind paywalls
+(academic journals, paid industry reports, gated analyst notes, subscription-only trade
+publications) that look genuinely high-value for the research question, STOP the pipeline
+and write a candidate list to `docs/research/[date]/drafts/paywalled-candidates.md`
+before completing Phase 2. Each entry must contain:
+
+- **Full citation** — author(s), title, publication, date, DOI/URL.
+- **Paywall publisher / platform** — Elsevier, JSTOR, Gartner, WSJ, Substack, etc.
+- **Estimated procurement cost** if known (e.g., "$39 per-article PDF," "$1,995 report,"
+  "$15/month subscription"). Write "unknown" if you cannot find pricing without
+  registering — do not register or submit forms to discover pricing.
+- **Why this source would materially improve the research** — be specific about what
+  claim it would support or refute. Vague justifications ("seems important," "looks
+  comprehensive") are non-compliant; the user needs to weigh procurement cost against
+  concrete research value.
+
+After writing the candidates file, ping the user for a procurement decision before
+completing Phase 2. Once the user decides which (if any) to procure, resume discovery
+with those sources included or document the exclusion in the §6 Methodology Limitations
+subsection (citation + reason for exclusion). Silently dropping a paywalled source you
+identified as high-value, without surfacing it for a procurement decision, is non-compliant.
+
+**Negative case.** If discovery surfaces zero genuinely high-value paywalled sources,
+do NOT create an empty `paywalled-candidates.md` file. Instead, note in the §6
+Methodology Source Discovery subsection: "Paywall scan: no high-value paywalled
+candidates identified." The negative result must be documented so a reader knows the
+scan was actually performed.
+
 ---
 
 ### Phase 3: Source Evaluation
