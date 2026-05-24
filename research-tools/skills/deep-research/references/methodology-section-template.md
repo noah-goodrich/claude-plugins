@@ -17,7 +17,8 @@ lists are not substitutes for the required tables.
 - [ ] **Source Discovery** — search strategy, source-diversity targets, and a **search-log
       TABLE** (not prose). One row per query.
 - [ ] **Source Evaluation** — evaluation framework reference, evidence-classification
-      reference, and the bias guards applied.
+      reference, the bias guards applied, and the **citation-verification report**
+      (Phase 3.5 sample size, failure count, failure-rate band).
 - [ ] **Inclusion/Exclusion Results** — the summary counts table, the **evidence-level
       distribution table**, the **source-category distribution table**, and the
       **credibility-score distribution table**. All four tables required.
@@ -86,6 +87,22 @@ lists are not substitutes for the required tables.
 | Disagreed with source — scored more generously on dims 5, 6, 8 | [N] |
 | Neutral / no strong reaction | [N] |
 | **Total sources evaluated** | [N] |
+
+**Citation-Verification Report** *(required — Phase 3.5 sample audit, full report at
+`docs/research/[date]/verification-report.md`):*
+
+| Metric | Value |
+|--------|-------|
+| Total source cards | [N] |
+| Cards sampled for verification | [N] ([P%]) |
+| Verified | [N] |
+| Failed | [N] |
+| Inaccessible (honestly flagged unverifiable) | [N] |
+| **Failure rate** (`failed / (verified + failed)`) | [X.X%] |
+| Failure-rate band | [`≤5%` / `>5%–10%` / `>10%`] |
+
+The failure-rate band MUST be `≤5%` for the deliverable to ship. If a higher band is
+reported, Phase 3.5 was not remediated and the gate was bypassed.
 
 ### Inclusion/Exclusion Results
 
