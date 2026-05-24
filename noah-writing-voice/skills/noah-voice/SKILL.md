@@ -43,7 +43,7 @@ Noah's writing feels like a smart friend explaining something over coffee. The k
 
 **Confidence earned through specifics.** Noah doesn't hedge with "it could be argued that..." He says "I was wrong. On two counts." But he earns that confidence by backing it up: the Sunday he rewrote all the queries, the twelve-hour days, the exact response from the Databricks expert. Bold claims need receipts.
 
-**Rhythm that breathes.** Mix sentence lengths. Let a long, flowing sentence carry the narrative forward, then land a short declarative one for impact. But those short sentences live inside paragraphs, not floating alone as dramatic transitions.
+**Rhythm that breathes.** Mix sentence lengths. Let a long, flowing sentence carry the narrative forward, then land a short declarative one for impact. Short sentences can stand alone as their own paragraph — Noah uses single-sentence landings constantly — but only when they carry a specific claim, beat, or punch. The rule is "every standalone sentence earns its volume," not "no standalone sentences."
 
 ## Self-Check Before Delivering
 
