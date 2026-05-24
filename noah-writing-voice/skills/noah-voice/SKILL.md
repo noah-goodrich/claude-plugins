@@ -18,17 +18,17 @@ Read these reference files in order:
    - `long-game-feb2026.txt` is a strong article he's proud of (light AI partnership)
    - `ai-efficiency-trap-dec2025.txt` shows his technical writing voice
 
-## The Non-Negotiable Rules (Quick Reference)
+## The Calibrated Rules (Quick Reference)
 
-These are explained in detail in `voice-rules.md`, but here's the checklist:
+These are calibrated against Noah's actual Medium corpus (`noah-writing-voice/validation/2026-05-23-corpus/`) and explained in detail in `voice-rules.md`. Here's the checklist:
 
-1. **No em dashes.** Rewrite with commas, colons, semicolons, or parentheses.
-2. **Banned words:** "genuinely," "straightforward," "honestly," "to be honest," "navigate," "landscape," "leverage," "delve"
-3. **Use "frankly"** when you need "honestly/to be honest."
-4. **No standalone punchy one-liners as transitions.** Embed observations inside larger thoughts.
-5. **No bullet-point lists in article body** (only in explicit CTA sections).
-6. **Single-sentence paragraphs are expensive.** Max 2 per article, 1 per LinkedIn post. Earn them.
-7. **Bold terms flow into paragraph content**, not as standalone definitions.
+1. **Em dashes: cap at 3 per article.** Not banned, but easy to overuse. If you have more than 3, replace the weakest with commas/parens/restructuring.
+2. **Hard-banned words (zero tolerance):** "honestly," "to be honest," "navigate," "landscape," "leverage"
+3. **Slippage-watch words (re-grep before publishing):** "genuinely," "straightforward," "delve"
+4. **Use "frankly"** when you need "honestly/to be honest" — in practice, rarely.
+5. **Single-sentence paragraphs are a rhythm tool.** Use them freely as landings, beats, and punches. The constraint: every one must carry weight. Reject *empty* transitions ("Let's dive in.", "But there's more.").
+6. **Bullets: avoid in essay-format articles; use freely in tutorials, comparisons, and CTA sections.**
+7. **Bold terms flow into paragraph content**, not as standalone definitions. Bold can also carry whole-phrase emphasis on landing lines.
 8. **Every piece needs a central metaphor** that runs through it consistently. Don't mix metaphors.
 9. **Set the scene before bold claims.** Build the case through story, then land the point.
 10. **Specific details over vague claims.** Numbers, names, timeframes.
@@ -49,10 +49,13 @@ Noah's writing feels like a smart friend explaining something over coffee. The k
 
 Before presenting any written content, run through this quick audit:
 
-1. Search for em dashes and replace them
-2. Search for banned words and replace them
-3. Count single-sentence paragraphs (max 2 for articles, 1 for posts)
-4. Check that bold terms flow into sentences, not standing alone
-5. Verify the central metaphor is consistent throughout
-6. Look for AI-style transitions ("Here's the thing," "Let's dive in," "That said") and remove them
-7. Confirm specific details are present (numbers, names, timeframes) rather than vague claims
+1. **Count em dashes.** If more than 3 in the article, replace the weakest ones with commas, parentheses, or restructuring.
+2. **Grep banned words explicitly.** Hard ban: "honestly," "to be honest," "navigate," "landscape," "leverage." Slippage-watch (recent articles have leaked these — grep specifically): "genuinely," "straightforward," "delve."
+3. **Audit each single-sentence paragraph.** Does it land/punch/beat? Does it carry a specific claim? If not (it's a bare transition or filler), fold it into a neighboring paragraph. Do *not* count them — judge them individually.
+4. **Check bullet usage by article type.** Essay/opinion → bullets in the body are wrong; convert to prose. Tutorial/comparison/CTA → bullets are fine if items are truly parallel discrete items.
+5. **Check that bold terms flow into sentences**, not standing alone (with the explicit exception of whole-phrase emphasis on landing lines).
+6. **Verify the central metaphor is consistent** throughout (no mixed metaphor families).
+7. **Look for AI-style transitions** and remove them: "Here's the thing," "Let's dive in," "That said," "Moreover," "Furthermore," "In conclusion," "It's worth noting." NOTE: "Here's the thing" has slipped into recent articles (long-game-part2 and part3) — grep for it explicitly.
+8. **Confirm specific details are present** (numbers, names, timeframes, named cultural anchors) rather than vague claims.
+9. **Verify family ages are correct and written out in words** if mentioned — Noah uses these as anchoring devices and they must be current.
+10. **If this is a Snowflake Builders Blog article and AI collaborated**, end with an italicized "A Note on Process" disclosure (see `voice-rules.md` Signature Structural Moves).
