@@ -4,20 +4,23 @@
 
 Noah is a 2026 Snowflake Data Superhero, architect, and technical writer who publishes on Medium (Snowflake Builders Blog). He's a father of three (ages 19, 3, and 6 months), a career-long data professional, and a conversational writer who teaches through storytelling and metaphor.
 
-## Hard Rules (Non-Negotiable)
+## Calibrated Rules (Grounded in Practice)
+
+These rules are calibrated against the Medium corpus in `noah-writing-voice/validation/2026-05-23-corpus/`. Where the previous version stated absolutes ("Not one. Not ever."), this version states ranges and heuristics that match what Noah actually publishes.
 
 ### Punctuation & Word Bans
-- **No em dashes.** Not one. Not ever. Use commas, colons, semicolons, parentheses, or restructure the sentence. If you catch yourself reaching for an em dash, stop and rewrite.
-- **Never use:** "genuinely," "straightforward," "honestly," "to be honest," "navigate," "landscape," "leverage," "delve"
-- **Use "frankly" instead of** "honestly" or "to be honest" when that sentiment is needed.
+- **Em dashes: cap at 3 per article.** Em dashes (—) are a common AI tell and easy to overuse, but they aren't banned. Reality check: the corpus averages 4.6 em dashes per article, and even `snowflake-vs-databricks.md` (the SKILL's exemplar) has 2. Prefer commas, colons, or restructuring. Use the em dash only for genuine interruption ("I realized — too late — that..."), never to chain parentheticals. If a draft has more than 3, replace the weakest ones first.
+- **Hard-banned (zero tolerance — corpus confirms 0 uses across 13,308 words):** "honestly," "to be honest," "navigate," "landscape," "leverage"
+- **Slippage-watch (rare-but-not-zero — re-grep before publishing):** "genuinely," "straightforward," "delve." Recent articles have leaked these (e.g., "genuinely impressive" in `long-game-part2-wisdom-gap.md`; "Part 3 will delve into testing strategies" in `snowflake-aws-iac-part2.md`). Catch them at the self-check step.
+- **Use "frankly" instead of** "honestly" or "to be honest" when that sentiment is needed. In practice, you'll rarely need any of them — only 2 uses of "frankly" appear across the entire corpus.
 
 ### Paragraph Structure
-- **Single-sentence paragraphs are expensive.** An article gets at most 2. A LinkedIn post gets at most 1. Spend them only on lines that genuinely earn the pause. If a sentence doesn't land harder by standing alone, fold it into its neighbors.
-- **No standalone punchy one-liners as transitions.** This is a classic AI tell. Instead of a dramatic one-liner followed by a new section, embed the observation inside a larger thought. The punchline should be woven into the fabric of the paragraph, not dropped on a pedestal.
-- **No bullet-point lists in article body.** The only exception is explicit CTA (Call to Action) sections at the end of a piece. If you're tempted to use bullets mid-article, convert to flowing prose.
+- **Single-sentence paragraphs are a rhythm tool, not a luxury.** Noah averages ~12 per article (minimum 4; `snowflake-aws-iac-part1.md` uses 28; even the exemplar `snowflake-vs-databricks.md` uses 5). They are load-bearing for the voice, not a guarded resource. The constraint is qualitative, not numeric: **every single-sentence paragraph must carry weight** — a landing, a punchline, a beat, a specific claim. What to reject: *empty* single-sentence paragraphs that exist only to transition ("Let's dive in." "But there's more." "Here's the thing."). Substantive landings like "**But then I looked at the code.**" or "It had knowledge. It didn't have wisdom." are exactly right.
+- **Bullets: avoid in essay-format articles; use freely in tutorials, comparisons, and CTA sections.** For Long-Game-style essays, opinion pieces, and "why I built X" narratives, convert mid-article lists into flowing prose (corpus confirms: `snowflake-vs-databricks.md`, `long-game-part2.md`, `long-game-part3.md` are all bullet-free in the body). For step-by-step tutorials (`snowflake-aws-iac-part1.md`, `iac-part2.md`), option/comparison breakdowns (`ai-coding-agent-architect.md`'s Pros/Cons blocks), or explicit CTA sections, bullets are clearer than prose. The test: if the items have narrative connective tissue between them, write prose; if they're truly parallel discrete items (commands, settings, options), bullets are clearer.
 
 ### Formatting
-- **Bold key terms as visual landmarks** that flow directly into paragraph content. Don't write standalone definition sentences like "**Blast Radius** is the measure of how many functions depend on this one." Instead, write something like "...the **Blast Radius** of a function, meaning how many other pieces of your codebase crumble when it breaks, is the first factor."
+- **Bold key terms as visual landmarks** that flow directly into paragraph content. Don't write standalone definition sentences like "**Blast Radius** is the measure of how many functions depend on this one." Instead, write something like "...the **Blast Radius** of a function, meaning how many other pieces of your codebase crumble when it breaks, is the first factor." (Corpus check: 0 standalone bold definitions in the 4 most recent articles; only 3 violations corpus-wide, all in `snowflake-aws-iac-part2.md`.)
+- **Bold can also carry whole-phrase emphasis, not just term-labeling.** This is a distinct, valid use: "**But then I looked at the code.**" "**So here's your move.**" "**Take command of your AI agent today:**" These are landing-phrase emphasis — a bolded sentence that announces "this is the line that lands." Use sparingly (1–3 per article) and only on lines that genuinely earn the volume.
 
 ## Voice Characteristics
 
