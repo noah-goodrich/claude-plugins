@@ -39,6 +39,59 @@ These rules are calibrated against the Medium corpus in `noah-writing-voice/vali
 - **Specific details anchor credibility.** Not "it took a long time" but "twelve and thirteen hours a day." Not "the data was big" but "billions of rows and terabytes of data." Not "my kids" but "a nineteen-year-old daughter, a three-year-old son, and a six-month-old daughter."
 - **Personal stakes matter.** Noah writes about things that cost him something. "Some of the worst three months of my life." "I spent a Sunday rewriting all of our queries." The reader feels the weight because Noah felt it first.
 
+## Signature Structural Moves
+
+These are high-frequency, distinctive moves the validation surfaced as recurring across the Medium corpus. They aren't required in every piece, but when a piece feels like Noah's, one or more of these is usually carrying the structure. Use them when the shape fits.
+
+### M1. The "I was wrong" / self-correction opener
+Many of Noah's strongest articles begin by undermining a prior position. This builds trust before any claim — the reader knows you've already done the work of questioning yourself.
+
+Examples from the corpus:
+- **`snowflake-vs-databricks-revisited.md`** opens: *"A few weeks ago, I published an essay on how Snowflake and Databricks are like high end Linux PCs and Macs or like Ferraris and American muscle cars. I was wrong. On two counts."*
+- **`the-long-game-part2-wisdom-gap.md`** opens: *"I was going to write a very different article."*
+- **`ai-efficiency-trap.md`** (Origin Story section): *"I didn't actually set out to build a standalone pytest plugin."*
+- **`ai-coding-agent-architect.md`** (Origin Story section): *"I didn't actually set out to build a standalone architectural linter."*
+
+When the piece is correcting, revising, or pivoting, lead with the correction. Don't hide it in the third paragraph.
+
+### M2. The "Origin Story" / "Hypothesis" sub-section
+When introducing a tool, framework, or thesis, name a subhead "The Origin Story," "The Hypothesis," or some specific variant. The shape is: "I built X because I needed Y for project Z. Then Z broke. So I built X." Or: "Here's the claim. Here's why I think it's true."
+
+Examples:
+- **`ai-efficiency-trap.md`** has a section literally titled "The Origin Story" (line 111).
+- **`ai-coding-agent-architect.md`** has both "The Hypothesis: Why Structural Chaos is a 'Success Disaster'" (line 18) and "The Origin Story: The Snowfort Pivot" (line 29).
+- **`the-long-game.md`** uses "The Hypothesis of the Long Game" (line 20).
+
+This is a structural pattern, not just a heading style. The named subhead signals the article's load-bearing claim.
+
+### M3. Family-anchor → professional pivot
+Open with a parenting/family story, bridge through a metaphor, land on a professional/architectural insight. The Long Game series uses this every article. Even `being-told-i-could-be-fired.md` (2022) uses Sheldon Cooper Syndrome as the anchor before pivoting to job survival.
+
+Example from **`the-long-game-part2-wisdom-gap.md`**: *"His baby sister was born six weeks premature, barely four pounds. She spent her first month in the NICU. One day we were out running errands and drove past the intersection where we'd normally turn to go to the hospital. From his car seat, he started shouting 'Sister! Sister!' and crying since we'd kept driving... His brain literally reorganized itself around something that mattered to him."* — which then pivots to the professional thesis about wisdom-as-felt-consequences.
+
+**Family ages are part of the byline.** Write them out in words, keep them current. The phrase *"a nineteen-year-old daughter, a three-year-old son, and a six-month-old daughter"* appears nearly verbatim in `the-long-game.md`, `long-game-part2.md`, and `long-game-part3.md`. This is a deliberate anchoring device.
+
+### M4. The "Your move" CTA
+When closing with a single concrete ask, the bolded phrase **"So here's your move."** or **"Your move:"** is a recognizable signature. Use it when the CTA is one specific thing the reader should do, not a generic call to engage.
+
+Examples from the corpus:
+- **`the-long-game-part2-wisdom-gap.md`** (line 94): *"**So here's your move.** Pick one architectural decision you've made in your Snowflake environment. Not a textbook best practice. One where you chose a specific approach because you'd been burned by the alternative. Write down the why..."*
+- **`the-long-game-part3-architects-anchor.md`** (line 86): *"**Your move:** In Part 2, I asked you to write down a piece of hard-won institutional knowledge. Now take the next step..."*
+
+The pattern is: bolded "Your move" phrase, then a single specific action, then the reasoning. No bulleted CTA list.
+
+### M5. Named cultural anchors (not generic "popular culture")
+Noah names specific shows, books, characters, vehicles, and people that anchor metaphors. Generic "many leaders" or "popular culture" doesn't land. Named references do.
+
+Corpus examples: Top Gear, The Wild Robot, Turn the Ship Around, Big Bang Theory's Sheldon Cooper, Toyota Hilux, DeLorean DMC-12, Captain Marquet / USS Santa Fe, Matt Shumer, DHH / Rails, Martin Fowler, Mary Sheedy Kurcinka, Roz / Brightbill, Capital One. When you reach for a metaphor, reach for a named one.
+
+### M6. The italicized "A Note on Process" coda (AI-collaboration disclosure)
+When AI collaborated on the piece, close with an italicized "A Note on Process" disclosure. This is a recent and distinctive pattern (Long Game Part 2 and Part 3 both end this way) and is becoming the AI-disclosure norm for Noah's Snowflake Builders Blog work.
+
+Format: italicize the section, name the collaborator (Claude), state what came from you (ideas, stories, opinions) versus what came from the partnership (flow, pacing, structure).
+
+Example from **`the-long-game-part2-wisdom-gap.md`** (line 112): *"All of the ideas, opinions, and stories in this article are mine, written in my own words first. I then worked with Claude to shape that raw material into something structured and readable. It was a great collaborator on flow and pacing. It could not have written the story about my son and the tornado, because it never sat on that floor. The wisdom is mine. The craft is a partnership."*
+
 ## Good vs Bad Examples
 
 ### Bad (AI-sounding):
