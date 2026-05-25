@@ -360,6 +360,33 @@ the §1-§7 order above):
 - Show the tension (where experts disagree is more interesting than where they agree)
 - No orphaned claims — every factual statement has a citation
 
+**Gate 11 — Term-definition checkpoint (ELI10 enforcement).** Every domain-specific
+term, acronym, or piece of jargon must be defined in plain English the first time it
+appears in the final deliverable. Acronyms (≥2 capitalized characters) must spell out
+the full phrase plus a plain-English gloss — `EF (executive function — the brain's
+capacity to plan, prioritize, and switch tasks)`, not just `EF (executive function)`.
+A "Glossary" subsection at the end of §6 Methodology is optional but encouraged for
+terms used >5 times across the document; the glossary does NOT substitute for the
+first-use inline definition.
+
+**Compliance check before declaring Phase 6 complete:**
+
+1. Grep the deliverable for capitalized acronyms with `\b[A-Z]{2,}\b` (or a similar
+   regex appropriate to the source format). For each match, scroll back to its FIRST
+   appearance and confirm an inline parenthetical defines it.
+2. Re-read §1 Recommendations and §2 Summary specifically — these are the only sections
+   non-specialist readers see. Any undefined jargon here is the gate's primary failure
+   mode (the Ingle caretaker reframe used "EF" and "low-EF dinner" eleven times across
+   §1 + §2 without ever defining EF; that is exactly the failure this gate exists to
+   prevent).
+3. List every domain-specific noun phrase introduced (e.g., "cognitive labor,"
+   "calm technology," "low-EF dinner") and verify each has a plain-English
+   parenthetical the first time it appears.
+
+A term that first appears in §1 or §2 without definition is non-compliant even if
+defined later in §4 or §5.
+
+
 **Bias-guard summary required in the deliverable.** Per-card bias-guard checkboxes are
 not enough. The §6 Methodology section MUST contain a Bias-Guard Summary table reporting
 how many sources fired the agree-with check, how many fired the disagree-with check, and
@@ -397,6 +424,11 @@ until every box is checked:
       with documented failure rate ≤5%. The report must include sample size, per-card
       outcomes, and the aggregate verified/failed/inaccessible counts (see Phase 3.5).
       If the rate is >5%, you are not done — return to Phase 3.5 and remediate.
+- [ ] **Gate 11 — Every term defined on first use.** Run the acronym grep (`\b[A-Z]{2,}\b`)
+      against the deliverable and walk every match back to its first appearance; confirm
+      an inline parenthetical defines it. Pay specific attention to §1 Recommendations
+      and §2 Summary — undefined jargon here, even if defined later, fails this gate
+      because non-specialist readers stop after §2.
 
 If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
 user presentation with an unchecked box.
@@ -431,3 +463,40 @@ For large research projects spanning multiple sessions:
 | Structure the final document | `research-document-template.md` |
 | Write the methodology section | `methodology-section-template.md` |
 | See a worked example | `example-evaluation.md` |
+
+---
+
+## Changelog
+
+### v3 (2026-05-25) — Research-quality gates from Ingle caretaker-reframe failure analysis
+
+Added four gates after a post-mortem of the Ingle caretaker-reframe research
+(`~/dev/ingle/docs/research/2026-05-23-caretaker-reframe/`) surfaced four failure
+modes that the v1+v2 gates did not catch:
+
+- **Gate 11 — Term-definition checkpoint (ELI10 enforcement).** Phase 6. Every
+  acronym/jargon term must be defined in plain English on first use, with explicit
+  attention to §1 + §2 (which non-specialists actually read).
+- **Gate 12 — Prior-research-integration checkpoint.** Phase 1. Before writing
+  research questions, name the prior research from the same product/brand family that
+  applies and the specific findings being carried forward.
+- **Gate 13 — Question-specificity gate (HOW not WHAT).** Phase 1. Research questions
+  must produce actionable product/decision outputs unless the project is explicitly
+  scoped as discovery-phase descriptive research.
+- **Gate 14 — Readability gate.** Phase 6. §1 readable in <3 minutes by a
+  non-specialist; §3 framework summarizable in one sentence + one screen of diagram;
+  no paragraph longer than 6 sentences in §1, §2, or §3.
+
+### v2 (2026-05-23) — Citation verification + paywall surfacing
+
+- **Gate 9 — Independent citation verification.** Phase 3.5. Blind sample audit of
+  source cards by an independent subagent; failure rate ≤5% required to ship.
+- **Gate 10 — Paywall surfacing.** Phase 2. High-value paywalled candidates surfaced
+  to the user for a procurement decision; negative results must be explicitly logged.
+
+### v1 (2026-05-23) — Initial 8 compliance gates from audit
+
+- Gates 1-8 covering reference loading, source-card-on-disk requirement, methodology
+  subsection completeness, bias-guard summary, deliverable manifest, evidence-level
+  distribution tables, source-category distribution tables, and credibility-score
+  distribution tables.
