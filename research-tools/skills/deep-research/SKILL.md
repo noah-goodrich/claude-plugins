@@ -470,6 +470,43 @@ bias-guard discipline up from per-source bookkeeping to deliverable-level accoun
 if the agree-with count dwarfs the disagree-with count, the reader can see the asymmetry
 and weight conclusions accordingly.
 
+**Gate 14 — Readability gate.** Research that nobody can read does not exist. Before
+running the Deliverable Manifest, run the readability gate on §1, §2, and §3.
+
+- **§1 Recommendations must be readable in under 3 minutes by a non-specialist.**
+  Bullets, not paragraphs. Each recommendation is one bullet, leading with a verb,
+  with a single backing-section reference (e.g., `(§4.5)`). No undefined jargon (see
+  Gate 11). If a recommendation needs more than one sentence of context to make
+  sense to a non-specialist, the recommendation is not sharp enough — split it,
+  cut it, or move the context into §4.
+- **§3 Framework (if present) must fit on one screen with a single-sentence
+  summary.** Open §3 with one sentence stating what the framework is and what it
+  decides (e.g., "The Elevation-vs-Surveillance axis decides whether a proposed
+  feature reduces user load or extracts user attention."). Include a diagram OR a
+  compact table that fits inside one screen at standard zoom — a reader should be
+  able to take in the whole framework without scrolling. Long backing prose lives
+  in §4, not §3.
+- **No paragraph longer than 6 sentences in §1, §2, or §3.** Long paragraphs in
+  conclusion-bearing sections are the readability failure mode. Break paragraphs
+  at the natural sentence boundary, or convert to a bullet list.
+
+**Readability compliance check:**
+
+1. Read §1 aloud (or out loud in your head). Time yourself. If it takes more than
+   3 minutes, cut.
+2. Open §3 in a viewer at standard zoom. If you have to scroll to see the
+   framework's structure, restructure §3.
+3. Grep §1, §2, §3 for paragraphs (text blocks between blank lines) and count
+   sentences in each. Flag every paragraph >6 sentences as needing restructure
+   before declare-complete.
+
+Failure to pass Gate 14 means the deliverable is not yet shippable — return to
+the relevant section and restructure. Readability is not a polish step you do
+after; it is a structural constraint that informs how §1, §2, and §3 get drafted
+in the first place.
+
+---
+
 **Required-artifacts verification (Deliverable Manifest).** Before declaring the research
 complete, verify each item below exists on disk. Do not present the deliverable to the user
 until every box is checked:
@@ -504,6 +541,10 @@ until every box is checked:
       an inline parenthetical defines it. Pay specific attention to §1 Recommendations
       and §2 Summary — undefined jargon here, even if defined later, fails this gate
       because non-specialist readers stop after §2.
+- [ ] **Gate 14 — Readability.** §1 reads aloud in under 3 minutes by a non-specialist
+      (bullets, not paragraphs). §3 fits on one screen with a single-sentence summary.
+      No paragraph in §1, §2, or §3 exceeds 6 sentences. Long paragraphs in
+      conclusion-bearing sections are flagged and restructured before declare-complete.
 
 If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
 user presentation with an unchecked box.
