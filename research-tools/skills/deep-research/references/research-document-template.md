@@ -30,6 +30,19 @@ deliver an incomplete document.
       citation pointing to a source-card filename or a numbered reference in §7.
 - [ ] **Section ordering matches §1 → §7 exactly** — no reordering, no invented
       top-level sections that displace these seven.
+- [ ] **Every term defined on first use (Gate 11 — ELI10 enforcement)** — every
+      domain-specific term, acronym (≥2 capitalized characters), or piece of jargon used
+      in §1, §2, §3, §4, or §5 has a plain-English parenthetical definition the first
+      time it appears. Acronyms must spell out the full phrase (e.g., "EF (executive
+      function — the brain's capacity to plan, prioritize, and switch tasks)"). A
+      glossary in §6 Methodology is optional but encouraged when a term recurs >5 times
+      across the deliverable; the glossary does NOT replace the first-use definition.
+      To verify: grep the deliverable for capitalized acronyms (`\b[A-Z]{2,}\b`) and
+      for any domain-specific noun phrase you introduce; for each match, scroll back to
+      its first appearance and confirm an inline parenthetical defines it. A term that
+      first appears in §1 Recommendations or §2 Summary without definition is
+      non-compliant even if it is defined later in §4 or §5 — non-specialist readers
+      stop after §2.
 
 ---
 
