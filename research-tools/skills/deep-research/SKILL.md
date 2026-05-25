@@ -80,6 +80,45 @@ was actually performed.**
 1. **Research questions** — What specifically are you trying to answer? Write 1-3 explicit
    questions. Vague questions produce vague research.
 
+   **Gate 13 — Question-specificity (HOW not WHAT).** Research questions must be HOW
+   questions producing actionable product/decision outputs, not WHAT questions producing
+   descriptive analyses — UNLESS the project is explicitly scoped as discovery-phase
+   research where description is the deliverable, in which case the scoping decision
+   must be on the page (not the default).
+
+   - **HOW questions** produce decisions you can act on. Examples: "HOW should the
+     personalization mechanic infer family preferences from behavior without an
+     onboarding questionnaire?" / "HOW does the meal-decision-at-5:45pm interaction
+     work end-to-end?" / "HOW should we phase the feature so the empty-state has value?"
+   - **WHAT questions** produce descriptive maps of a landscape. Examples: "WHAT does
+     the user care about?" / "WHAT does the literature say about X?" / "WHAT is the
+     state of competitive products?" These are appropriate ONLY in explicit
+     discovery-phase scoping.
+
+   **The HOW-ness test.** For each question you write, ask: *can the answer be
+   implemented as a product feature, a workflow change, or a concrete decision the
+   team can ship next week?* If the answer would mostly read as "the user cares
+   about X" or "the literature says Y" or "the science supports the framing" — the
+   question is a WHAT question and needs sharpening before Phase 2.
+
+   **Sharpening pattern.** Take the WHAT question and add a verb-bearing clause:
+   *"WHAT is the cognitive shape of dinner load?"* → *"HOW should the
+   meal-decision-at-5:45pm interaction reduce anticipation load without requiring
+   onboarding-time data entry?"* The HOW version forces the deliverable to produce
+   an interaction spec, not a literature review.
+
+   **Discovery-phase override.** If the project genuinely IS discovery-phase
+   research (first-pass investigation of an unknown domain, no product hypothesis
+   yet), the Phase 1 design doc must state that explicitly in a single sentence:
+   *"This is descriptive-phase research; HOW questions are out of scope and
+   recommendations will be advisory, not actionable."* Without that explicit
+   sentence, the default is HOW-shaped questions.
+
+   **The Phase 1 checkpoint MUST include explicit confirmation** that each research
+   question is HOW-shaped OR that descriptive-WHAT scope is justified. A research
+   question list that contains undeclared WHAT questions is non-compliant — the user
+   signs off on the HOW-or-justified-WHAT classification before Phase 2 begins.
+
 2. **Scope boundaries** — What is in scope? What is explicitly out? Why? Write both lists.
    Scope boundaries prevent rabbit-holing.
 
@@ -100,9 +139,14 @@ was actually performed.**
 
 **Checkpoint:** Present the research design to the user for validation before proceeding to
 Phase 2. Do not search until the design is confirmed. The user-facing design doc MUST
-include the Gate 12 "Prior research carried forward" subsection (with the negative-result
-note if no prior work applies) BEFORE the research-questions list — this is the explicit
-confirmation that the prior-research scan was performed.
+include:
+
+1. **Gate 12 — "Prior research carried forward" subsection** (with the negative-result
+   note if no prior work applies) BEFORE the research-questions list. Explicit
+   confirmation that the prior-research scan was performed.
+2. **Gate 13 — Question-shape classification.** Each research question is annotated
+   `[HOW]` or `[WHAT — descriptive-phase override justified by: ...]`. A question list
+   with unannotated WHAT questions is non-compliant.
 
 ---
 
