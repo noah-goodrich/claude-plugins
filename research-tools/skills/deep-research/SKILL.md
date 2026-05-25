@@ -49,6 +49,34 @@ references are the manual.
 
 Before searching for anything, define:
 
+**Gate 12 — Prior-research-integration checkpoint (runs first).** Before writing
+research questions, explicitly inventory what PRIOR research from the same product
+family, brand, or methodology applies to this question, and what findings carry forward.
+The Phase 1 design doc MUST include a "Prior research carried forward" subsection
+naming, for each prior doc:
+
+- **Source document** — path/URL, date, methodology version.
+- **Specific findings carried forward** — bullet-list of conclusions, frameworks, or
+  archetypes that the new research will build on (not re-derive). Quote the prior
+  doc's own language where possible so the carry-forward is concrete, not vague.
+- **How this research extends (rather than duplicates) prior work** — name the
+  delta: new data, new framing, new sub-question, or testing prior conclusions
+  against new evidence. "Different topic" is not a sufficient extension claim if
+  the new research will end up rediscovering the prior framework.
+
+**If prior research from the SAME product family or brand has already answered the
+question(s) you are about to ask, you must EITHER (a) justify the rerun in writing
+(new data, new test, refutation hunt) OR (b) scope the new research down to the
+genuinely new questions only.** A new project that rediscovers conclusions an earlier
+project produced is not "validation" — it is wasted budget and a missed opportunity
+to ask the next-level question. The Phase 1 checkpoint MUST surface the carry-forward
+inventory to the user; the user signs off before Phase 2 begins.
+
+**If no prior research applies, the subsection still appears with the explicit
+note: "Prior research carried forward: none — this is a first-pass investigation of
+[domain]." The negative result must be on the page so a reader can verify the scan
+was actually performed.**
+
 1. **Research questions** — What specifically are you trying to answer? Write 1-3 explicit
    questions. Vague questions produce vague research.
 
@@ -71,7 +99,10 @@ Before searching for anything, define:
    Confirm with the user before proceeding.
 
 **Checkpoint:** Present the research design to the user for validation before proceeding to
-Phase 2. Do not search until the design is confirmed.
+Phase 2. Do not search until the design is confirmed. The user-facing design doc MUST
+include the Gate 12 "Prior research carried forward" subsection (with the negative-result
+note if no prior work applies) BEFORE the research-questions list — this is the explicit
+confirmation that the prior-research scan was performed.
 
 ---
 
