@@ -3,7 +3,7 @@
 **Created:** 2026-05-27
 **Scope:** `borg-collective` plugin within this repo, the standalone
 `~/dev/borg-collective` repo, and the `~/dev/cairn` graph-backend repo
-**Status:** Operational rule, decision component pending Noah confirmation
+**Status:** Confirmed 2026-05-27
 
 ## Why
 
@@ -29,33 +29,38 @@ prefer, or treat cairn as fully optional.
 
 Two coordinated decisions:
 
-1. **Source-of-truth:** designate `claude-plugins/borg-collective/` as the
-   canonical home for the publishable plugin's skill files and hooks.
-   `~/dev/borg-collective/` remains the research repo where new skills
-   incubate before being promoted into the plugin.
+1. **Source-of-truth:** `~/dev/borg-collective/` is the canonical home for all
+   skill files and hooks. `claude-plugins/borg-collective/` distributes the
+   **publishable subset** — it never originates edits. See the privacy boundary
+   below for what is and isn't included in the plugin.
 2. **cairn coupling:** borg skills treat cairn as **optional**. If
    `~/.cairn/` is present, skills use it for graph storage; otherwise they
    degrade gracefully to filesystem-only mode. No skill hard-requires cairn.
 
-Both decisions are **proposed** in this directive. Noah confirms by either
-leaving this file in place after PR merge, or amending it with the actual
-decision.
+Decision confirmed 2026-05-27. Source: original Dispatch session `f9ef8d07`
+(2026-05-24) that created the plugin — the instruction explicitly named
+`~/dev/borg-collective/` as the source repo and defined an exclusion list
+(CLI machinery, registry, research docs, private paths) as the privacy boundary.
 
 ## How to apply
 
 **Editing borg-collective skills:**
-- Edit in `~/dev/claude-plugins/borg-collective/skills/<skill>/SKILL.md`.
-- If the edit originates from research in `~/dev/borg-collective/`,
-  port it across explicitly with a commit message referencing the source
-  commit.
-- Never edit only in `~/dev/borg-collective/` and expect the plugin to
-  pick it up — there is no auto-sync.
+- Edit in `~/dev/borg-collective/skills/<skill>/SKILL.md` — that is the
+  source of truth.
+- Never edit directly in `~/dev/claude-plugins/borg-collective/skills/` —
+  it is a derived copy and changes will be overwritten on the next promote.
 
 **Writing new borg skills:**
-- Incubate in `~/dev/borg-collective/` on a research branch.
-- When stable, copy into `~/dev/claude-plugins/borg-collective/skills/`
-  and rebuild `dist/borg-collective.plugin`.
-- Reference both commits in the promotion PR.
+- Write and iterate in `~/dev/borg-collective/` (research branch if needed).
+- When stable and safe to distribute (passes the privacy boundary check below),
+  copy into `~/dev/claude-plugins/borg-collective/skills/` and rebuild
+  `dist/borg-collective.plugin`. Reference the source commit in the promotion
+  PR.
+
+**Privacy boundary — what must NOT be promoted to claude-plugins:**
+- Skills that reference private paths, JIRA configs, or work-machine specifics
+- Skills or hooks that require the `borg`/`drone` CLI at runtime
+- Any content flagged in `PRIVACY-AUDIT-2026-05-23.md`
 
 **cairn integration in borg skills:**
 - Wrap cairn calls in a `cairn_available()` check.
