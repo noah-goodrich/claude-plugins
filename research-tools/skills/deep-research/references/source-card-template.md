@@ -42,6 +42,35 @@ completed cards in the project's `sources/` directory.
 [3-5 bullet points summarizing the most important claims or insights from this source.
 Each bullet should be a discrete, citable finding — not a vague summary.]
 
+## Verified Quote(s)
+
+[At least ONE verbatim quote from the source — copied exactly, not paraphrased — that
+serves as the textual evidence for the strongest claim this card makes in Key Findings.
+The reader (and the Phase 3.5 verification subagent) must be able to take this quote
+and search for it character-for-character in the source. If the source is long, prefer
+two or three short quotes over one paraphrastic block.]
+
+**Location reference:** [The exact pointer a verifier needs to find this in the source.
+Use the most precise unit the source supports — page number for books/PDFs, section
+heading for web articles, timestamp `MM:SS` for video/audio, paragraph offset (e.g.,
+"paragraph 7 under heading X") for unpaginated web text. Vague locators like "somewhere
+in the conclusion" are non-compliant.]
+
+> [Quote 1, verbatim, in blockquote form. Preserve original punctuation, capitalization,
+> and any italics/bolding as `*emphasis*` / `**emphasis**`. If you elide text inside the
+> quote, use bracketed ellipses `[...]` so it is clear material was omitted.]
+
+> [Quote 2, if applicable. One blockquote per quote.]
+
+**Access status:** [EXACTLY ONE of: `live` / `cached/partial` / `inaccessible`.
+- `live` — URL was fetched successfully at evaluation time and the quote was verified
+  in-place.
+- `cached/partial` — source could not be fully re-fetched (paywall, takedown, dead link,
+  geo-block); the quote is what was visible at the original access time. The Phase 3.5
+  verifier will mark this source `inaccessible` rather than `failed`.
+- `inaccessible` — only the title/abstract was ever available; the card is built on
+  metadata + secondary description. Strongly consider exclusion in Phase 4.]
+
 ## Inclusion Decision
 
 **Decision:** [Core / Supporting / Excluded]

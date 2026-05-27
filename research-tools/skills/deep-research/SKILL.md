@@ -101,6 +101,34 @@ say it, look for data. This is non-negotiable.
 **When to stop searching:** When new searches are returning sources you've already seen, and
 all 5 source categories have at least some representation for each major topic area.
 
+**Paywall surfacing.** If during source discovery you encounter sources behind paywalls
+(academic journals, paid industry reports, gated analyst notes, subscription-only trade
+publications) that look genuinely high-value for the research question, STOP the pipeline
+and write a candidate list to `docs/research/[date]/drafts/paywalled-candidates.md`
+before completing Phase 2. Each entry must contain:
+
+- **Full citation** — author(s), title, publication, date, DOI/URL.
+- **Paywall publisher / platform** — Elsevier, JSTOR, Gartner, WSJ, Substack, etc.
+- **Estimated procurement cost** if known (e.g., "$39 per-article PDF," "$1,995 report,"
+  "$15/month subscription"). Write "unknown" if you cannot find pricing without
+  registering — do not register or submit forms to discover pricing.
+- **Why this source would materially improve the research** — be specific about what
+  claim it would support or refute. Vague justifications ("seems important," "looks
+  comprehensive") are non-compliant; the user needs to weigh procurement cost against
+  concrete research value.
+
+After writing the candidates file, ping the user for a procurement decision before
+completing Phase 2. Once the user decides which (if any) to procure, resume discovery
+with those sources included or document the exclusion in the §6 Methodology Limitations
+subsection (citation + reason for exclusion). Silently dropping a paywalled source you
+identified as high-value, without surfacing it for a procurement decision, is non-compliant.
+
+**Negative case.** If discovery surfaces zero genuinely high-value paywalled sources,
+do NOT create an empty `paywalled-candidates.md` file. Instead, note in the §6
+Methodology Source Discovery subsection: "Paywall scan: no high-value paywalled
+candidates identified." The negative result must be documented so a reader knows the
+scan was actually performed.
+
 ---
 
 ### Phase 3: Source Evaluation
@@ -114,6 +142,17 @@ at `[project]/docs/research/sources/<topic>-<slug>.md`, using the template exact
 Inline summaries inside the analysis document do not satisfy this requirement. A subagent
 that "summarized the source in the analysis doc" instead of producing a card has skipped
 the step; go back and produce the card.
+
+**Verbatim-quote requirement.** Each card must include a `## Verified Quote(s)` section
+per the updated `references/source-card-template.md`. The quotes must be verbatim from
+the source — not paraphrases, not "the source basically says X" summaries. Pick the
+strongest claim the card makes in Key Findings and have at least one quote support that
+claim with a precise location reference (page, section, timestamp, paragraph offset —
+whatever the source supports). If a source cannot be fetched live (paywalled, taken
+down, dead link, geo-blocked), use whatever excerpt was visible at access time and flag
+the source as `Access: cached/partial` in the card. A card with no Verified Quote(s)
+section — or with a section that contains paraphrases instead of verbatim text — has
+not satisfied this gate; go back and pull the quote before proceeding.
 
 **The evaluation process:**
 
@@ -137,6 +176,94 @@ the step; go back and produce the card.
 **Batch evaluation:** When evaluating many sources, do NOT score them all on one dimension
 at a time. Evaluate each source completely before moving to the next. This prevents anchoring
 bias from the previous source's scores.
+
+---
+
+### Phase 3.5: Independent Citation Verification
+
+Phases 1–3 produce source cards with verbatim quotes. This phase verifies those quotes
+actually exist where the cards say they do. Source cards can be fabricated — URLs that
+resolve to unrelated pages, quotes that paraphrase rather than reproduce, attributions
+to authors who never made the claim. Phase 3.5 catches all three by running a
+**blind** verification pass: an independent subagent re-reads the sources, not the
+analysis. If the analysis is fiction dressed as research, this is the phase that
+surfaces it.
+
+**Spawn an independent verification subagent.** This subagent MUST be a fresh Task-tool
+agent with no shared context from the synthesis work. Give it ONLY:
+- Read access to `docs/research/[date]/sources/`
+- The verification protocol below
+- The fetch/search tools it needs (WebFetch, WebSearch, Read)
+
+Do NOT give it the analysis document, the topic map, the draft synthesis, or any
+context about what conclusions the research is reaching. The whole point is that the
+verifier evaluates each card against its source on the card's own terms, uninfluenced
+by what the larger document needs the source to say.
+
+**Sampling rule.** The verifier samples **30% of source cards, rounded up, with a
+minimum of 3**. If there are fewer than 10 cards total, verify ALL of them. Sample
+selection is random across the full set — not weighted toward "important" sources
+(important sources are exactly the ones most worth fabricating, so weighting defeats
+the purpose).
+
+**Per-card verification protocol.** For each sampled card, the verifier:
+
+1. **Fetches the URL.** Live → continue. Paywalled/dead/geo-blocked but the card is
+   flagged `Access: cached/partial` → mark `inaccessible` (NOT failed) and move on.
+   Paywalled/dead/geo-blocked WITHOUT the `cached/partial` flag → mark `failed`
+   (the card claimed live access it cannot demonstrate).
+2. **Searches for the verbatim quote(s).** The quote must appear character-for-character
+   in the fetched content. Allow only trivial variation (smart-quote vs. straight-quote,
+   normalized whitespace). A "close paraphrase" is a failure.
+3. **Confirms attribution.** The author/speaker named on the card must be the one to
+   whom the quote is attributed in the source. A quote correctly reproduced but
+   misattributed is a failure.
+4. **Confirms location reference.** The page/section/timestamp/paragraph offset on
+   the card must point to the actual location of the quote. Off-by-one paragraph is
+   acceptable; "wrong section entirely" is a failure.
+
+**Per-card outcome.** Exactly one of: `verified` / `failed` / `inaccessible`. No
+"partial credit." Borderline cases default to `failed` — the verifier is the
+adversarial check, not a sympathetic reviewer.
+
+**Verification report.** Write the report to
+`docs/research/[date]/verification-report.md`. Required contents:
+
+- Sample size, sample-selection method, list of sampled card filenames
+- Per-card outcome table (filename | outcome | notes if failed/inaccessible)
+- Aggregate counts: verified / failed / inaccessible
+- **Failure rate** = `failed / (verified + failed)`. Inaccessible cards are excluded
+  from the denominator because they are honestly flagged unverifiable, not failed
+  attempts at deception.
+- Failure-rate band: `≤5%` / `>5%–10%` / `>10%`
+
+**Gate — if failure rate is >5% (more than 1 in 20 sampled-and-verifiable cards
+failed), DO NOT proceed to Phase 4.** Three remediation paths, in preference order:
+
+1. **Re-evaluate the failed sources.** Fetch them, pull correct quotes, rewrite the
+   cards. Then re-sample (the original sample is now contaminated — draw a fresh 30%
+   from the full set, including any newly-rewritten cards).
+2. **Re-source the claims the failed cards supported.** If a card's quote turns out to
+   not exist, the claim that quote supported in the analysis is now unsourced. Find a
+   real source for the claim or remove the claim.
+3. **Document as access-limited.** If the failure is genuinely an access problem (the
+   source changed, the URL now redirects, the paywall hardened), reclassify the card's
+   `Access` field to `cached/partial` with a note explaining what changed. Then re-run
+   verification — the reclassified card now counts as `inaccessible` rather than
+   `failed`, and may bring the rate under 5%.
+
+After any remediation path, **re-run Phase 3.5 from scratch** on a freshly-drawn sample
+before proceeding to Phase 4. A subagent that "patched the failed ones and moved on"
+without re-sampling has skipped the gate.
+
+**Methodology reporting.** The §6 Methodology section MUST report:
+- Verification sample size (`N sampled` out of `M total cards`, `P%`)
+- Failure count
+- Failure-rate band
+
+These three numbers appear in the Source Evaluation subsection of the methodology
+template. A methodology that omits them has not satisfied the gate even if the
+verification report file exists.
 
 ---
 
@@ -266,6 +393,10 @@ until every box is checked:
 - [ ] Source counts reconcile: source-card files on disk == sources reported in the
       methodology counts == sources cited in §5 Research. If the three counts disagree,
       something was dropped silently — investigate before proceeding.
+- [ ] Citation verification report exists at `docs/research/[date]/verification-report.md`
+      with documented failure rate ≤5%. The report must include sample size, per-card
+      outcomes, and the aggregate verified/failed/inaccessible counts (see Phase 3.5).
+      If the rate is >5%, you are not done — return to Phase 3.5 and remediate.
 
 If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
 user presentation with an unchecked box.
