@@ -6,6 +6,11 @@
   },
   "plugins": [
     {
+      "name": "borg-collective",
+      "description": "The cognitive-load layer for parallel AI coding — skills and lifecycle hooks for sustainable AI-assisted development.",
+      "source": "./borg-collective"
+    },
+    {
       "name": "dev-tools",
       "description": "Development environment tools: project scaffolding, devcontainer bootstrapping, repository review and documentation generation.",
       "source": "./dev-tools"
