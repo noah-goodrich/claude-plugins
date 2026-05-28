@@ -1,31 +1,12 @@
 #!/usr/bin/env bash
-# notify.sh — alert when Claude finishes a turn and needs input.
-#
-# macOS-only: posts a Notification Center notification via osascript and
-# sends a tmux visual bell (when running inside tmux). Inside a container
-# this is a no-op — the host can't reach the desktop and the borg CLI's
-# notify daemon isn't part of this plugin.
-
+# notify.sh — alert when Claude finishes a turn and needs input
 set -euo pipefail
 
-# Inside a container the host's Notification Center isn't reachable.
+# Inside a container the host's Notification Center isn't reachable; borg-notify.sh
+# writes status=waiting to the bind-mounted registry and borg-notifyd pops on the host.
 [[ -f /.dockerenv ]] && exit 0
 
-# Inlined from borg-collective lib/borg-hooks.sh — keeps this hook
-# self-contained so the plugin works without the CLI installed.
-_osa_notify() {
-    local title="$1" subtitle="$2" message="$3"
-    title="${title//\\/\\\\}";       title="${title//\"/\\\"}"
-    subtitle="${subtitle//\\/\\\\}"; subtitle="${subtitle//\"/\\\"}"
-    message="${message//\\/\\\\}";   message="${message//\"/\\\"}"
-    local script="display notification \"$message\" with title \"$title\""
-    [[ -n "$subtitle" ]] && script+=" subtitle \"$subtitle\""
-    script+=" sound name \"Glass\""
-    osascript -e "$script" 2>/dev/null || true
-}
-
-# osascript is macOS-only; bail silently elsewhere so the hook is portable.
-command -v osascript >/dev/null 2>&1 || exit 0
+source "$HOME/.claude/lib/borg-hooks.sh"
 
 INPUT=$(cat /dev/stdin 2>/dev/null || true)
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)
@@ -38,9 +19,9 @@ if [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]]; then
 fi
 SUBTITLE="${WINDOW:+$WINDOW — }$PROJECT"
 
-_osa_notify "Claude Code" "$SUBTITLE" "Ready for input"
+_borg_osa_notify "Claude Code" "$SUBTITLE" "Ready for input"
 
-# tmux visual bell — write directly to the pane's TTY so tmux sees it.
+# tmux visual bell — write directly to the pane's TTY so tmux sees it
 [[ -n "$PANE_TTY" ]] && printf '\a' > "$PANE_TTY"
 
 exit 0
