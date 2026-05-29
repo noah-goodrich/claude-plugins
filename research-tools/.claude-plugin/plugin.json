@@ -1,9 +1,9 @@
 {
   "name": "research-tools",
-  "version": "0.1.0",
-  "description": "Systematic research methodology — source evaluation, evidence classification, inclusion/exclusion decisions, and documentation standards.",
+  "version": "0.2.0",
+  "description": "Research and ideation methodology — brainstorm design council for open-ended problems, deep-research pipeline for evidence synthesis.",
   "author": {
     "name": "Noah Goodrich"
   },
-  "keywords": ["research", "credibility", "source-evaluation", "methodology", "evidence"]
+  "keywords": ["research", "brainstorm", "ideation", "credibility", "source-evaluation", "methodology", "evidence"]
 }
