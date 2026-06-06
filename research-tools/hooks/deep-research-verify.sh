@@ -47,6 +47,45 @@
 #       lowest-scoring source that CLEARED the bar — every run must make a real cut
 #       or own the marginal keep.
 #
+# DIRECTIVE 03 — EVIDENCE-FLOOR + CONFIRMATION-SKEW (added below, W1-W2 + the §2
+# evidence-floor classifier prose; NON-BLOCKING WARNINGS, never hard fails):
+#   W1  NO-PRIMARY-EVIDENCE banner. When the §6 evidence-level distribution table
+#       reports Level 1 (systematic review / meta-analysis) AND Level 2 (RCT) both at
+#       0 — i.e. no primary experimental evidence was collected — the verifier asserts
+#       the VERBATIM banner string
+#           NO PRIMARY EVIDENCE — all findings are literature-derived predictions
+#       as a non-blocking WARNING. If the deliverable already carries that exact string
+#       in §2, the warning is satisfied (the banner is present); if it does not, the
+#       warning flags that it MUST be added to §2. Either way this NEVER increments
+#       FAILS and NEVER changes the exit code. Fails eating-out (0%) and agent-teams (0%).
+#   W2  CONFIRMATION-SKEW gate. The §6 Bias-Guard Summary reports an "Agreed with
+#       source" count and a "Disagreed with source" count. A skew of >3:1
+#       (agree > 3 * disagree, including the all-agree/zero-disagree case) triggers a
+#       non-blocking WARNING that the run MUST add (a) a falsification query to the
+#       Phase 2 search plan and (b) a "steel-man the contrarian" subsection in Phase 4.
+#       The verifier additionally checks whether those two remediations are already
+#       present (a `falsif`-bearing line in the search log / §2 plan, and a literal
+#       `steel-man` contrarian subsection) and footnotes whichever is missing. Reported
+#       as a footnote/warning FIRST, not a hard block (audit.md:429-432). Fails
+#       eating-out (27:3) and agent-teams (10:2).
+#
+# ANTI-GAMING NOTE (testability classifier honor-system escape hatch)
+#   The Phase 2 evidence-floor classifier is itself an honor-system gate: a tired agent
+#   can declare every question "untestable" to dodge the direct-observation preference.
+#   Per the council's absorbed dissent, declaring a question UNTESTABLE requires a
+#   one-line justification in §2 — the escape hatch leaves a paper trail. This is
+#   enforced as METHODOLOGY PROSE in deep-research/SKILL.md Phase 2, not as a verifier
+#   assertion (the verifier cannot read intent); W1's banner is the machine backstop.
+#
+# PROMOTION PATH (documented, NOT done here)
+#   W1/W2 are WARNINGS, not blocks. They become blocking only AFTER (a) the Directive 01
+#   gate has fired in production AND (b) the banner/skew warnings have run clean on >=2
+#   real deliverables. Until then they are advisory: non-zero `WARN:` lines + a
+#   `Warnings:` tally that DO NOT affect the exit code. Because each warning is written
+#   to the ground-ledger-shaped record (the same per-deliverable record the A* assertions
+#   read), promotion to blocking is a one-line change (move the warning's verdict into
+#   FAILS) with NO rewrite of the detection logic.
+#
 # GROUND-LEDGER-SHAPED INPUT CONTRACT (forward-compat; load-bearing, not a nicety)
 #   The verifier models its input as a GROUND LEDGER: a set of per-card grounding
 #   records, each shaped like one line of a future `ground.jsonl`:
@@ -73,13 +112,20 @@
 #                   most recent docs/research/ deliverable under $PWD is discovered.
 #
 # EXIT CODES
-#   0   all six assertions pass (gate PASS)
-#   1   one or more assertions failed (gate FAIL)
+#   0   all hard assertions pass (gate PASS) — Directive 03 WARNINGS DO NOT affect this
+#   1   one or more hard assertions failed (gate FAIL)
 #   2   usage / could-not-locate-a-deliverable error
+#
+#   Directive 03 warnings (W1/W2) are advisory only: they emit WARN: lines and a
+#   Warnings: tally but NEVER change the exit code. A clean deliverable with warnings
+#   still exits 0; a deliverable that fails a hard assertion still exits 1 regardless of
+#   whether warnings fired.
 #
 # STATUS LINES (machine-readable; the Stop hook parses these)
 #   GATE: <assertion-id> <PASS|FAIL> <human reason>
-#   Gate result: PASS        (emitted ONLY on full pass, with the honest badge)
+#   WARN: <warning-id> <human reason>     (Directive 03; advisory, non-blocking)
+#   Warnings: <N>                          (count of advisory warnings raised)
+#   Gate result: PASS        (emitted ONLY on full hard-pass, with the honest badge)
 #   Gate result: FAIL: <first failing reason>
 
 set -euo pipefail
@@ -177,10 +223,15 @@ if [[ -z "$DELIVERABLE_DOC" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Failure accumulator.
+# Failure accumulator (hard gate) + warning accumulator (Directive 03, advisory).
+# WARNS is deliberately SEPARATE from FAILS: warnings never feed the verdict. The
+# WARN_LEDGER strings are the ground-ledger-shaped warning records — keyed by warning
+# id so a later directive can promote any one of them into FAILS without re-deriving it.
 # ---------------------------------------------------------------------------
 FAILS=0
 FIRST_REASON=""
+WARNS=0
+WARN_LEDGER=""   # "<id>=<verdict>; " advisory records; load-bearing for promotion
 
 fail() {
     # fail <assertion-id> <reason>
@@ -199,6 +250,26 @@ pass() {
     # pass <assertion-id> <note>
     local id="$1"; shift
     printf 'GATE: %s PASS %s\n' "$id" "$*"
+}
+
+warn() {
+    # warn <warning-id> <reason>  — Directive 03 advisory. NEVER touches FAILS.
+    # Writes one ground-ledger-shaped warning record (id=raised) so the warning can be
+    # promoted to a hard fail later without re-deriving the condition.
+    local id="$1"; shift
+    printf 'WARN: %s %s\n' "$id" "$*"
+    WARNS=$((WARNS + 1))
+    WARN_LEDGER="${WARN_LEDGER}${id}=raised; "
+    return 0
+}
+
+okwarn() {
+    # okwarn <warning-id> <note>  — the advisory condition did NOT trigger. Records the
+    # clear verdict in the ledger (id=clear) for the promotion-path "ran clean" tally.
+    local id="$1"; shift
+    printf 'WARN: %s clear — %s\n' "$id" "$*"
+    WARN_LEDGER="${WARN_LEDGER}${id}=clear; "
+    return 0
 }
 
 # ===========================================================================
@@ -660,8 +731,134 @@ else
 fi
 
 # ===========================================================================
+# DIRECTIVE 03 — NON-BLOCKING WARNINGS (W1, W2).
+# These run unconditionally (the evidence-level table and Bias-Guard Summary live in the
+# deliverable doc, which can exist even when the report is absent) and NEVER touch FAILS.
+# The scan body is the deliverable doc unioned with the report, mirroring SCAN_FILES but
+# computed locally so W1/W2 work even on a report-absent run.
+# ===========================================================================
+WARN_SCAN=""
+[[ -n "$DELIVERABLE_DOC" && -f "$DELIVERABLE_DOC" ]] && WARN_SCAN="$DELIVERABLE_DOC"
+[[ -f "$REPORT" ]] && WARN_SCAN="$WARN_SCAN $REPORT"
+
+# The exact verbatim banner string. Asserted character-for-character — this is the
+# load-bearing public contract (Directive 03 acceptance criterion).
+PRIMARY_BANNER="NO PRIMARY EVIDENCE — all findings are literature-derived predictions"
+
+# ---------------------------------------------------------------------------
+# W1 — NO-PRIMARY-EVIDENCE banner.
+# Read Level 1 and Level 2 counts from the §6 evidence-level distribution table. The
+# table rows are `| 1 | <desc> | <count> |` and `| 2 | <desc> | <count> |`. Primary
+# experimental evidence = Level 1 (systematic review / meta-analysis) + Level 2 (RCT).
+# Both zero => no primary evidence collected => the banner is required in §2.
+#
+# The level number alone is NOT a safe anchor: a search-log table earlier in §6 also has
+# rows starting `| 1 |`, `| 2 |` (query numbers). We anchor on the canonical DESCRIPTION
+# text of the evidence-level rows instead — Level 1 carries "systematic review" /
+# "meta-analysis"; Level 2 carries "RCT" / "randomized" — then read that row's last
+# integer cell as the count.
+# ---------------------------------------------------------------------------
+if [[ -z "$WARN_SCAN" ]]; then
+    okwarn W1 "no deliverable doc to read evidence-level distribution from; banner check deferred"
+else
+    # Level 1 row: a leading `| 1 |` whose description names a systematic review /
+    # meta-analysis. Count = last integer on the row (the count cell).
+    lvl1=$(grep -EI '^\|[[:space:]]*1[[:space:]]*\|.*(systematic[[:space:]]+review|meta[ -]?analysis)' $WARN_SCAN \
+        | head -n1 \
+        | grep -Eo '[0-9]+' | tail -n1 || true)
+    # Level 2 row: a leading `| 2 |` whose description names an RCT / randomized trial /
+    # strong experiment. Count = last integer on the row.
+    lvl2=$(grep -EI '^\|[[:space:]]*2[[:space:]]*\|.*(RCT|randomi[sz]ed|strong[[:space:]]+experiment)' $WARN_SCAN \
+        | head -n1 \
+        | grep -Eo '[0-9]+' | tail -n1 || true)
+    # Banner already present verbatim in the deliverable?
+    banner_present=0
+    if grep -Fq "$PRIMARY_BANNER" $WARN_SCAN; then
+        banner_present=1
+    fi
+    if [[ -z "$lvl1" && -z "$lvl2" ]]; then
+        # No readable evidence-level distribution table. If the banner is already present,
+        # honor it; otherwise this is not a primary-evidence signal we can read — stay clear.
+        if [[ "$banner_present" -eq 1 ]]; then
+            okwarn W1 "no readable evidence-level table but verbatim NO-PRIMARY-EVIDENCE banner is present"
+        else
+            okwarn W1 "no readable §6 evidence-level distribution table; primary-evidence floor not assessable"
+        fi
+    else
+        [[ -n "$lvl1" ]] || lvl1=0
+        [[ -n "$lvl2" ]] || lvl2=0
+        primary=$(( lvl1 + lvl2 ))
+        if [[ "$primary" -eq 0 ]]; then
+            if [[ "$banner_present" -eq 1 ]]; then
+                okwarn W1 "0 primary-evidence cards (L1=$lvl1 + L2=$lvl2) and the verbatim banner is present in §2"
+            else
+                warn W1 "0 primary-evidence cards (L1=$lvl1 + L2=$lvl2) — §2 MUST carry the verbatim banner: \"${PRIMARY_BANNER}\""
+            fi
+        else
+            okwarn W1 "$primary primary-evidence card(s) collected (L1=$lvl1 + L2=$lvl2); no banner required"
+        fi
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# W2 — CONFIRMATION-SKEW gate.
+# Read the "Agreed with source" and "Disagreed with source" counts from the §6
+# Bias-Guard Summary. The rows are
+#   | Agreed with source — scored harder on dims 5, 6, 8 | <N> |
+#   | Disagreed with source — scored more generously on dims 5, 6, 8 | <N> |
+# A skew of >3:1 (agree > 3 * disagree, incl. zero-disagree) triggers the warning and
+# the verifier footnotes whether the two required remediations are present:
+#   (a) a falsification query in the Phase 2 search plan/log (a `falsif`-bearing line)
+#   (b) a literal `steel-man` contrarian subsection in Phase 4
+# ---------------------------------------------------------------------------
+if [[ -z "$WARN_SCAN" ]]; then
+    okwarn W2 "no deliverable doc to read Bias-Guard Summary from; skew check deferred"
+else
+    agree=$(grep -Ei '^\|[^|]*agree[d]?[[:space:]]+with[[:space:]]+source' $WARN_SCAN \
+        | head -n1 \
+        | grep -Eo '[0-9]+' | tail -n1 || true)
+    disagree=$(grep -Ei '^\|[^|]*disagree[d]?[[:space:]]+with[[:space:]]+source' $WARN_SCAN \
+        | head -n1 \
+        | grep -Eo '[0-9]+' | tail -n1 || true)
+    if [[ -z "$agree" || -z "$disagree" ]]; then
+        okwarn W2 "no readable Bias-Guard Summary agree/disagree counts; confirmation-skew not assessable"
+    else
+        # >3:1 skew test without floats: agree > 3 * disagree. Covers disagree==0.
+        if [[ "$agree" -gt $(( disagree * 3 )) ]]; then
+            # Remediation presence checks (footnoted, not blocking).
+            has_falsif=0
+            if grep -Eiq 'falsif' $WARN_SCAN; then
+                has_falsif=1
+            fi
+            has_steelman=0
+            if grep -Eiq 'steel[- ]?man' $WARN_SCAN; then
+                has_steelman=1
+            fi
+            missing=""
+            [[ "$has_falsif" -eq 0 ]] && missing="a falsification query in the Phase 2 search plan"
+            if [[ "$has_steelman" -eq 0 ]]; then
+                [[ -n "$missing" ]] && missing="$missing AND "
+                missing="${missing}a \"steel-man the contrarian\" subsection in Phase 4"
+            fi
+            if [[ -n "$missing" ]]; then
+                warn W2 "confirmation skew ${agree}:${disagree} exceeds 3:1 — REQUIRES ${missing} (both missing-or-partial)"
+            else
+                warn W2 "confirmation skew ${agree}:${disagree} exceeds 3:1 — required falsification query AND steel-man subsection are present, but the skew remains a flagged research-design risk"
+            fi
+        else
+            okwarn W2 "confirmation skew ${agree}:${disagree} within 3:1 — no falsification/steel-man remediation required"
+        fi
+    fi
+fi
+
+# ===========================================================================
 # Verdict.
 # ===========================================================================
+# The advisory warnings tally is surfaced on BOTH paths — warnings are independent of
+# the hard verdict and must be visible whether the gate passes or fails. They never
+# change the exit code (Directive 03: banner first, block later).
+printf 'Warnings: %s\n' "$WARNS"
+
 if [[ "$FAILS" -eq 0 ]]; then
     # The badge is printed ONLY here, on a full pass. It is context-blind, not
     # model-blind — see header. Never "blind", never "true", never "cannot lie".

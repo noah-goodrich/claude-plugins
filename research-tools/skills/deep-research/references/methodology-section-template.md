@@ -26,7 +26,9 @@ lists are not substitutes for the required tables.
       Academic / Institutional / Practitioner / Boots / Contrarian).
 - [ ] **Bias-Guard Summary** — counts of sources where the agree-with box fired, the
       disagree-with box fired, and neutral. Forces card-level bias guards up to deliverable
-      accountability.
+      accountability. **Confirmation-skew gate (Directive 03):** if agree:disagree exceeds
+      `3:1`, the run must add a Phase 2 falsification query and a Phase 4 "steel-man the
+      contrarian" subsection (advisory warning W2 today; blocking later).
 - [ ] **Limitations** — honest accounting of what this methodology cannot do.
 
 ---
@@ -88,6 +90,11 @@ lists are not substitutes for the required tables.
 | Neutral / no strong reaction | [N] |
 | **Total sources evaluated** | [N] |
 
+If the agree:disagree ratio exceeds `3:1`, note the confirmation-skew risk here and confirm
+the Phase 2 falsification query and Phase 4 "steel-man the contrarian" subsection are
+present (Directive 03 warning W2). The verifier reads the "Agreed with source" and
+"Disagreed with source" counts from this table.
+
 **Citation-Verification Report** *(required — Phase 3.5 sample audit, full report at
 `docs/research/[date]/verification-report.md`):*
 
@@ -129,6 +136,11 @@ reported, Phase 3.5 was not remediated and the gate was bypassed.
 | 7 | Expert opinion / thought leadership | [N] |
 | 8 | Anecdotal / personal experience | [N] |
 | 9 | Marketing / promotional | [N] |
+
+If Level 1 and Level 2 are BOTH 0, no primary experimental evidence was collected: §2 must
+carry the verbatim banner `NO PRIMARY EVIDENCE — all findings are literature-derived
+predictions` (Directive 03 warning W1). The verifier reads the Level 1 and Level 2 counts
+from this table.
 
 **Distribution by source category:**
 

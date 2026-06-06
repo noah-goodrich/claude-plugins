@@ -101,6 +101,34 @@ say it, look for data. This is non-negotiable.
 **When to stop searching:** When new searches are returning sources you've already seen, and
 all 5 source categories have at least some representation for each major topic area.
 
+**Evidence-floor classifier (Directive 03 — advisory now, blocking later).** Before you
+finish Phase 2, classify EACH research question on one axis: *is it cheaply testable
+in-environment?* A question is cheaply testable when you could answer it by directly
+observing a UX flow, a prompt's behavior, an API's output, or the household's own data —
+rather than only by reading what others have written. The reveal portrait research is the
+worked example: instead of defaulting to the published-consensus answer, it ran a single
+n=1 in-environment probe (21 live calls, MAE 3.32/255) and that one measurement reframed
+the entire recommendation.
+
+- **When a question IS cheaply testable**, the pipeline PREFERS at least one
+  direct-observation artifact over more source-scoring: a small probe PLUS the committed
+  harness that produced its numbers (a script, a notebook, a logged transcript). Absence of
+  such an artifact does NOT block in this directive — it surfaces in §2 so the reader knows
+  the testable question was answered from literature rather than measurement.
+- **When you declare a question UNTESTABLE** (to skip the direct-observation preference),
+  that declaration REQUIRES a one-line justification in §2 — e.g. "Q3 is not cheaply
+  testable in-environment: it depends on multi-week household behavior we cannot observe in
+  this session." This anti-gaming note exists because the classifier is otherwise an
+  honor-system escape hatch: a tired agent can declare everything untestable to dodge the
+  preference. The one-line justification leaves a paper trail; it does not have to be long,
+  it has to exist.
+- **Falsification query (confirmation-skew remediation).** If the run's Bias-Guard Summary
+  ends up skewed `>3:1` agree:disagree (see Phase 6), the Phase 2 search plan MUST include
+  at least one deliberate FALSIFICATION query — a search framed to find evidence the thesis
+  is WRONG ("counterexamples to X," "evidence X fails," "when X backfires"), not merely a
+  contrarian-flavored rephrase of the thesis. Log it in the search-log table like any other
+  query. The executable gate footnotes its absence (warning W2); it does not yet block.
+
 **Paywall surfacing.** If during source discovery you encounter sources behind paywalls
 (academic journals, paid industry reports, gated analyst notes, subscription-only trade
 publications) that look genuinely high-value for the research question, STOP the pipeline
@@ -330,6 +358,25 @@ deliverable be presented as PASS. The honest badge it prints on a pass is
 on the page, but it cannot prove the verifier's mind was uninfluenced. The box is now
 checked by the script, not the agent.
 
+Directive 03 adds two NON-BLOCKING advisory warnings on the same no-model script — they
+emit `WARN:` lines and a `Warnings:` tally but NEVER change the exit code, so a clean
+deliverable with warnings still passes the hard gate:
+
+- **W1 — NO-PRIMARY-EVIDENCE banner.** When the §6 evidence-level distribution shows
+  Level 1 and Level 2 both at 0, the verifier asserts the verbatim banner
+  `NO PRIMARY EVIDENCE — all findings are literature-derived predictions` as a warning; if
+  §2 already carries that exact string, the warning is satisfied.
+- **W2 — confirmation skew.** A `>3:1` agree:disagree ratio in the Bias-Guard Summary
+  raises a warning and footnotes whether the Phase 2 falsification query and the Phase 4
+  steel-man subsection are present.
+
+**Promotion path (documented, not done here).** W1 and W2 stay ADVISORY until two
+conditions are met: (a) the Directive 01 hard gate has fired in production, AND (b) the
+banner/skew warnings have run clean on `>=2` real deliverables. Only then may they graduate
+to blocking. Because each warning is written to the same ground-ledger-shaped record the A*
+assertions read, promotion is a one-line change (move the warning's verdict into the
+failure accumulator) with no rewrite of the detection logic.
+
 **Honest fallback (Task-tool unavailable).** If you cannot spawn a fresh, independent
 Task-tool verification subagent in this environment, do NOT silently downgrade to
 self-verification and claim a pass. Instead, stamp the deliverable
@@ -360,6 +407,15 @@ matches.
 1. Which rule would have applied
 2. Why you're overriding
 3. What role this source plays in the final document
+
+**Steel-man the contrarian (confirmation-skew remediation).** If the run's Bias-Guard
+Summary is skewed `>3:1` agree:disagree (see Phase 6), Phase 4 MUST include a
+`### Steel-man the contrarian` subsection. State the STRONGEST version of the position that
+contradicts the thesis — on its own terms, charitably, before weighing it — not a strawman
+set up to be knocked down. The point is to counterbalance the documented agreement skew: a
+corpus selected to confirm a thesis needs the dissenting case argued at full strength, not
+just noted in passing. The executable gate footnotes the subsection's absence (warning W2);
+it does not yet block.
 
 ---
 
@@ -402,6 +458,15 @@ not invent new top-level sections that displace these seven, and do not reorder 
 1. `## 1. Recommendations` — actionable bullets, each starting with a verb, each
    referencing the analysis section that backs it. See template L17-30.
 2. `## 2. Summary` — the "tired dad at 4am" version (2-3 pages max). See template L34-44.
+   **NO-PRIMARY-EVIDENCE banner (Directive 03):** if no primary experimental evidence was
+   collected — i.e. the §6 evidence-level distribution table reports Level 1 (systematic
+   review / meta-analysis) AND Level 2 (RCT) both at 0 — §2 MUST carry this exact string,
+   verbatim, on its own line: `NO PRIMARY EVIDENCE — all findings are literature-derived
+   predictions`. The executable gate asserts this string as a non-blocking warning (W1); it
+   surfaces the floor without failing the deliverable. Also state in §2 the testability
+   classification from Phase 2 — for each cheaply-testable question with no
+   direct-observation artifact, say so; for each question declared untestable, carry its
+   one-line justification.
 3. `## 3. [Domain-Specific Framework]` — include ONLY if a framework, typology, or model
    emerged from the research. If no framework emerged, omit this section entirely (do not
    ship an empty heading). See template L48-61.
@@ -443,6 +508,17 @@ how many were neutral (see `references/methodology-section-template.md`). This p
 bias-guard discipline up from per-source bookkeeping to deliverable-level accountability —
 if the agree-with count dwarfs the disagree-with count, the reader can see the asymmetry
 and weight conclusions accordingly.
+
+**Confirmation-skew gate (Directive 03 — advisory now, blocking later).** When the
+Bias-Guard Summary's agree:disagree ratio exceeds `3:1` (e.g. eating-out's 27:3,
+agent-teams' 10:2), the run carries a confirmation-skew risk the methodology cannot
+self-correct — the same agent scored the source AND decided whether it "agreed," so the
+guard is self-graded confirmation bias with a paper trail. A `>3:1` skew REQUIRES two
+remediations: (a) a deliberate FALSIFICATION query in the Phase 2 search plan, and (b) a
+`### Steel-man the contrarian` subsection in Phase 4. The executable gate reads the two
+Bias-Guard counts and, on a `>3:1` skew, raises warning W2: it footnotes whichever
+remediation is missing, and even when both are present it flags the skew as a research-
+design risk the reader should weight. W2 is a footnote/warning first — it does NOT block.
 
 **Required-artifacts verification (Deliverable Manifest).** Before declaring the research
 complete, verify each item below exists on disk. Do not present the deliverable to the user
