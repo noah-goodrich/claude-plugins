@@ -29,7 +29,11 @@ completed cards in the project's `sources/` directory.
 | 9 | Specificity | /10 | [1-2 sentences] |
 | 10 | Relevance | /10 | [1-2 sentences] |
 
-**Composite score:** [calculated weighted average]
+**Score band:** [EXACTLY ONE of: `keep` / `borderline` / `reject`, per
+source-evaluation-rubric.md. Do NOT report a 2-decimal composite — the band is the
+disposition. You may note the intermediate weighted average in a justification, but the
+card's verdict is the band word. Every run must cut ≥1 source or name the lowest source
+that cleared the bar — see the rubric's real-cut rule.]
 
 ## Bias Guard Check
 
@@ -44,11 +48,17 @@ Each bullet should be a discrete, citable finding — not a vague summary.]
 
 ## Verified Quote(s)
 
-[At least ONE verbatim quote from the source — copied exactly, not paraphrased — that
-serves as the textual evidence for the strongest claim this card makes in Key Findings.
-The reader (and the Phase 3.5 verification subagent) must be able to take this quote
-and search for it character-for-character in the source. If the source is long, prefer
-two or three short quotes over one paraphrastic block.]
+[Use this LITERAL heading: `## Verified Quote(s)` — plural, with parentheses. A singular
+`## Verified Quote` is non-compliant and the executable gate (Assertion 5) fails the
+manifest on it (the reveal s11 card used the singular form and slipped a bad quote
+through). At least ONE verbatim quote from the source — copied exactly, not paraphrased —
+that serves as the textual evidence for the strongest claim this card makes in Key
+Findings. The reader (and the Phase 3.5 verification subagent) must be able to take this
+quote and search for it character-for-character in the source. If the source is long,
+prefer two or three short quotes over one paraphrastic block. **Attribution must match the
+card URL host:** if you credit the quote to a domain other than this card's `URL:` host,
+the gate (Assertion 9) marks the card an automatic `failed` — the quote did not come from
+the source the card claims.]
 
 **Location reference:** [The exact pointer a verifier needs to find this in the source.
 Use the most precise unit the source supports — page number for books/PDFs, section
@@ -82,9 +92,12 @@ If yes, what? If no, which source supersedes it?]
 
 **Perspective category:** [EXACTLY ONE of: `Academic` / `Institutional` / `Practitioner` /
 `Boots-on-the-ground` / `Contrarian`. No other values. Do not invent hybrid labels
-("Tier-1 journalism," "Industry-benchmark," "Internal," "Practitioner/Boots-on-the-ground,"
-etc.) — if the source spans two categories, pick the primary one and note the secondary
-in the Rationale field above. Any value outside this enum is non-compliant.]
+("Tier-1 journalism," "Industry-benchmark," "Internal," "Academic/Institutional,"
+"Practitioner/Boots-on-the-ground," etc.) — if the source spans two categories, pick the
+primary one and note the secondary in the Rationale field above. Any value outside this
+enum is non-compliant, and the executable gate (Assertion 11) fails the manifest on any
+present non-enum value — a slash-joined hybrid like "Academic/Institutional" is exactly
+the deviation it catches.]
 ```
 
 ---

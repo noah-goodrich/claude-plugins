@@ -169,7 +169,10 @@ not satisfied this gate; go back and pull the quote before proceeding.
    - If you disagree → score those three dimensions MORE GENEROUSLY (you're primed to punish)
    - Check the appropriate box on the source card
 
-4. **Calculate the composite score** using the weighted formula in the rubric
+4. **Assign the score band** (`keep` / `borderline` / `reject`) using the weighted
+   average in the rubric. Report the band word on the card, not a 2-decimal composite —
+   the band is the disposition (see `references/source-evaluation-rubric.md`). Every run
+   must cut ≥1 source or name the lowest source that cleared the bar.
 
 5. **Extract key findings** — 3-5 bullet points of discrete, citable claims or insights
 
@@ -204,7 +207,9 @@ by what the larger document needs the source to say.
 minimum of 3**. If there are fewer than 10 cards total, verify ALL of them. Sample
 selection is random across the full set — not weighted toward "important" sources
 (important sources are exactly the ones most worth fabricating, so weighting defeats
-the purpose).
+the purpose). The executable gate (Assertion 7) reads the reported sample size against
+the card count on disk and hard-fails any run below the 30% floor — an under-sampled
+"verification" of a handful of hand-picked cards does not satisfy this phase.
 
 **Per-card verification protocol.** For each sampled card, the verifier:
 
@@ -217,7 +222,12 @@ the purpose).
    normalized whitespace). A "close paraphrase" is a failure.
 3. **Confirms attribution.** The author/speaker named on the card must be the one to
    whom the quote is attributed in the source. A quote correctly reproduced but
-   misattributed is a failure.
+   misattributed is a failure. **Domain rule (machine-checked):** if the quote's
+   attribution credits a domain OTHER than the card's own `URL:` host, the card is an
+   automatic `failed` regardless of access status — the quote did not come from the
+   source the card claims (this is the reveal s11 defect: a quote credited to
+   `Lavivienpost.net` on a card whose URL is `stable-diffusion-art.com`). The gate
+   enforces this as Assertion 9.
 4. **Confirms location reference.** The page/section/timestamp/paragraph offset on
    the card must point to the actual location of the quote. Off-by-one paragraph is
    acceptable; "wrong section entirely" is a failure.
@@ -255,11 +265,26 @@ failed), DO NOT proceed to Phase 4.** Three remediation paths, in preference ord
 2. **Re-source the claims the failed cards supported.** If a card's quote turns out to
    not exist, the claim that quote supported in the analysis is now unsourced. Find a
    real source for the claim or remove the claim.
-3. **Document as access-limited.** If the failure is genuinely an access problem (the
-   source changed, the URL now redirects, the paywall hardened), reclassify the card's
-   `Access` field to `cached/partial` with a note explaining what changed. Then re-run
-   verification — the reclassified card now counts as `inaccessible` rather than
-   `failed`, and may bring the rate under 5%.
+3. **Document as access-limited — but NOT to game the rate.** A `cached/partial` flag is
+   honored ONLY if it documents a genuine access problem that existed at synthesis time
+   (the source was already paywalled/dead/geo-blocked when the card was written).
+   Retroactively flipping a `failed` card to `cached/partial` AFTER verification, solely
+   to move it out of the failure denominator and bring the rate under 5%, is forbidden
+   rate-gaming — it converts the honest "this attempt failed" into a laundered
+   "unverifiable, not our fault." The executable gate (Assertion 8) enforces this two
+   ways, with NO git/mtime provenance check (that is out of scope):
+   - A card scored `inaccessible` in the report whose card file lacks the canonical
+     `Access status:` enum is treated as `failed`, not excluded. (A missing enum is
+     exactly what let the reveal s11 card be scored `inaccessible` on a `cached/partial`
+     flag it never carried — see `references/source-card-template.md`.)
+   - A retroactive-reclassification note in the report (e.g. "reclassified to
+     cached/partial after synthesis," "now counts as inaccessible") hard-fails the gate.
+   If a source genuinely became inaccessible between synthesis and verification, the
+   honest path is to re-source the claim (path #2) or stamp the deliverable
+   `low-confidence` — never to relabel a real failure as an honest gap. And the
+   inaccessible exclusions themselves are capped: if more than ~30% of the sample lands
+   in `inaccessible`, the deliverable is stamped `low-confidence`, not `passed`
+   (Assertion 10).
 
 After any remediation path, **re-run Phase 3.5 from scratch** on a freshly-drawn sample
 before proceeding to Phase 4. A subagent that "patched the failed ones and moved on"
@@ -276,10 +301,27 @@ verification report file exists.
 
 **Executable gate (not honor-system).** Phase 3.5 is now enforced by a no-model script,
 `hooks/deep-research-verify.sh`, run by the plugin's `Stop` hook. The script is
-context-blind, deterministic, and makes zero model calls; it asserts the six on-disk
-integrity facts (report exists; §6 has the three numbers; the band is canonical; a
-distinct verifier ID is recorded; every card has the `Access status:` enum line and a
-`## Verified Quote(s)` heading; no corrected-then-recounted card is scored `verified`).
+context-blind, deterministic, and makes zero model calls. Directive 01 shipped the first
+six integrity facts (A1–A6): report exists; §6 has the three numbers; the band is
+canonical; a distinct verifier ID is recorded; every card has the `Access status:` enum
+line and a `## Verified Quote(s)` heading; no corrected-then-recounted card is scored
+`verified`. Directive 02 adds six more (A7–A12):
+
+- **A7** — the verification sample is ≥30% of total cards (rounded up, min 3; all cards
+  if fewer than 10). Fails an under-sampled run (e.g. 5/53 ≈ 9%).
+- **A8** — a card scored `inaccessible` whose file lacks the canonical `Access status:`
+  enum is treated as `failed`; and any retroactive cached/partial reclassification note
+  hard-fails (no rate-gaming). No git/mtime provenance is read.
+- **A9** — a quote attributed to a domain other than the card's own URL host is an
+  automatic `failed`, regardless of access status.
+- **A10** — inaccessible exclusions are capped at ~30% of the sample; above the cap the
+  deliverable must be stamped `low-confidence`, not `passed`.
+- **A11** — every present `Perspective category:` value is exactly one of the five enum
+  values (Academic / Institutional / Practitioner / Boots-on-the-ground / Contrarian); a
+  bespoke or hybrid value fails.
+- **A12** — every run must exclude ≥1 source OR explicitly name the lowest-scoring source
+  that cleared the bar.
+
 On any failure it exits non-zero and the `Stop` hook injects a blocking
 `NOT fact-checked — verification gate failed: <reason>` message and refuses to let the
 deliverable be presented as PASS. The honest badge it prints on a pass is
@@ -326,8 +368,8 @@ matches.
 With included sources identified and scored, synthesize findings.
 
 **Weighting:** When multiple sources address the same question, weight their contributions
-by composite credibility score. A source scoring 8.5 carries more weight than one scoring 5.2,
-but both contribute.
+by credibility band. A `keep` source carries more weight than a `borderline` one, but both
+contribute; a `reject` source was already cut and does not appear here.
 
 **Handling contradictions:** When credible sources disagree:
 1. State both positions clearly and fairly
