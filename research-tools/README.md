@@ -44,8 +44,33 @@ verifier's mind was uninfluenced (out-of-band hint-feeding survives). If Task-to
 unavailable, the deliverable is stamped `UNVERIFIED — self-check only` and the gate fails rather
 than laundering a self-check into a green stamp.
 
-The gate is hard-capped to those six integrity facts and never rejects on cosmetic enum-format
+The gate is hard-capped to those integrity facts and never rejects on cosmetic enum-format
 nits (spacing/casing that is still semantically the literal enum passes). When in doubt, it passes.
+
+## Evidence-Floor + Confirmation-Skew Banners (advisory)
+
+On top of the hard gate, the same no-model verifier raises two NON-BLOCKING advisory
+warnings — they emit `WARN:` lines and a `Warnings:` tally but NEVER change the exit code, so
+a clean deliverable that trips a warning still PASSES the hard gate:
+
+- **NO-PRIMARY-EVIDENCE banner (W1).** When the §6 evidence-level distribution shows Level 1
+  (systematic review / meta-analysis) and Level 2 (RCT) both at 0, no primary experimental
+  evidence was collected. The verifier asserts the verbatim banner
+  **`NO PRIMARY EVIDENCE — all findings are literature-derived predictions`** as a warning;
+  §2 should carry that exact string. The skill also runs a Phase 2 *evidence-floor
+  classifier* — for each cheaply-testable question (UX flow, prompt behavior, API output, the
+  household's own data) it PREFERS a direct-observation probe + committed harness (codifying
+  the reveal portrait pattern), and declaring a question untestable requires a one-line
+  justification in §2 (anti-gaming paper trail).
+- **Confirmation skew (W2).** A `>3:1` agree:disagree ratio in the §6 Bias-Guard Summary
+  raises a warning and requires a falsification query in the Phase 2 search plan plus a
+  "steel-man the contrarian" subsection in Phase 4. The verifier footnotes whichever is
+  missing.
+
+These ship as **banners first, blocks later**: they graduate to blocking only after the
+Directive 01 gate has fired in production AND the warnings have run clean on ≥2 real
+deliverables. Each warning is written to the same ground-ledger-shaped record the hard
+assertions read, so promotion is a one-line change with no detection-logic rewrite.
 
 ## Prior Art
 
