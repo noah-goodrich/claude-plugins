@@ -13,7 +13,7 @@
 #   the verifier's mind was uninfluenced (out-of-band hint-feeding survives). The honest
 #   badge says exactly that and no more. See HONEST_BADGE below.
 #
-# THE SIX FALSIFIABLE ASSERTIONS (fail non-zero on ANY):
+# THE FALSIFIABLE ASSERTIONS (fail non-zero on ANY):
 #   A1  verification-report.md exists at docs/research/[dir]/verification-report.md.
 #   A2  §6 of the deliverable carries three numbers: sample N (of M, with %),
 #       failure count, and a failure-rate band string.
@@ -24,6 +24,28 @@
 #       `## Verified Quote(s)` heading.
 #   A6  a card corrected during verification counts as a FAILURE — the per-card
 #       outcome table must not record "corrected then verified" as `verified`.
+#
+# DIRECTIVE 02 — CARD-INTEGRITY HARDENING + REAL CUTS (added below, A7-A12):
+#   A7  the verification SAMPLE is >=30% of total cards (rounded up, min 3; all
+#       cards if <10 total). Fails personalization's 9% sample.
+#   A8  a card scored `inaccessible` in the report whose card file LACKS the
+#       canonical `Access status:` enum is a laundered FAILURE — enum-missing means
+#       `failed`, never `inaccessible`. AND the report carries no retroactive
+#       reclassification note (a `cached/partial` flag set after synthesis to lower
+#       the rate is forbidden). NO git/mtime provenance is read — the check is the
+#       absence-of-retroactive-note plus the enum-missing-equals-failed rule.
+#   A9  a card whose Verified Quote attribution names a domain OTHER than the card's
+#       own URL host is automatic `failed`, regardless of access status.
+#   A10 inaccessible exclusions are capped at ~30% of the sample. Above the cap, the
+#       deliverable must be stamped `low-confidence` (not `passed`).
+#   A11 every source card's `Perspective category:` value, WHEN PRESENT, is exactly
+#       one of  Academic / Institutional / Practitioner / Boots-on-the-ground /
+#       Contrarian. A bespoke or hybrid value (e.g. "Academic/Institutional",
+#       "Technical Documentation") fails. Absence is not nitted here (A5 already
+#       governs card-shape minimums); a PRESENT non-enum value is the deviation.
+#   A12 §6 / the report names >=1 EXCLUDED source OR explicitly names the
+#       lowest-scoring source that CLEARED the bar — every run must make a real cut
+#       or own the marginal keep.
 #
 # GROUND-LEDGER-SHAPED INPUT CONTRACT (forward-compat; load-bearing, not a nicety)
 #   The verifier models its input as a GROUND LEDGER: a set of per-card grounding
@@ -167,6 +189,10 @@ fail() {
     printf 'GATE: %s FAIL %s\n' "$id" "$reason"
     FAILS=$((FAILS + 1))
     [[ -z "$FIRST_REASON" ]] && FIRST_REASON="$reason"
+    # Always return 0: fail() is frequently the last statement in an if-branch, and
+    # under `set -e` a non-zero return there (when FIRST_REASON is already set) would
+    # abort the run before later assertions execute. The accumulator carries verdict.
+    return 0
 }
 
 pass() {
@@ -192,6 +218,15 @@ fi
 # quote anchor. A freeform "Last Fetched / Assessment Confidence" line does NOT
 # satisfy the enum. Cosmetic spacing/casing of the enum is tolerated.
 # ===========================================================================
+# The A5 loop is the single pass over every card. It is the materialization point of
+# the in-memory ground ledger: as it walks each card it records the facts A8 (cards
+# WITHOUT the canonical enum), A9 (quote-attribution domain != card URL host), and A11
+# (present-but-non-enum perspective category) reason about. Those three assertions read
+# the accumulators below — they do not re-walk the directory.
+CARD_COUNT=0           # total card files on disk (= M, the ledger cardinality for A7)
+NOENUM_CARDS=""        # space-joined basenames of cards lacking the Access status: enum
+BADDOMAIN_CARDS=""     # "<card> (<quote-domain> != <url-host>); " accumulator for A9
+BADPERSP_CARDS=""      # "<card> (<value>); " accumulator for A11
 if [[ -z "$SOURCES_DIR" || ! -d "$SOURCES_DIR" ]]; then
     fail A5 "no sources/ card directory found for $RESEARCH_DIR"
 else
@@ -224,6 +259,66 @@ else
             fi
             bad_cards="${bad_cards}${cname} (missing ${missing}); "
         fi
+
+        # --- Ledger record fields for A8/A9/A11, captured in this same pass. ---
+        CARD_COUNT=$((CARD_COUNT + 1))
+
+        # A8 field: record the card if it lacks the canonical Access status: enum.
+        [[ "$has_access" -eq 0 ]] && NOENUM_CARDS="${NOENUM_CARDS}${cname} "
+
+        # A9 field: card URL host vs quote-attribution domain. The card declares its
+        # source URL on a `**URL:** <url>` line; the attribution is any host-shaped
+        # token that appears on an attribution line near the quote (a line beginning
+        # with an em/en/hyphen dash, or a `— Source:`-style credit). We compare bare
+        # registrable hosts (strip scheme, www., path). A domain on the attribution
+        # that is NOT a substring-or-superstring of the URL host is a mismatch.
+        url_host=$(grep -Eio '^[[:space:]]*\**[[:space:]]*url[[:space:]]*:[^[:alnum:]]*https?://[^[:space:])]+' "$card" \
+            | head -n1 \
+            | sed -E 's#.*https?://##' \
+            | sed -E 's#^www\.##I' \
+            | sed -E 's#[/?#].*$##' \
+            | tr 'A-Z' 'a-z' \
+            || true)
+        if [[ -n "$url_host" ]]; then
+            # Pull candidate attribution-domain tokens: bare host.tld tokens that sit
+            # on a dash-led attribution/credit line (NOT inside the blockquote itself,
+            # which starts with `>`). This targets the reveal-s11 shape:
+            #   — Lavivienpost.net / Stable Diffusion Art ecosystem documentation
+            attr_domain=$(grep -E '^[[:space:]]*([-–—]|\*\*?(source|attribut|credit))' "$card" \
+                | grep -Eio '[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.(com|net|org|io|gov|edu|co|ai|dev|info|us|uk|ca)' \
+                | sed -E 's#^www\.##I' \
+                | tr 'A-Z' 'a-z' \
+                | head -n1 \
+                || true)
+            if [[ -n "$attr_domain" && "$attr_domain" != "$url_host" ]]; then
+                case "$url_host" in
+                    *"$attr_domain"*) : ;;
+                    *) case "$attr_domain" in
+                           *"$url_host"*) : ;;
+                           *) BADDOMAIN_CARDS="${BADDOMAIN_CARDS}${cname} (${attr_domain} != ${url_host}); " ;;
+                       esac ;;
+                esac
+            fi
+        fi
+
+        # A11 field: perspective category value, when the field is PRESENT. Strip the
+        # label, markdown emphasis, backticks, and any parenthetical secondary-note;
+        # then test the leading value against the five-value enum. Absence => skip
+        # (A5 governs card-shape minimums; a present non-enum value is the deviation).
+        persp_raw=$(grep -Eio '^[[:space:]]*\**[[:space:]]*perspective[[:space:]]+category[[:space:]]*\**[[:space:]]*:[^(]*' "$card" \
+            | head -n1 \
+            | sed -E 's/.*:[[:space:]]*//' \
+            | tr -d '*`' \
+            | sed -E 's/^[[:space:]]+//' \
+            | sed -E 's/[[:space:]]+$//' \
+            || true)
+        if [[ -n "$persp_raw" ]]; then
+            persp_norm=$(printf '%s' "$persp_raw" | tr 'A-Z' 'a-z')
+            case "$persp_norm" in
+                academic|institutional|practitioner|boots-on-the-ground|contrarian) : ;;
+                *) BADPERSP_CARDS="${BADPERSP_CARDS}${cname} ($(printf '%s' "$persp_raw" | tr -s '[:space:]' ' ')); " ;;
+            esac
+        fi
     done
     if [[ "$card_count" -eq 0 ]]; then
         fail A5 "sources/ contains no card files"
@@ -232,6 +327,34 @@ else
     else
         pass A5 "$card_count card(s): every card has Access status: enum + ## Verified Quote(s)"
     fi
+fi
+
+# ===========================================================================
+# ASSERTION 9 — a quote attributed to a domain OTHER than the card URL host is an
+# automatic FAILURE, regardless of access status (resolves audit.md:227-234, the
+# reveal-s11 Lavivienpost.net-vs-stable-diffusion-art.com defect).
+# Ground-ledger framing: a record whose claim_quote is credited to a domain that is
+# not the card's own source host cannot be `verified` — the quote did not come from
+# the source the card claims. Evaluated from the A5-pass accumulator BADDOMAIN_CARDS.
+# ===========================================================================
+if [[ -n "$BADDOMAIN_CARDS" ]]; then
+    fail A9 "quote attributed to a domain other than the card URL: ${BADDOMAIN_CARDS%; }"
+else
+    pass A9 "no card credits its quote to a domain other than its own URL host"
+fi
+
+# ===========================================================================
+# ASSERTION 11 — the `Perspective category:` value, WHEN PRESENT, is exactly one of
+# the five enum values (Academic / Institutional / Practitioner / Boots-on-the-ground
+# / Contrarian). A bespoke or hybrid value fails (resolves the reveal portrait
+# "Academic/Institutional" and "Technical Documentation / Commercial Product Analysis
+# / Regulatory" defect, audit.md:169-172). Absence is NOT nitted (A5 governs card
+# minimums); a present non-enum value is the deviation. Evaluated from BADPERSP_CARDS.
+# ===========================================================================
+if [[ -n "$BADPERSP_CARDS" ]]; then
+    fail A11 "non-enum Perspective category value(s): ${BADPERSP_CARDS%; }"
+else
+    pass A11 "every present Perspective category value is one of the five enum values"
 fi
 
 # ===========================================================================
@@ -244,6 +367,10 @@ if [[ ! -f "$REPORT" ]]; then
     fail A3 "cannot read band: verification-report.md absent"
     fail A4 "cannot read verifier ID: verification-report.md absent"
     fail A6 "cannot read per-card outcomes: verification-report.md absent"
+    fail A7 "cannot read sample size: verification-report.md absent"
+    fail A8 "cannot read per-card outcomes: verification-report.md absent"
+    fail A10 "cannot read inaccessible count: verification-report.md absent"
+    fail A12 "cannot read inclusion/exclusion cut: verification-report.md absent"
 else
     # -------------------------------------------------------------------
     # The text we scan for §6 numbers: prefer the deliverable doc's §6, but the
@@ -388,6 +515,147 @@ else
         fail A6 "corrected-then-recounted card scored verified: $firstline"
     else
         pass A6 "no corrected-then-verified card in outcome table"
+    fi
+
+    # ===================================================================
+    # ASSERTION 7 — the verification SAMPLE is >=30% of total cards (rounded up,
+    # min 3; all cards if <10 total). Fails personalization's 9% (5/53) sample.
+    # Ground-ledger framing: the ledger must sample enough records to be defensible.
+    #
+    # M (total) is the GROUND-TRUTH card count on disk (CARD_COUNT, from the A5 pass) —
+    # not a self-reported number that could embed a date or a typo. If no cards were
+    # found on disk, fall back to the M declared on a `sampl`-bearing line.
+    # N (sampled) is read from a `sampl`-bearing line as the FIRST integer that is a
+    # plausible sample count (a "N ... (of|from|out of|/) ... M" or "N ... sampled"
+    # shape), with the year-like 19xx/20xx tokens stripped so a report date cannot be
+    # mistaken for a count. The required sample is:
+    #   M < 10  -> all M     else -> ceil(0.30 * M), floored at 3
+    # ===================================================================
+    # The sample-declaration line: the first line that mentions sampling and carries a
+    # "N ... <connector> ... M" or "N / M" pair. Strip 4-digit year tokens first.
+    sample_line=$(grep -Ei 'sampl' $SCAN_FILES \
+        | sed -E 's/\b(19|20)[0-9]{2}\b//g' \
+        | grep -Eio '[0-9]+[^0-9]{0,40}(of|out of|from|/)[^0-9]{0,12}[0-9]+' \
+        | head -n1 || true)
+    sample_n=$(printf '%s' "$sample_line" | grep -Eo '[0-9]+' | head -n1 || true)
+    sample_m_reported=$(printf '%s' "$sample_line" | grep -Eo '[0-9]+' | sed -n '2p' || true)
+    if [[ "$CARD_COUNT" -gt 0 ]]; then
+        sample_m="$CARD_COUNT"
+    else
+        sample_m="$sample_m_reported"
+    fi
+    if [[ -z "$sample_n" || -z "$sample_m" || "$sample_m" -le 0 ]]; then
+        fail A7 "cannot read sample N (of M) from report/§6 (got N='${sample_n}', M='${sample_m}')"
+    else
+        if [[ "$sample_m" -lt 10 ]]; then
+            required="$sample_m"
+        else
+            required=$(( (sample_m * 30 + 99) / 100 ))
+            [[ "$required" -lt 3 ]] && required=3
+        fi
+        if [[ "$sample_n" -lt "$required" ]]; then
+            fail A7 "sample $sample_n/$sample_m below required ${required} (>=30%, ceil, min 3; all if <10)"
+        else
+            pass A7 "sample $sample_n/$sample_m meets required ${required} (>=30% / all-if-<10)"
+        fi
+    fi
+
+    # ===================================================================
+    # ASSERTION 8 — a card scored `inaccessible` whose card file LACKS the canonical
+    # `Access status:` enum is a laundered FAILURE; AND no retroactive reclassification
+    # note is present. This closes the reveal-s11 loophole: s11 carries no enum yet was
+    # scored `inaccessible` on a `cached/partial` flag the card never had.
+    # NO git/mtime provenance is read (out of scope per Directive 01). The check is:
+    #   (a) any card named on an `inaccessible` outcome row that is in NOENUM_CARDS, AND
+    #   (b) absence of a retroactive-change note ("reclassified", "retroactively",
+    #       "changed ... to cached/partial", "set ... after synthesis", "now counts as
+    #       inaccessible") used to lower the rate.
+    # Ground-ledger framing: outcome=inaccessible REQUIRES access_status enum present on
+    # the record; a missing enum collapses the outcome to `failed`.
+    # ===================================================================
+    a8_bad=""
+    # (a) cards on an `inaccessible` row that have no enum on disk.
+    if [[ -n "$NOENUM_CARDS" ]]; then
+        while IFS= read -r inacc_line; do
+            for nc in $NOENUM_CARDS; do
+                case "$inacc_line" in
+                    *"$nc"*) a8_bad="${a8_bad}${nc} (scored inaccessible but card has no Access status: enum -> failed); " ;;
+                esac
+            done
+        done < <(grep -Ei 'inaccessible' "$REPORT" || true)
+    fi
+    # (b) a retroactive reclassification note anywhere in the report.
+    retro_note=$(grep -Ein \
+        '(retroactive|reclassif|re-classif|changed[^.]{0,40}(to[[:space:]]+)?(cached/partial|inaccessible)|set[^.]{0,40}(after|post)[[:space:]]+synthesis|now counts as[[:space:]]+inaccessible|down(graded|ranked)[^.]{0,30}after)' \
+        "$REPORT" || true)
+    if [[ -n "$a8_bad" ]]; then
+        fail A8 "enum-missing card laundered as inaccessible: ${a8_bad%; }"
+    elif [[ -n "$retro_note" ]]; then
+        firstretro=$(printf '%s' "$retro_note" | head -n1 | cut -c1-120)
+        fail A8 "retroactive cached/partial reclassification detected (rate-gaming forbidden): $firstretro"
+    else
+        pass A8 "no enum-missing-as-inaccessible and no retroactive reclassification note"
+    fi
+
+    # ===================================================================
+    # ASSERTION 10 — inaccessible exclusions capped at ~30% of the SAMPLE. Above the
+    # cap, the deliverable must be stamped `low-confidence` (not passed)
+    # (audit.md:152-154). Ground-ledger framing: too many records excluded from the
+    # denominator is not a pass — it is an honestly low-confidence result.
+    #
+    # Read the aggregate Inaccessible count from the report; compare to sample N (A7).
+    # cap = ceil(0.30 * N). At or below cap -> PASS. Above cap -> a `low-confidence`
+    # stamp must be present in the report/§6, else FAIL.
+    # ===================================================================
+    inacc_count=$(grep -Eio 'inaccessible[^0-9|]{0,40}[|:][^0-9]{0,8}[0-9]+' "$REPORT" \
+        | head -n1 \
+        | grep -Eo '[0-9]+' | tail -n1 \
+        || true)
+    [[ -n "$inacc_count" ]] || inacc_count=0
+    if [[ -z "$sample_n" || "$sample_n" -le 0 ]]; then
+        pass A10 "no readable sample N; inaccessible-cap check deferred to A7"
+    else
+        cap=$(( (sample_n * 30 + 99) / 100 ))
+        if [[ "$inacc_count" -le "$cap" ]]; then
+            pass A10 "inaccessible $inacc_count/$sample_n within ~30% cap ($cap)"
+        elif grep -Eiq 'low[ -]confidence' $SCAN_FILES; then
+            pass A10 "inaccessible $inacc_count/$sample_n above cap ($cap) but deliverable stamped low-confidence"
+        else
+            fail A10 "inaccessible $inacc_count/$sample_n exceeds ~30% cap ($cap) without a low-confidence stamp"
+        fi
+    fi
+
+    # ===================================================================
+    # ASSERTION 12 — every run must EXCLUDE >=1 source OR explicitly name the
+    # lowest-scoring source that CLEARED the bar (audit.md:449-451). A rubric that
+    # never rejects is decorative; this forces a real cut or an owned marginal keep.
+    # Ground-ledger framing: the inclusion ledger must record at least one cut, or
+    # the report must name its weakest survivor.
+    #
+    # PASS if EITHER:
+    #   (a) an exclusion is recorded with a nonzero count ("Excluded | N", "Excluded: N",
+    #       N>=1), OR a §6 source-category "Excluded" column carries a nonzero total; OR
+    #   (b) a "lowest-scoring source that cleared the bar" / "weakest included" /
+    #       "lowest source that cleared" phrasing names the marginal keep.
+    # ===================================================================
+    excluded_nonzero=0
+    while IFS= read -r exline; do
+        exnum=$(printf '%s' "$exline" | grep -Eo '[0-9]+' | tail -n1 || true)
+        if [[ -n "$exnum" && "$exnum" -ge 1 ]]; then
+            excluded_nonzero=1
+            break
+        fi
+    done < <(grep -Ei 'exclud(e|ed)[^0-9|]{0,30}[|:][^0-9]{0,8}[0-9]+' $SCAN_FILES || true)
+    named_lowest=0
+    if grep -Eiq '(lowest[ -]scoring|lowest[^.]{0,30}cleared|weakest[^.]{0,20}(included|kept|survivor)|marginal[ -]keep|lowest[^.]{0,20}that cleared)' $SCAN_FILES; then
+        named_lowest=1
+    fi
+    if [[ "$excluded_nonzero" -eq 1 ]]; then
+        pass A12 "run records >=1 excluded source"
+    elif [[ "$named_lowest" -eq 1 ]]; then
+        pass A12 "run names the lowest-scoring source that cleared the bar"
+    else
+        fail A12 "§6/report excludes no source and names no lowest-cleared source — no real cut made"
     fi
 fi
 

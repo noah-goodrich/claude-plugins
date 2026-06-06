@@ -140,14 +140,18 @@ reported, Phase 3.5 was not remediated and the gate was bypassed.
 | Boots-on-the-ground | [N] | [N] |
 | Contrarian | [N] | [N] |
 
-**Distribution by credibility score:**
+**Distribution by credibility band** *(3-bucket band, not 2-decimal composites — see
+source-evaluation-rubric.md):*
 
-| Score range | Count | Disposition |
-|-------------|-------|-------------|
-| 7.0 – 10.0 | [N] | [N] included, [N] excluded |
-| 5.0 – 6.9 | [N] | [N] included, [N] excluded |
-| 3.0 – 4.9 | [N] | [N] included, [N] excluded |
-| 0.0 – 2.9 | [N] | [N] included, [N] excluded |
+| Band | Weighted average | Count | Disposition |
+|------|------------------|-------|-------------|
+| keep | ≥ 7.0 | [N] | [N] included, [N] excluded |
+| borderline | 5.0 – 6.9 | [N] | [N] included, [N] excluded |
+| reject | < 5.0 | [N] | [N] included, [N] excluded |
+
+**Real cut made this run:** [Name the source(s) excluded, OR — if nothing was cut — name
+the lowest-scoring source that cleared the bar and why it was kept. A run that excludes
+nothing and names no marginal keep fails the executable gate (Assertion 12).]
 
 ### Perspective Balance
 
