@@ -101,6 +101,33 @@ say it, look for data. This is non-negotiable.
 **When to stop searching:** When new searches are returning sources you've already seen, and
 all 5 source categories have at least some representation for each major topic area.
 
+**Backend routing (Directive 06 — optional scholarly adapter).** deep-research has no
+web-scale corpus of its own: discovery rides the host's general WebSearch/WebFetch
+(`audit.md:201-206`). For academic and clinical questions that is a real gap, so an OPTIONAL
+first-party adapter (`hooks/scholarly-adapter.sh`) can pull peer-reviewed abstracts + DOIs +
+open-access PDF links from a keyless scholarly API into the SAME source-card pipeline. Route
+each Phase 2 query by topic:
+
+- **academic / clinical → OpenAlex** (the adapter default; 250M+ works, CC0, keyless, not
+  throttled). Run `hooks/scholarly-adapter.sh search "<query>" --topic <area>` — it writes one
+  standard source card per result to `docs/research/sources/` and one fetch-time abstract
+  SNAPSHOT to `docs/research/snapshots/`.
+- **AI / ML / CS → Semantic Scholar** (the documented FALLBACK; 200M+ papers, keyless but
+  GLOBALLY THROTTLED, which is exactly why it is NOT the default). Add `--backend
+  semanticscholar`; expect rate-limited/empty responses and fall back to OpenAlex or WebSearch.
+- **general web → WebSearch / WebFetch** (the existing default path; everything above is
+  additive).
+
+The adapter is OPTIONAL and adds NO hard dependency: with no scholarly backend invoked, the
+pipeline runs exactly as before, and neither backend needs a secret (both are keyless).
+Adapter-pulled cards use the STANDARD template with NO backend-specific fields — a reader
+cannot tell OpenAlex from Semantic Scholar from a card, so the corpus stays swappable and the
+open-corpus advantage never becomes new lock-in. Each card's `## Verified Quote(s)` blockquote
+is a verbatim span of the snapshotted abstract, so the Phase 3.5 verifier (and the executable
+ground gate) check the card against the fetch-time snapshot exactly as they check a web card
+against its live page — consistent with the Directive 01 ground-ledger contract. We are NOT
+Elicit-scale; this adds a free academic backend, not a 138M-paper index (`audit.md:204-206`).
+
 **Evidence-floor classifier (Directive 03 — advisory now, blocking later).** Before you
 finish Phase 2, classify EACH research question on one axis: *is it cheaply testable
 in-environment?* A question is cheaply testable when you could answer it by directly
