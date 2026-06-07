@@ -108,3 +108,19 @@ the deviation it catches.]
 - **Location:** `[project]/docs/research/sources/`
 - **One card per source** — even if a source spans multiple topic areas, file it under its
   primary topic and cross-reference in the findings
+
+## Scholarly-Adapter Cards (Directive 06 — backend-agnostic)
+
+The optional scholarly adapter (`hooks/scholarly-adapter.sh`, OpenAlex default / Semantic
+Scholar fallback) emits cards using THIS template — there are NO backend-specific fields. An
+adapter card carries the same Full citation, URL, Date accessed, Evidence level, Key Findings,
+`## Verified Quote(s)` heading + Access status, and Inclusion Decision + Perspective category
+as any hand-authored card. A reader cannot tell which backend pulled it; that is deliberate, so
+the corpus stays swappable and the open-corpus advantage never becomes new lock-in. The only
+adapter-specific convention is operational, not schematic: the card's `## Verified Quote(s)`
+blockquote is a VERBATIM span of the abstract the adapter snapshotted at fetch time to
+`docs/research/snapshots/<card-id>.txt`, and the Location reference points at that snapshot.
+The Phase 3.5 verifier and the executable ground gate check the quote against the snapshot
+exactly as they check a web card's quote against its live page (the Directive 01 ground-ledger
+contract). The DOI is the card's `URL:` host so the Assertion 9 domain check passes; the
+open-access PDF link, when present, is noted on an `**Open-access PDF:**` line.

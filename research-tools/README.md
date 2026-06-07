@@ -72,6 +72,36 @@ Directive 01 gate has fired in production AND the warnings have run clean on ≥
 deliverables. Each warning is written to the same ground-ledger-shaped record the hard
 assertions read, so promotion is a one-line change with no detection-logic rewrite.
 
+## Scholarly-Source Adapter (optional)
+
+deep-research has no web-scale corpus of its own — discovery rides the host's general
+WebSearch/WebFetch. To close the academic-reach gap WITHOUT an unwinnable indexing war and
+WITHOUT third-party MCP supply-chain risk in a trust-first pipeline, the plugin ships a thin,
+**first-party** HTTP adapter (`hooks/scholarly-adapter.sh`, ~one screen of `curl` + `jq`) that
+pulls peer-reviewed abstracts + DOIs + open-access PDF links from a **keyless** scholarly API
+into the SAME inspectable source-card pipeline.
+
+- **OpenAlex is the default backend** — 250M+ works, CC0, keyless, not throttled. (It is the
+  proof-point that open+transparent beats paid+black-box — it materially defeated paid Scopus,
+  the Sorbonne deregistration of Dec 2023.)
+- **Semantic Scholar is the documented fallback** — 200M+ papers, keyless but globally
+  throttled, so it cannot be the default; use `--backend semanticscholar` for AI/ML/CS queries.
+- **Phase 2 routing:** academic/clinical → OpenAlex; AI/ML/CS → Semantic Scholar; general web →
+  WebSearch.
+- **Backend-agnostic cards.** Pulled results use the standard source-card template with NO
+  backend-specific fields, so the corpus stays swappable and the open-corpus advantage never
+  becomes new lock-in.
+- **Snapshotting.** The adapter writes the abstract AS PULLED to
+  `docs/research/snapshots/<card-id>.txt`; the Directive 01 verifier checks each card's verbatim
+  quote against that snapshot, consistent with the ground-ledger contract.
+- **Optional, no secret.** The pipeline runs unchanged with no scholarly backend configured;
+  both backends are keyless, so nothing here adds a hard dependency or a required secret.
+
+**The honest boundary: we are not Elicit-scale; this adds a free academic backend, not a
+138M-paper index.** It lifts the cheap-to-card peer-reviewed share (raising the thin
+primary-evidence floor) — it does not turn deep-research into a quality-filtered academic
+search engine.
+
 ## Prior Art
 
 This plugin synthesizes and extends six established source evaluation and research frameworks:
