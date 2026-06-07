@@ -1,14 +1,15 @@
 {
-  "Stop": [
-    {
-      "matcher": "",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deep-research-stop.sh",
-          "timeout": 30
-        }
-      ]
-    }
-  ]
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/deep-research-stop.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }

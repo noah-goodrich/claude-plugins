@@ -5,6 +5,5 @@
   "author": {
     "name": "Noah Goodrich"
   },
-  "keywords": ["research", "brainstorm", "ideation", "credibility", "source-evaluation", "methodology", "evidence"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["research", "brainstorm", "ideation", "credibility", "source-evaluation", "methodology", "evidence"]
 }
