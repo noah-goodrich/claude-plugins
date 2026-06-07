@@ -28,10 +28,26 @@ VERIFY="${CLAUDE_PLUGIN_ROOT:-$HOOK_DIR/..}/hooks/deep-research-verify.sh"
 
 INPUT="$(cat /dev/stdin 2>/dev/null || true)"
 CWD=""
+TRANSCRIPT=""
 if command -v jq >/dev/null 2>&1; then
     CWD="$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)"
+    TRANSCRIPT="$(printf '%s' "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null || true)"
 fi
 [[ -n "$CWD" ]] || CWD="$PWD"
+
+# Did THIS session actually run the deep-research skill? The reliable, automatic, and
+# specific signal is a `Skill` tool_use entry in the Stop hook's own transcript whose
+# skill field is exactly the deep-research skill — either the plugin-namespaced form
+# `research-tools:deep-research` or the bare `deep-research`. This is the literal JSON the
+# harness logs for a Skill invocation; it does NOT match a mere prose mention of "deep
+# research" (the same transcript carries both, so a naive word grep would false-positive).
+# Absent / empty / unreadable transcript -> NOT armed (stay dormant, never block).
+TRANSCRIPT_ARMED=""
+if [[ -n "$TRANSCRIPT" && -r "$TRANSCRIPT" ]]; then
+    if grep -Eq '"name":"Skill","input":\{"skill":"(research-tools:)?deep-research"' "$TRANSCRIPT"; then
+        TRANSCRIPT_ARMED="1"
+    fi
+fi
 
 # Honor an explicit target dir for testing; otherwise the verifier auto-discovers
 # the most-recent deliverable relative to the project cwd.
@@ -40,12 +56,16 @@ TARGET="${DEEP_RESEARCH_DIR:-}"
 # Scope guard. As a plugin-global Stop hook this fires on EVERY session's Stop, so it
 # must NOT block an arbitrary project just because it happens to carry a docs/research/
 # tree (ingle, reveal, troth, borg-collective all do). On the auto-discover path it
-# engages ONLY when a deep-research run armed it this session — signalled by the
-# DEEP_RESEARCH_GATE_ARM env var or a `.gate-armed` marker the skill drops for a run.
-# An explicit DEEP_RESEARCH_DIR (tests / manual runs) always engages.
+# engages when a deep-research run armed it this session, signalled by ANY of:
+#   1. the transcript proves THIS session ran the deep-research skill (TRANSCRIPT_ARMED —
+#      automatic and specific: the agent cannot skip it and unrelated sessions never trip it),
+#   2. the DEEP_RESEARCH_GATE_ARM env var is set, or
+#   3. a `.gate-armed` marker the skill dropped for a run is present.
+# When none of these hold (including an absent/empty/unreadable transcript) it stays dormant.
+# An explicit DEEP_RESEARCH_DIR (tests / manual runs) always engages, unchanged.
 if [[ -z "$TARGET" ]]; then
     [[ -d "$CWD/docs/research" ]] || exit 0
-    if [[ -z "${DEEP_RESEARCH_GATE_ARM:-}" && ! -f "$CWD/docs/research/.gate-armed" ]]; then
+    if [[ -z "$TRANSCRIPT_ARMED" && -z "${DEEP_RESEARCH_GATE_ARM:-}" && ! -f "$CWD/docs/research/.gate-armed" ]]; then
         exit 0
     fi
 fi
