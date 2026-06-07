@@ -39,7 +39,7 @@ Before Phase 1, load all available context (in priority order). Read each that e
 2. `CLAUDE.md` — tech stack, architecture, deployment, conventions
 3. Any files passed as arguments (`/brainstorm "question" --context path/to/file.md`)
 4. `docs/brainstorms/` — scan for prior brainstorms on related problems (avoid re-solving)
-5. `docs/research/` — existing research documents (evaluated via recency gates in Phase 1)
+5. `docs/research/` — existing research documents to reuse as track input
 
 **No project context?** Degrade gracefully — skip steps 1–5, run on the problem statement alone.
 Offer to save output to a user-specified path at the end.
@@ -63,16 +63,15 @@ Produce:
 
 ### 1b. Research inventory
 
-Scan `docs/research/` for existing research relevant to the problem. For each document found,
-apply recency gates:
+Scan `docs/research/` for existing research relevant to the problem. List what you find and note
+whether each document looks reusable as track input. Surface the inventory at the Phase 2
+checkpoint — do not silently reuse or silently discard.
 
-| Age | Action |
-|-----|--------|
-| < 45 days | Available for track reuse as-is. Surface at Phase 2 checkpoint. |
-| 45–90 days | Flag for evaluation. Track agent reads §4 Analysis headings and checks whether key claims are likely to have shifted. **Tech and competitive tracks**: apply higher scrutiny — frameworks, APIs, and market landscape shift fast. **Behavioral/domain tracks**: more tolerant — cognitive science doesn't change in 6 weeks. |
-| > 90 days | Default to re-run. Novelty probe runs first before invoking the full pipeline (see Phase 3). |
-
-Surface the inventory at the Phase 2 checkpoint. Do not silently reuse or silently discard.
+**Stale evidence is deep-research's job, not brainstorm's.** If a track's correctness is
+load-bearing and your model knowledge (or the existing research) is stale, run `/deep-research`
+separately and feed its §1–§2 back in as that track's findings. Brainstorm stays fast; deep-
+research owns evidence rigor and freshness checks (its Phase 1.0 novelty probe gates whether a
+full run is even warranted).
 
 ---
 
@@ -83,50 +82,47 @@ more for broad ones. Each track gets:
 
 1. **Name** — short label (e.g., "user/behavioral", "competitive", "technical", "domain")
 2. **Question** — the specific question this track answers
-3. **Depth** — `lightweight` or `evidence-backed` (see classification guide below)
-4. **Research source** — `fresh` / `reuse:[path]` / `supplement:[path]`
+3. **Research source** — `fresh` / `reuse:[path]` / `supplement:[path]`
 
-### Track depth classification
+### One evidentiary standard, one escape hatch (Directive 04)
 
-**`lightweight`** — WebSearch/WebFetch/Read, 3–5 key findings, 1–2 cited sources per finding.
-Right for:
-- Competitive landscape ("what do existing apps do, and where do they fall short?")
-- Technical feasibility ("can we build X with the current stack?")
-- Current market state ("what tools/frameworks exist for this today?")
-- Topics where model knowledge is reliable and a few searches catch any updates
+Every track runs the SAME lightweight research and returns the SAME unified finding shape (see
+Phase 3) — a single brainstorm no longer carries two incompatible evidentiary standards side by
+side. There is no `lightweight` vs `evidence-backed` depth tag and no inline novelty-probe /
+recency-band / recursive-`/deep-research` machinery: that ~85-line apparatus had a 0% utilization
+rate across the corpus and taxed every read (`audit.md:278-287`), so it is replaced by one line:
 
-**`evidence-backed`** — Invokes `/deep-research` as a sub-pipeline (with novelty probe
-gate — see Phase 3). Right for:
-- Behavioral, psychological, or clinical claims where model knowledge is likely confidently wrong
-- Any track where a wrong answer would meaningfully mislead the synthesis
-- Contested topics where institutional or academic sources are needed to separate signal from noise
+> **Escape hatch:** if a track's correctness is load-bearing and your model knowledge is stale,
+> run `/deep-research` separately and feed its §1–§2 back in as that track's findings.
 
-**Classification heuristic:** *"If this track's findings are wrong due to outdated or fabricated
-model knowledge, does the entire synthesis go in the wrong direction?"* If yes → `evidence-backed`.
+deep-research owns evidence rigor; brainstorm stays fast.
 
 ### Common track patterns
 
 Most problems fit one of these decompositions:
 
-| Track | Typical depth | Answers |
-|-------|--------------|---------|
-| User/behavioral | evidence-backed | How do real users behave in this context? What does psychology say? |
-| Competitive | lightweight | What do existing products do? Where do they succeed/fail? |
-| Technical | lightweight | What's feasible given our stack? What are the known implementation patterns? |
-| Domain | evidence-backed | What do subject-matter experts say about this specific problem? |
+| Track | Answers |
+|-------|---------|
+| User/behavioral | How do real users behave in this context? What does psychology say? |
+| Competitive | What do existing products do? Where do they succeed/fail? |
+| Technical | What's feasible given our stack? What are the known implementation patterns? |
+| Domain | What do subject-matter experts say about this specific problem? |
 
-Not every problem needs all four. Two well-scoped tracks often beat four shallow ones.
+Not every problem needs all four. Two well-scoped tracks often beat four shallow ones. For any
+track whose correctness is load-bearing, use the escape hatch above rather than trusting model
+knowledge.
 
 ### Phase 2 checkpoint
 
 Present the full track plan before proceeding:
 - Sharpened problem statement
 - Constraint list (with tensions flagged)
-- Track table (name, question, depth, research source)
+- Track table (name, question, research source)
 - Research inventory findings (reuse decisions)
+- Any track flagged for the `/deep-research` escape hatch (load-bearing + stale knowledge)
 
-**Do not run Phase 3 until this checkpoint is confirmed.** User can adjust track angles, depth
-tags, and reuse decisions. This is the cheapest moment to course-correct.
+**Do not run Phase 3 until this checkpoint is confirmed.** User can adjust track angles, reuse
+decisions, and which tracks warrant the escape hatch. This is the cheapest moment to course-correct.
 
 ---
 
@@ -135,52 +131,36 @@ tags, and reuse decisions. This is the cheapest moment to course-correct.
 Spawn one agent per track using the Agent tool. Independent tracks run in parallel; only sequence
 if one track's findings are needed to frame another (rare — avoid sequencing as a default).
 
-### Lightweight track agents
-
-Each agent receives:
+Every track runs the SAME lightweight research and returns the SAME unified finding shape. Each
+agent receives:
 - The track question
 - The problem statement and constraints
 - Access to: WebSearch, WebFetch, Read
 
+### Unified finding shape (Directive 04)
+
+Each finding carries a **minimal source record** — the same minimal evidentiary fields a
+`/deep-research` source card front-matter carries (full citation, URL, access date), so brainstorm
+findings and deep-research findings speak one evidentiary language. A finding is NOT a free-form
+"the source basically says X"; it is a discrete claim with a citable source attached.
+
 Returns:
 ```
 Track: [name]
-Depth: lightweight
 Research source: fresh | reused:[date] | supplemented:[date]
 
-Key findings:
-- [Finding] — Source: [title, URL, access date]
+Key findings (each a discrete claim + minimal source record):
+- [Finding claim] — Source: [author/outlet, title, URL, access date YYYY-MM-DD]
 [3–5 findings]
 
 Confidence note: [one sentence — "findings well-supported" OR "claim X is weakly sourced — flagging"]
 ```
 
-### Evidence-backed track agents
-
-Before invoking the full `/deep-research` pipeline, every evidence-backed track agent runs a
-**novelty probe** — 2–3 targeted searches:
-
-1. `"[topic]" after:[existing-research-date]` — if existing research exists
-2. `"[topic]" 2025 OR 2026 new research OR update`
-3. One domain-specific probe (framework changelog for tech tracks; new study framing for
-   behavioral/domain tracks)
-
-**Early termination:** If the probe finds nothing materially new — same sources surfacing, no
-new studies or frameworks, no contradicting findings — terminate the deep-research invocation.
-Use existing research (if available) or model knowledge. Note the kill explicitly:
-
-> "Novelty probe: no significant new developments found since [date]. Deep-research terminated
-> early. Using [existing doc / model knowledge]."
-
-The track still returns 3–5 key findings; they're drawn from the existing source rather than a
-fresh pipeline run.
-
-**Run the full pipeline:** If the probe finds new, updated, or conflicting information, invoke
-`/deep-research` with the track question as the research question. The pipeline runs to completion.
-The track agent then extracts §1 Recommendations + §2 Summary as its findings input to Phase 4.
-
-Returns the same format as lightweight tracks, with depth noted as `evidence-backed (early-terminated)`
-or `evidence-backed (full run)`.
+**Escape hatch (the only path to deeper rigor).** If a track's correctness is load-bearing and
+your model knowledge is stale, run `/deep-research` separately and feed its §1–§2 back in as that
+track's Key findings (keeping the same minimal-source-record shape). Brainstorm itself runs no
+second, lower-rigor research pipeline — there is one evidentiary standard here, and deep-research
+is where evidence rigor lives.
 
 ---
 
@@ -316,9 +296,9 @@ user-specified path or present inline.
 
 ## Research Summary
 
-### Track 1: [Name] ([depth] — [fresh/reused:[date]/supplemented:[date]])
-- [Finding] — [source]
-- [Finding] — [source]
+### Track 1: [Name] ([fresh/reused:[date]/supplemented:[date]])
+- [Finding claim] — Source: [author/outlet, title, URL, access date]
+- [Finding claim] — Source: [author/outlet, title, URL, access date]
 [Confidence note if anything flagged]
 
 ### Track 2: [Name] (...)
@@ -365,9 +345,8 @@ minimum viable version]"
 | I need to... | Do this |
 |---|---|
 | Decide whether to run this skill | Ask: "Can I specify the implementation before knowing the options?" No → brainstorm |
-| Classify track depth | "If this track is wrong, does it sink the synthesis?" Yes → evidence-backed |
-| Reuse existing research | < 45 days: reuse. 45–90 days: evaluate (tech: high scrutiny; domain: lenient). > 90 days: novelty probe first |
-| Kill deep-research early | Probe finds nothing new → terminate, note the kill, use existing or model knowledge |
+| Get deeper evidence for a track | Escape hatch: run `/deep-research` separately, feed its §1–§2 back in |
+| Shape a track finding | One unified shape: a discrete claim + minimal source record (author, title, URL, date) |
 | Choose visual format | UI/interaction pattern → Claude Design prompt. Flow/architecture/journey → Mermaid |
 | Handle no project context | Skip context loading, degrade gracefully, offer to save output to user-specified path |
 | Move from brainstorm to implementation | Feed output document into /borg-plan as context |
