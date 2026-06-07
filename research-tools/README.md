@@ -24,6 +24,50 @@ Brainstorm track needs academic evidence?  → /brainstorm invokes /deep-researc
 The brainstorm output document feeds into `/borg-plan` for implementation planning. The typical
 flow for a vague, high-stakes problem is: brainstorm → borg-plan → implementation.
 
+## Redundancy between the two skills (Directive 04)
+
+The two skills deliberately share machinery, and a few controls used to be DUPLICATED across
+them with diverging rigor. Directive 04 collapsed that overlap to a single owner each:
+
+- **Novelty probe ("is this worth a full run?")** lives ONLY in `deep-research` now (Phase 1.0),
+  as a universal pre-flight gate for any direct `/deep-research`. It was previously inlined in
+  `brainstorm` (firing only for "evidence-backed" tracks, which never fired), so a direct
+  `/deep-research` had no "should I even run this?" gate at all. It is promoted to where it
+  belongs.
+- **Evidence rigor / freshness** is OWNED by `deep-research`. `brainstorm` no longer runs a
+  second, lower-rigor research pipeline. Its tracks return ONE unified finding shape (a discrete
+  claim + a minimal source record: author/outlet, title, URL, access date) — the same minimal
+  evidentiary record a deep-research source card carries — so one brainstorm no longer carries
+  two incompatible evidentiary standards side by side. The old ~85-line evidence-backed-track /
+  recency-band / recursive-`/deep-research` apparatus (0% utilization across the corpus) is
+  demoted to a single escape-hatch line: *if a track's correctness is load-bearing and your
+  model knowledge is stale, run `/deep-research` separately and feed its §1–§2 back in.*
+- **Triage screen + rapid tier + lazy reference loading** (below) are `deep-research`
+  mechanisms; `brainstorm` reaches them only via the escape hatch.
+
+Net: `brainstorm` stays fast and owns option-generation + the council; `deep-research` owns
+evidence rigor, verification, and the freshness probe. There is no longer a parallel
+mini-pipeline in `brainstorm`.
+
+## Triage Screen + Rapid Tier + Lazy Loading (Directive 04)
+
+`deep-research` no longer taxes every run with an all-or-nothing protocol:
+
+- **Triage screen (Phase 3.0).** A fast keep/cut screen runs against ALL discovered sources
+  first (on-topic? minimally credible? non-redundant?); full 10-dimension source cards are
+  written ONLY for the survivors. The inclusion cut moves BEFORE the expensive scoring instead
+  of after it.
+- **Rapid tier (Phase 1.1).** A documented low-stakes mode with HONEST reduced guarantees. It
+  caps the deliverable at **§1 + §2 + §5 + a short methodology note**, runs no independent
+  Phase 3.5 verification, and stamps the artifact `UNVERIFIED — self-check only` and `NOT
+  INDEPENDENTLY VERIFIED` — the SAME honest-fallback vocabulary as the Directive 01 gate, so the
+  verifier **never prints `Gate result: PASS` on a rapid run** (it carries no distinct verifier
+  ID, so Assertion 4 fails it by design). The full §1–§7 manifest fires only for high-stakes /
+  external-publication runs. Document size is tied to decision size.
+- **Lazy reference loading.** The mandatory ~14k-token up-front pre-load wall is removed. Only
+  the card-field skeleton and the §1–§7 outline carry inline; each reference loads at the phase
+  that consumes it (per the skill's Quick Reference lazy-load map).
+
 ## Fail-Closed Ground Gate
 
 `deep-research` ships with a no-model, deterministic verifier (`hooks/deep-research-verify.sh`)

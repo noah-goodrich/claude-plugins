@@ -16,30 +16,43 @@ exclusion decision is traceable.
 Built on six established frameworks (CREDIBLE, CRAAP, SIFT, RADAR, PRISMA, DeepTRACE) but
 extends them into a unified end-to-end pipeline that no single existing framework covers.
 
-## Before You Begin
+## Before You Begin — Lazy Reference Loading (Directive 04)
 
-**Reference loading is mandatory.** Before doing any research — before Phase 1, before
-any search, before any source evaluation — load ALL SEVEN reference documents into
-context. The references are not optional reading; they are the operational contract. If
-you skip a reference because the task "feels small" or "is obvious," you will skip the
-structure that reference enforces, and the deliverable will fail the Phase 6 manifest
-check.
+**References load at the phase that consumes them — NOT all up front.** The old protocol
+demanded all seven reference documents (~14k tokens) loaded before Phase 1. A 4-source
+product question and a 65-source clinical synthesis paid the identical entry tax, and that
+undifferentiated up-front wall was the activation-energy spike that killed task initiation
+(`audit.md:175-181`). It is removed. There is no pre-load checklist to clear before Phase 1.
 
-Verify each reference has been read before proceeding:
+**Only two things carry inline — read them now:**
 
-- [ ] 1. `references/source-evaluation-rubric.md` — 10-dimension scoring system with anchors
-- [ ] 2. `references/evidence-hierarchy.md` — 9-level evidence classification
-- [ ] 3. `references/source-card-template.md` — per-source evaluation card format
-- [ ] 4. `references/inclusion-decision-matrix.md` — keep/throw decision tree with override
-      rules
-- [ ] 5. `references/research-document-template.md` — final document structure and language
-      guide
-- [ ] 6. `references/methodology-section-template.md` — "show your work" section structure
-- [ ] 7. `references/example-evaluation.md` — worked example evaluating Morgan Housel's
-      "The Psychology of Money"
+1. **The card-field skeleton** (so you know the shape every source card must take):
+   Full citation · URL · Date accessed · Evidence level · Research topic area ·
+   the 10-dimension Credibility Scores table · Score band (`keep`/`borderline`/`reject`) ·
+   Bias Guard Check · Key Findings · `## Verified Quote(s)` + Location reference ·
+   `Access status:` (`live`/`cached/partial`/`inaccessible`) · Inclusion Decision ·
+   `Perspective category:` (one of the five enum values). The full template with anchors is
+   `references/source-card-template.md` — load it at Phase 3, when you actually fill a card.
+2. **The §1–§7 deliverable outline** (so you know the shape the final document must take):
+   §1 Recommendations · §2 Summary · §3 Framework (if one emerged) · §4 Analysis ·
+   §5 Research · §6 Methodology · §7 Bibliography, in that order. The full template is
+   `references/research-document-template.md` — load it at Phase 6, when you write the doc.
 
-Do not start Phase 1 until every box above is checked. SKILL.md is the overview; the
-references are the manual.
+**Load each reference at the phase that consumes it** (the Quick Reference table at the end
+of this file is the lazy-load map):
+
+- Phase 1 (Research Design) → `references/example-evaluation.md` is optional context; nothing
+  is required to start. Run the novelty probe (below) first.
+- Phase 2 (Discovery) → `references/evidence-hierarchy.md` when you start classifying.
+- Phase 3 (Evaluation) → `references/source-evaluation-rubric.md`, `source-card-template.md`,
+  and `evidence-hierarchy.md` — loaded at the triage screen and the scoring step.
+- Phase 4 (Inclusion) → `references/inclusion-decision-matrix.md`.
+- Phase 6 (Documentation) → `references/research-document-template.md` and
+  `methodology-section-template.md`.
+
+The references are still the operational contract; you just pay for each one when you reach
+the step that uses it, not all at once at the moment of least commitment. SKILL.md is the
+overview; the references are the manual.
 
 ---
 
@@ -47,7 +60,51 @@ references are the manual.
 
 ### Phase 1: Research Design
 
-Before searching for anything, define:
+#### Phase 1.0: Novelty probe — "is this worth a full run?" gate (Directive 04)
+
+**Run this FIRST, before designing anything.** Promoted here from brainstorm, where it lived
+in the wrong skill — a direct `/deep-research` previously always ran the full heavy pipeline
+with no "should I even run this?" gate (`audit.md:191-199,444-447`). The probe is a universal
+pre-flight: 2–3 targeted searches to decide whether a full pipeline is warranted at all.
+
+1. `"[topic]" after:[date-of-any-existing-research]` — if prior research on disk exists.
+2. `"[topic]" 2025 OR 2026 new research OR update`.
+3. One domain-specific probe (a framework changelog for tech topics; a new-study framing for
+   behavioral/clinical/domain topics).
+
+**Early termination.** If the probe surfaces nothing materially new — same sources recurring,
+no new studies/frameworks, no contradicting findings — and prior research or reliable model
+knowledge already answers the question, STOP. Do NOT run the full pipeline. Note the kill
+explicitly to the user:
+
+> "Novelty probe: no significant new developments found since [date]. Full deep-research not
+> warranted. Answering from [existing doc / model knowledge]; run the full pipeline only if you
+> need a fresh defensible evidence base."
+
+**Proceed** to the tier choice (below) only if the probe finds new, updated, or conflicting
+information, or no prior research exists and the question genuinely needs an evidence base.
+
+#### Phase 1.1: Stakes / tier selection (Directive 04)
+
+Choose the tier BEFORE designing, and tie document size to the size of the decision it informs
+(`audit.md:261-268`). Confirm the tier with the user at the Phase 1 checkpoint.
+
+- **rapid tier** — when the decision is low-stakes, has ≤~4 candidate sources, is
+  internal/reversible, or you are under a tight time budget. Deliverable: **§1 + §2 + §5 + a
+  short methodology note ONLY**. Verification: self-check only, stamped `UNVERIFIED —
+  self-check only`.
+- **full tier** — when the decision is high-stakes, externally published, costly/irreversible,
+  or the evidence base is contested. Deliverable: **the complete §1–§7 manifest**. Verification:
+  an independent Phase 3.5 verification subagent.
+
+The **rapid tier is HONEST about its reduced guarantees** — see "Rapid Tier" below. It is the
+documented escape valve so that under time pressure the pipeline produces a smaller *compliant*
+artifact, not a quietly non-compliant full one (troth: 65 cards, no verification —
+`audit.md:183-189`). The **full manifest fires only for high-stakes / external-publication runs.**
+
+#### Phase 1.2: Design
+
+Once the tier is chosen, define:
 
 1. **Research questions** — What specifically are you trying to answer? Write 1-3 explicit
    questions. Vague questions produce vague research.
@@ -72,6 +129,46 @@ Before searching for anything, define:
 
 **Checkpoint:** Present the research design to the user for validation before proceeding to
 Phase 2. Do not search until the design is confirmed.
+
+---
+
+### Rapid Tier — HONEST reduced guarantees (Directive 04)
+
+The rapid tier exists so that under time pressure (or for a genuinely low-stakes decision) the
+pipeline produces a smaller **compliant** artifact rather than a quietly non-compliant full one
+or a non-start (`audit.md:183-189`). It is NOT "the full pipeline with steps skipped silently" —
+it wears its rigor level on its face.
+
+**What rapid keeps:**
+
+- Phase 1.0 novelty probe and Phase 1.2 design (always).
+- Phase 2 discovery and the Phase 3 **triage screen** (the fast keep/cut — see Phase 3).
+- Full 10-dimension source cards ONLY for the handful of sources that survive triage.
+- A deliverable capped at **§1 Recommendations + §2 Summary + §5 Research + a short
+  methodology note** (search-log + which sources were triaged in/out + the honest stamp).
+  §3, §4, §6 (full), and §7 are NOT produced in rapid — the full manifest fires only for the
+  full tier.
+
+**What rapid honestly gives up:** independent Phase 3.5 verification. A rapid run does NOT spawn
+a fresh, independent verifier subagent. Therefore:
+
+- **Stamp the artifact `UNVERIFIED — self-check only`** — the SAME honest-fallback vocabulary
+  Directive 01 defined for the Task-tool-unavailable case. Put the stamp in BOTH the §2 Summary
+  AND the short methodology note (the rapid analogue of the §6 Source Evaluation subsection and
+  the manifest's verification-report item). Also stamp the artifact `NOT INDEPENDENTLY VERIFIED`
+  in §2 so a reader sees it at a glance.
+- **Never fabricate a verifier ID.** Record in any report header that no distinct verifier agent
+  ran; never copy the synthesis ID into the verifier field to satisfy a check.
+- Because a rapid run carries no distinct verifier ID, the executable ground gate
+  (`hooks/deep-research-verify.sh`, Assertion 4) **correctly FAILS it** and the `Stop` hook
+  surfaces it as `NOT fact-checked` — by design. **The verifier never prints `Gate result: PASS`
+  on a rapid run, and that is the honest, intended outcome.** A rapid artifact is a smaller
+  compliant deliverable for its tier; it is explicitly NOT a fact-checked one, and it does not
+  pretend to be.
+
+If a rapid run's decision turns out to be higher-stakes than first judged, **upgrade to the full
+tier**: produce the missing sections (§3/§4/§6/§7) and run the Phase 3.5 verification subagent so
+the deliverable can earn a real `PASS`.
 
 ---
 
@@ -188,7 +285,33 @@ scan was actually performed.
 
 ### Phase 3: Source Evaluation
 
-For every source pulled from discovery, complete a source evaluation card (see
+#### Phase 3.0: Triage screen — fast keep/cut BEFORE expensive scoring (Directive 04)
+
+**Apply a fast keep/cut screen to ALL discovered sources first; write full 10-dimension cards
+only for the sources that pass.** This moves the inclusion cut BEFORE the expensive scoring
+(`audit.md:434-438`) — previously every discovered source paid the full 10-dimension card cost
+even when it was obviously off-topic or strictly dominated by a stronger source.
+
+For each discovered source, spend ~15 seconds on three keep/cut questions:
+
+1. **On-topic?** Does it actually address a research question or topic-map subtopic? Off-topic →
+   **cut** (note it in the search log so the cut is visible; do not card it).
+2. **Minimally credible?** Is the author/outlet plausibly authoritative, or is this content-farm
+   / SEO-spam / undated rehash? Obvious junk → **cut**.
+3. **Non-redundant?** Does it add something a source you have already kept does not? If a stronger
+   already-kept source strictly dominates it → **cut** (record the superseding source).
+
+A source that clears all three is **kept for full evaluation** (gets a 10-dimension card below).
+A source that fails any one is **triaged out** — log it as a cut in the §6 search-log /
+methodology note with a one-line reason; it does NOT get a card. The triage screen is the cheap
+front gate; the 10-dimension rubric is the expensive back gate only the survivors reach.
+
+(In the **rapid tier** the triage screen is the primary instrument: card only the few survivors
+and write the short methodology note from the triage log.)
+
+#### Phase 3.1: Full source evaluation
+
+For every source that PASSED triage, complete a source evaluation card (see
 `references/source-card-template.md`) and write it to disk at
 `[project]/docs/research/sources/<topic>-<slug>.md`.
 
@@ -475,6 +598,14 @@ specific source citations.
 
 ### Phase 6: Documentation
 
+**Tier check first (Directive 04).** If this is a **rapid** run, the deliverable is capped at
+**§1 Recommendations + §2 Summary + §5 Research + a short methodology note** (search-log + the
+triage in/out log + the `UNVERIFIED — self-check only` and `NOT INDEPENDENTLY VERIFIED` stamps).
+Skip §3, §4, the full §6, and §7 — and skip the full Deliverable Manifest below (it governs the
+full tier). A rapid deliverable does not run the Phase 3.5 verification subagent, so the ground
+gate correctly fails it as `NOT fact-checked` — that is the honest outcome for the tier, not a
+defect. The rest of this section governs the **full** tier.
+
 Produce the final deliverable at `[project]/docs/research/analysis.md` (or a named
 equivalent under `[project]/docs/research/`) using
 `references/research-document-template.md`.
@@ -605,14 +736,18 @@ For large research projects spanning multiple sessions:
 
 ---
 
-## Quick Reference: When to Use Each Reference Document
+## Quick Reference: Lazy-Load Map (Directive 04)
 
-| I need to... | Read... |
-|--------------|---------|
-| Score a source | `source-evaluation-rubric.md` |
-| Classify evidence type | `evidence-hierarchy.md` |
-| Fill out a source evaluation | `source-card-template.md` |
-| Decide keep/throw | `inclusion-decision-matrix.md` |
-| Structure the final document | `research-document-template.md` |
-| Write the methodology section | `methodology-section-template.md` |
-| See a worked example | `example-evaluation.md` |
+This table is the lazy-load contract: load each reference at the phase that consumes it, NOT all
+up front. Only the card-field skeleton and the §1–§7 outline carry inline (see "Before You
+Begin"). The 14k-token up-front pre-load wall is removed.
+
+| I need to... | Load... | At phase |
+|--------------|---------|----------|
+| See a worked example (optional) | `example-evaluation.md` | Phase 1 (optional) |
+| Classify evidence type | `evidence-hierarchy.md` | Phase 2 / Phase 3 |
+| Triage keep/cut, then score a source | `source-evaluation-rubric.md` | Phase 3 |
+| Fill out a source evaluation card | `source-card-template.md` | Phase 3 |
+| Decide keep/throw (final inclusion) | `inclusion-decision-matrix.md` | Phase 4 |
+| Structure the final document | `research-document-template.md` | Phase 6 |
+| Write the methodology section | `methodology-section-template.md` | Phase 6 |
