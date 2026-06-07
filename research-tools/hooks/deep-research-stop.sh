@@ -37,10 +37,17 @@ fi
 # the most-recent deliverable relative to the project cwd.
 TARGET="${DEEP_RESEARCH_DIR:-}"
 
-# Only engage the gate when this project actually has a deep-research deliverable.
-# A project with no docs/research/ should not be blocked by an unrelated Stop.
-if [[ -z "$TARGET" && ! -d "$CWD/docs/research" ]]; then
-    exit 0
+# Scope guard. As a plugin-global Stop hook this fires on EVERY session's Stop, so it
+# must NOT block an arbitrary project just because it happens to carry a docs/research/
+# tree (ingle, reveal, troth, borg-collective all do). On the auto-discover path it
+# engages ONLY when a deep-research run armed it this session — signalled by the
+# DEEP_RESEARCH_GATE_ARM env var or a `.gate-armed` marker the skill drops for a run.
+# An explicit DEEP_RESEARCH_DIR (tests / manual runs) always engages.
+if [[ -z "$TARGET" ]]; then
+    [[ -d "$CWD/docs/research" ]] || exit 0
+    if [[ -z "${DEEP_RESEARCH_GATE_ARM:-}" && ! -f "$CWD/docs/research/.gate-armed" ]]; then
+        exit 0
+    fi
 fi
 
 set +e
