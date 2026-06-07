@@ -632,13 +632,13 @@ not invent new top-level sections that displace these seven, and do not reorder 
    consensus / contested / gaps / institutional-vs-ground-truth structure. See
    template L65-92.
 5. `## 5. Research` — full findings by topic area, with per-source citations including
-   composite score and evidence level in brackets. See template L96-106.
+   score band and evidence level in brackets. See template L96-106.
 6. `## 6. Methodology` — see `references/methodology-section-template.md`. MUST include
    all required subsections: research design, search-log table, source-evaluation
    framework, inclusion/exclusion summary + all four distribution tables (evidence level,
    source category, credibility score), perspective-balance matrix, bias-guard summary,
    limitations.
-7. `## 7. Bibliography` — every included source with full citation, composite score,
+7. `## 7. Bibliography` — every included source with full citation, score band,
    evidence level, inclusion decision, and one-line contribution summary. See template
    L119-134.
 
@@ -698,7 +698,7 @@ until every box is checked:
       is non-compliant.
 - [ ] §6 Methodology includes a Bias-Guard Summary (counts of sources that fired the
       agree-with check, the disagree-with check, and the neutral box).
-- [ ] §7 Bibliography lists every included source with composite score, evidence level,
+- [ ] §7 Bibliography lists every included source with score band, evidence level,
       inclusion decision, and a one-line contribution summary.
 - [ ] Source counts reconcile: source-card files on disk == sources reported in the
       methodology counts == sources cited in §5 Research. If the three counts disagree,
