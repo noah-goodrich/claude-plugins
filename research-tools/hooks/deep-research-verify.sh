@@ -524,7 +524,7 @@ else
     while IFS= read -r badline; do
         noncanonical="$badline"
         break
-    done < <(grep -Eio '(≤|<=)[[:space:]]*[0-9]+[[:space:]]*%' $SCAN_FILES \
+    done < <(grep -hEio '(≤|<=)[[:space:]]*[0-9]+[[:space:]]*%' $SCAN_FILES \
              | grep -Eiv '(≤|<=)[[:space:]]*5[[:space:]]*%' || true)
     if [[ "$canonical_band" -eq 1 && -z "$noncanonical" ]]; then
         pass A3 "band string is canonical"
@@ -604,7 +604,7 @@ else
     # ===================================================================
     # The sample-declaration line: the first line that mentions sampling and carries a
     # "N ... <connector> ... M" or "N / M" pair. Strip 4-digit year tokens first.
-    sample_line=$(grep -Ei 'sampl' $SCAN_FILES \
+    sample_line=$(grep -hEi 'sampl' $SCAN_FILES \
         | sed -E 's/\b(19|20)[0-9]{2}\b//g' \
         | grep -Eio '[0-9]+[^0-9]{0,40}(of|out of|from|/)[^0-9]{0,12}[0-9]+' \
         | head -n1 || true)
