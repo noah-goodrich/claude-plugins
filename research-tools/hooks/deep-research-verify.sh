@@ -146,10 +146,21 @@ discover_latest_deliverable() {
     # sources/ subdir or a markdown analysis file. Pick the most recently modified.
     local base="${PWD}/docs/research"
     [[ -d "$base" ]] || return 1
+    # Flat-file layout FIRST: docs/research/ itself holds the report/deliverable directly,
+    # with cards under docs/research/sources/. This MUST be checked before enumerating
+    # subdirs — otherwise the sources/ card directory is itself picked as "the deliverable"
+    # and verification-report.md is sought inside sources/, a spurious A1 failure.
+    if [[ -f "$base/verification-report.md" ]] || ls "$base"/*.md >/dev/null 2>&1; then
+        printf '%s\n' "$base"
+        return 0
+    fi
+    # Otherwise: a per-run subdirectory under docs/research/. NEVER treat a bare `sources`
+    # card directory as a deliverable root.
     local newest=""
     local newest_mtime=0
     local d
     while IFS= read -r d; do
+        [[ "$(basename "$d")" == "sources" ]] && continue
         [[ -d "$d/sources" ]] || ls "$d"/*.md >/dev/null 2>&1 || continue
         local m
         m=$(stat -f %m "$d" 2>/dev/null || stat -c %Y "$d" 2>/dev/null || echo 0)
@@ -159,11 +170,6 @@ discover_latest_deliverable() {
         fi
     done < <(find "$base" -mindepth 1 -maxdepth 1 -type d)
     [[ -n "$newest" ]] && printf '%s\n' "$newest" && return 0
-    # Fallback: docs/research itself holds the cards/analysis directly.
-    if [[ -d "$base/sources" ]] || ls "$base"/*.md >/dev/null 2>&1; then
-        printf '%s\n' "$base"
-        return 0
-    fi
     return 1
 }
 
@@ -335,7 +341,10 @@ else
         CARD_COUNT=$((CARD_COUNT + 1))
 
         # A8 field: record the card if it lacks the canonical Access status: enum.
-        [[ "$has_access" -eq 0 ]] && NOENUM_CARDS="${NOENUM_CARDS}${cname} "
+        # NEWLINE-joined (not space-joined): card basenames are matched as whole lines in
+        # A8 via grep -Fxq, so a space-bearing basename never word-splits and a card id
+        # that is a substring of another id never collides.
+        [[ "$has_access" -eq 0 ]] && NOENUM_CARDS="${NOENUM_CARDS}${cname}"$'\n'
 
         # A9 field: card URL host vs quote-attribution domain. The card declares its
         # source URL on a `**URL:** <url>` line; the attribution is any host-shaped
@@ -343,32 +352,43 @@ else
         # with an em/en/hyphen dash, or a `— Source:`-style credit). We compare bare
         # registrable hosts (strip scheme, www., path). A domain on the attribution
         # that is NOT a substring-or-superstring of the URL host is a mismatch.
-        url_host=$(grep -Eio '^[[:space:]]*\**[[:space:]]*url[[:space:]]*:[^[:alnum:]]*https?://[^[:space:])]+' "$card" \
-            | head -n1 \
-            | sed -E 's#.*https?://##' \
+        # Card URL host. The scheme is OPTIONAL: a `**URL:** example.org/x` shorthand (no
+        # https://) must still yield a host — otherwise the cross-domain check is skipped
+        # for that card and a spoofed attribution passes. Strip the label, markdown bold,
+        # leading space, any trailing description, then scheme/www./path, leaving the host.
+        url_line=$(grep -Ei '^[[:space:]]*\**[[:space:]]*url[[:space:]]*\**[[:space:]]*:' "$card" | head -n1 || true)
+        url_host=$(printf '%s' "$url_line" \
+            | sed -E 's#^[^:]*:[[:space:]]*##' \
+            | tr -d '*' \
+            | sed -E 's#^[[:space:]]+##' \
+            | sed -E 's#[[:space:]].*$##' \
+            | sed -E 's#^https?://##I' \
             | sed -E 's#^www\.##I' \
             | sed -E 's#[/?#].*$##' \
             | tr 'A-Z' 'a-z' \
             || true)
         if [[ -n "$url_host" ]]; then
-            # Pull candidate attribution-domain tokens: bare host.tld tokens that sit
-            # on a dash-led attribution/credit line (NOT inside the blockquote itself,
-            # which starts with `>`). This targets the reveal-s11 shape:
+            # Pull a candidate attribution host from a dash-led attribution/credit line
+            # (NOT the blockquote, which starts with `>`). The host pattern is STRUCTURAL —
+            # `label(.label)*.tld` with any 2+-char alpha TLD — NOT a closed TLD allowlist,
+            # so a `.xyz` / `.de` / `.tv` misattribution cannot escape. reveal-s11 shape:
             #   — Lavivienpost.net / Stable Diffusion Art ecosystem documentation
             attr_domain=$(grep -E '^[[:space:]]*([-–—]|\*\*?(source|attribut|credit))' "$card" \
-                | grep -Eio '[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.(com|net|org|io|gov|edu|co|ai|dev|info|us|uk|ca)' \
+                | grep -Eio '[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}' \
                 | sed -E 's#^www\.##I' \
                 | tr 'A-Z' 'a-z' \
                 | head -n1 \
                 || true)
             if [[ -n "$attr_domain" && "$attr_domain" != "$url_host" ]]; then
-                case "$url_host" in
-                    *"$attr_domain"*) : ;;
-                    *) case "$attr_domain" in
-                           *"$url_host"*) : ;;
-                           *) BADDOMAIN_CARDS="${BADDOMAIN_CARDS}${cname} (${attr_domain} != ${url_host}); " ;;
-                       esac ;;
-                esac
+                # Same-origin iff equal OR a true subdomain relationship (dot-suffix). This
+                # is a SUFFIX test, never a substring test: `notes.example.org.attacker.com`
+                # is NOT same-origin as `example.org` — it does not end with `.example.org`.
+                same_origin=0
+                case "$attr_domain" in *."$url_host") same_origin=1 ;; esac
+                case "$url_host" in *."$attr_domain") same_origin=1 ;; esac
+                if [[ "$same_origin" -eq 0 ]]; then
+                    BADDOMAIN_CARDS="${BADDOMAIN_CARDS}${cname} (${attr_domain} != ${url_host}); "
+                fi
             fi
         fi
 
@@ -448,8 +468,11 @@ else
     # report restates the same three numbers, so union both bodies. This keeps the
     # gate robust to whether the numbers live in §6 or only in the report.
     # -------------------------------------------------------------------
-    SCAN_FILES="$REPORT"
-    [[ -n "$DELIVERABLE_DOC" && -f "$DELIVERABLE_DOC" ]] && SCAN_FILES="$SCAN_FILES $DELIVERABLE_DOC"
+    # A bash ARRAY, not a space-joined string: a deliverable/report path containing a
+    # space (routine on macOS — ~/Library/Mobile Documents, "My Project/") must not
+    # word-split into nonexistent filenames and zero out every report-derived assertion.
+    SCAN_FILES=("$REPORT")
+    [[ -n "$DELIVERABLE_DOC" && -f "$DELIVERABLE_DOC" ]] && SCAN_FILES+=("$DELIVERABLE_DOC")
 
     # ===================================================================
     # ASSERTION 2 — three numbers present: sample N (of M, with %), failure count,
@@ -463,23 +486,23 @@ else
 
     # Sample N of M with a %: e.g. "19 cards sampled from 62 total (30%)",
     # "4 cards sampled from 8 total (50% ...)", "N sampled out of M total cards, P%".
-    if grep -Eiq '[0-9]+[^0-9]{0,40}(of|out of|from)[^0-9]{0,12}[0-9]+' $SCAN_FILES \
-       && grep -Eq '[0-9]+(\.[0-9]+)?[[:space:]]*%' $SCAN_FILES; then
+    if grep -Eiq '[0-9]+[^0-9]{0,40}(of|out of|from)[^0-9]{0,12}[0-9]+' "${SCAN_FILES[@]}" \
+       && grep -Eq '[0-9]+(\.[0-9]+)?[[:space:]]*%' "${SCAN_FILES[@]}"; then
         has_sample=1
     fi
 
     # Failure count: a "Failed" tally line/row, e.g. "| Failed | 0 |" or "Failed: 0"
     # or "Failure count: 1". Zero is a valid count.
-    if grep -Eiq 'fail(ed|ure)?[[:space:]]*(count)?[[:space:]]*[:|][[:space:]]*\**[[:space:]]*[0-9]+' $SCAN_FILES; then
+    if grep -Eiq 'fail(ed|ure)?[[:space:]]*(count)?[[:space:]]*[:|][[:space:]]*\**[[:space:]]*[0-9]+' "${SCAN_FILES[@]}"; then
         has_failcount=1
     fi
 
     # Band string present at all (canonicality is A3): any of the three legal bands,
     # tolerant of <= vs ≤ and -/–/— in the middle band.
-    if grep -Eq '(≤|<=)[[:space:]]*5[[:space:]]*%' $SCAN_FILES \
-       || grep -Eq '>[[:space:]]*5[[:space:]]*%[[:space:]]*[-–—][[:space:]]*10[[:space:]]*%' $SCAN_FILES \
-       || grep -Eq '>[[:space:]]*10[[:space:]]*%' $SCAN_FILES \
-       || grep -Eiq 'band[[:space:]]*[:|]' $SCAN_FILES; then
+    if grep -Eq '(≤|<=)[[:space:]]*5[[:space:]]*%' "${SCAN_FILES[@]}" \
+       || grep -Eq '>[[:space:]]*5[[:space:]]*%[[:space:]]*[-–—][[:space:]]*10[[:space:]]*%' "${SCAN_FILES[@]}" \
+       || grep -Eq '>[[:space:]]*10[[:space:]]*%' "${SCAN_FILES[@]}" \
+       || grep -Eiq 'band[[:space:]]*[:|]' "${SCAN_FILES[@]}"; then
         has_band=1
     fi
 
@@ -505,33 +528,32 @@ else
     # Cosmetic tolerance: <= vs ≤, and -/–/— for the middle dash, and a trailing
     # ✓ or surrounding ** are NOT nits. A different NUMBER (20, 15...) is a real fail.
     # ===================================================================
+    # Read the band ONLY from the band-declaration line(s) — a `Failure-rate band:` /
+    # `band:` line — NOT the whole-file union. An unanchored scan fails OPEN (a recited
+    # rubric "the three bands: ≤5%, >5%-10%, >10%" makes any bogus band look canonical)
+    # AND fails CLOSED (an unrelated "≤20% of respondents" in prose hard-fails a compliant
+    # deliverable). Every band token on those lines is canonicalized and checked; a single
+    # non-canonical token (≤20%, >8%, >12%, >10%-20%) fails — its canonical siblings on a
+    # rubric line cannot rescue it.
+    band_lines=$(grep -hEi 'failure[- ]?rate[- ]?band|(^|[^a-z])band[[:space:]]*\**[[:space:]]*[:|]' "${SCAN_FILES[@]}" || true)
     canonical_band=0
-    # Legal band 1: <=5% (or ≤5%)
-    if grep -Eq '(≤|<=)[[:space:]]*5[[:space:]]*%' $SCAN_FILES; then
-        canonical_band=1
-    fi
-    # Legal band 2: >5%-10% (any dash glyph)
-    if grep -Eq '>[[:space:]]*5[[:space:]]*%[[:space:]]*[-–—][[:space:]]*10[[:space:]]*%' $SCAN_FILES; then
-        canonical_band=1
-    fi
-    # Legal band 3: >10%
-    if grep -Eq '>[[:space:]]*10[[:space:]]*%' $SCAN_FILES; then
-        canonical_band=1
-    fi
-    # Detect an explicitly NON-canonical band: a "band: <num>%" where num is not 5/10,
-    # or a "≤<num>%" with num != 5. This catches personalization's "≤20%".
     noncanonical=""
-    while IFS= read -r badline; do
-        noncanonical="$badline"
-        break
-    done < <(grep -hEio '(≤|<=)[[:space:]]*[0-9]+[[:space:]]*%' $SCAN_FILES \
-             | grep -Eiv '(≤|<=)[[:space:]]*5[[:space:]]*%' || true)
-    if [[ "$canonical_band" -eq 1 && -z "$noncanonical" ]]; then
-        pass A3 "band string is canonical"
-    elif [[ -n "$noncanonical" ]]; then
+    while IFS= read -r tok; do
+        [[ -n "$tok" ]] || continue
+        # Normalize: drop whitespace, ≤ -> <=, any dash glyph -> '-'.
+        norm=$(printf '%s' "$tok" | tr -d '[:space:]' | sed -e 's/≤/<=/g' -e 's/–/-/g' -e 's/—/-/g')
+        case "$norm" in
+            '<=5%'|'>5%-10%'|'>10%') canonical_band=1 ;;
+            *) [[ -z "$noncanonical" ]] && noncanonical="$tok" ;;
+        esac
+    done < <(printf '%s\n' "$band_lines" \
+             | grep -Eo '(≤|<=|>)[[:space:]]*[0-9]+[[:space:]]*%([[:space:]]*[-–—][[:space:]]*[0-9]+[[:space:]]*%)?' || true)
+    if [[ -n "$noncanonical" ]]; then
         fail A3 "non-canonical band present: '$(printf '%s' "$noncanonical" | tr -s '[:space:]' ' ')'"
+    elif [[ "$canonical_band" -eq 1 ]]; then
+        pass A3 "band string is canonical"
     else
-        fail A3 "no canonical band (<=5% / >5%-10% / >10%) found"
+        fail A3 "no canonical band (<=5% / >5%-10% / >10%) found on a band-declaration line"
     fi
 
     # ===================================================================
@@ -577,10 +599,17 @@ else
     # Ground-ledger framing: a record whose outcome is `verified` but whose note shows
     # an in-flight correction is a laundered FAILURE.
     # ===================================================================
-    # Find any line that both mentions a correction verb AND records verified.
+    # Find any line that both shows a correction VERB and records the `verified` outcome.
+    # `correct(ed)?` matched the bare nouns "correct"/"correction", and stage 2's loose
+    # `verif` matched "unverified"/"verification", so an honest note ("Quote verified; no
+    # correction needed") or a protocol restatement ("a corrected card counts as failed,
+    # never verified") hard-failed the gate. Stage 1 is now verb-only; stage 2 anchors on
+    # the word `verified`; stage 3 drops negated/methodology phrasing.
     corrected_recount=$(grep -Ein \
-        '(correct(ed)?|fixed|repaired|re-?paraphrased|synthesi[sz]ed paraphrase|extra word|rewrit(e|ten))' "$REPORT" \
-        | grep -Ei 'verif' || true)
+        '(corrected|correcting|fixed|repaired|re-?paraphrased|synthesi[sz]ed paraphrase|extra word|rewrit(e|ten|ing))' "$REPORT" \
+        | grep -Ei '(^|[^a-z])verified([^a-z]|$)' \
+        | grep -Eiv '(^|[^a-z])(no|not|never|without)([^.]{0,40})(corrected|correction|verified)|counted as[[:space:]]+failed' \
+        || true)
     if [[ -n "$corrected_recount" ]]; then
         firstline=$(printf '%s' "$corrected_recount" | head -n1 | cut -c1-120)
         fail A6 "corrected-then-recounted card scored verified: $firstline"
@@ -604,12 +633,22 @@ else
     # ===================================================================
     # The sample-declaration line: the first line that mentions sampling and carries a
     # "N ... <connector> ... M" or "N / M" pair. Strip 4-digit year tokens first.
-    sample_line=$(grep -hEi 'sampl' $SCAN_FILES \
-        | sed -E 's/\b(19|20)[0-9]{2}\b//g' \
+    # Strip percent literals FIRST (so "95% ... from 12" cannot read 95 as the count), then
+    # 4-digit year tokens. The year strip uses an explicit non-digit boundary, NOT \b:
+    # GNU \b is a silent no-op on BSD/macOS sed, so the original date defense did nothing
+    # on the maintainer's own machine and a report date could be read as the sample count.
+    sample_line=$(grep -hEi 'sampl' "${SCAN_FILES[@]}" \
+        | sed -E 's/[0-9]+(\.[0-9]+)?[[:space:]]*%//g' \
+        | sed -E 's/(^|[^0-9])(19|20)[0-9]{2}([^0-9]|$)/\1\3/g' \
         | grep -Eio '[0-9]+[^0-9]{0,40}(of|out of|from|/)[^0-9]{0,12}[0-9]+' \
         | head -n1 || true)
     sample_n=$(printf '%s' "$sample_line" | grep -Eo '[0-9]+' | head -n1 || true)
     sample_m_reported=$(printf '%s' "$sample_line" | grep -Eo '[0-9]+' | sed -n '2p' || true)
+    # M (total) is the GROUND-TRUTH card count on disk; the reported total is trusted only
+    # when no cards are on disk. A report claiming a LARGER universe than exists on disk is
+    # computing its fraction against a PHANTOM denominator (personalization's "5 of 53" with
+    # 1 card on disk), and N can never exceed M — reject both rather than green-light a
+    # degenerate N/M that passes the >=30% floor.
     if [[ "$CARD_COUNT" -gt 0 ]]; then
         sample_m="$CARD_COUNT"
     else
@@ -617,6 +656,10 @@ else
     fi
     if [[ -z "$sample_n" || -z "$sample_m" || "$sample_m" -le 0 ]]; then
         fail A7 "cannot read sample N (of M) from report/§6 (got N='${sample_n}', M='${sample_m}')"
+    elif [[ "$CARD_COUNT" -gt 0 && -n "$sample_m_reported" && "$sample_m_reported" -gt "$CARD_COUNT" ]]; then
+        fail A7 "reported total ($sample_m_reported) exceeds cards on disk ($CARD_COUNT) — sample fraction computed against a phantom denominator"
+    elif [[ "$sample_n" -gt "$sample_m" ]]; then
+        fail A7 "sample N ($sample_n) exceeds total M ($sample_m) — degenerate/impossible sample"
     else
         if [[ "$sample_m" -lt 10 ]]; then
             required="$sample_m"
@@ -645,20 +688,27 @@ else
     # the record; a missing enum collapses the outcome to `failed`.
     # ===================================================================
     a8_bad=""
-    # (a) cards on an `inaccessible` row that have no enum on disk.
+    # (a) cards on an `inaccessible` row that have no enum on disk. Match the card NAMED in
+    # the row (its `.md` token) against the enum-missing set as a WHOLE line via grep -Fxq —
+    # never a substring (`c1-card.md` is a substring of `ic1-card.md`) and never a
+    # `for nc in $NOENUM_CARDS` word-split that a spaced basename would break.
     if [[ -n "$NOENUM_CARDS" ]]; then
         while IFS= read -r inacc_line; do
-            for nc in $NOENUM_CARDS; do
-                case "$inacc_line" in
-                    *"$nc"*) a8_bad="${a8_bad}${nc} (scored inaccessible but card has no Access status: enum -> failed); " ;;
-                esac
-            done
+            row_card=$(printf '%s' "$inacc_line" | grep -Eo '[A-Za-z0-9._-]+\.md' | head -n1 || true)
+            [[ -n "$row_card" ]] || continue
+            if printf '%s\n' "$NOENUM_CARDS" | grep -Fxq "$row_card"; then
+                a8_bad="${a8_bad}${row_card} (scored inaccessible but card has no Access status: enum -> failed); "
+            fi
         done < <(grep -Ei 'inaccessible' "$REPORT" || true)
     fi
-    # (b) a retroactive reclassification note anywhere in the report.
+    # (b) a retroactive reclassification note anywhere in the report. The trailing -v drops
+    # NEGATED phrasing ("No card was reclassified after synthesis") so honestly DENYING the
+    # gaming is not mis-read as committing it.
     retro_note=$(grep -Ein \
         '(retroactive|reclassif|re-classif|changed[^.]{0,40}(to[[:space:]]+)?(cached/partial|inaccessible)|set[^.]{0,40}(after|post)[[:space:]]+synthesis|now counts as[[:space:]]+inaccessible|down(graded|ranked)[^.]{0,30}after)' \
-        "$REPORT" || true)
+        "$REPORT" \
+        | grep -Eiv '(^|[^a-z])(no|not|never|without|zero)([^.]{0,40})(retroactive|reclassif|change|set|down|count)' \
+        || true)
     if [[ -n "$a8_bad" ]]; then
         fail A8 "enum-missing card laundered as inaccessible: ${a8_bad%; }"
     elif [[ -n "$retro_note" ]]; then
@@ -678,9 +728,17 @@ else
     # cap = ceil(0.30 * N). At or below cap -> PASS. Above cap -> a `low-confidence`
     # stamp must be present in the report/§6, else FAIL.
     # ===================================================================
-    inacc_count=$(grep -Eio 'inaccessible[^0-9|]{0,40}[|:][^0-9]{0,8}[0-9]+' "$REPORT" \
+    # Read the AGGREGATE inaccessible count: a table row whose FIRST cell is `Inaccessible`
+    # (optionally bold), or an `Inaccessible: N` line. NOT a per-card outcome row (where
+    # `inaccessible` sits in the SECOND cell beside a note that may carry a digit) — the old
+    # first-match-on-any-line scan latched a per-card note digit and under-counted, passing
+    # an 83%-inaccessible run under the ~30% cap.
+    inacc_count=$(grep -hEi \
+        -e '^[[:space:]]*\|[[:space:]]*\**[[:space:]]*inaccessible[[:space:]]*\**[[:space:]]*\|[[:space:]]*\**[[:space:]]*[0-9]+' \
+        -e '^[[:space:]]*\**[[:space:]]*inaccessible[[:space:]]*\**[[:space:]]*:[[:space:]]*\**[[:space:]]*[0-9]+' \
+        "$REPORT" \
         | head -n1 \
-        | grep -Eo '[0-9]+' | tail -n1 \
+        | grep -Eo '[0-9]+' | head -n1 \
         || true)
     [[ -n "$inacc_count" ]] || inacc_count=0
     if [[ -z "$sample_n" || "$sample_n" -le 0 ]]; then
@@ -689,7 +747,7 @@ else
         cap=$(( (sample_n * 30 + 99) / 100 ))
         if [[ "$inacc_count" -le "$cap" ]]; then
             pass A10 "inaccessible $inacc_count/$sample_n within ~30% cap ($cap)"
-        elif grep -Eiq 'low[ -]confidence' $SCAN_FILES; then
+        elif grep -Eiq 'low[ -]confidence' "${SCAN_FILES[@]}"; then
             pass A10 "inaccessible $inacc_count/$sample_n above cap ($cap) but deliverable stamped low-confidence"
         else
             fail A10 "inaccessible $inacc_count/$sample_n exceeds ~30% cap ($cap) without a low-confidence stamp"
@@ -710,15 +768,18 @@ else
     #       "lowest source that cleared" phrasing names the marginal keep.
     # ===================================================================
     excluded_nonzero=0
-    while IFS= read -r exline; do
-        exnum=$(printf '%s' "$exline" | grep -Eo '[0-9]+' | tail -n1 || true)
+    # The loop input is a BOUNDED match (grep -Eoi): the only digit run in each match is the
+    # count immediately after the `|`/`:` delimiter, so head -n1 reads the count. The old
+    # whole-line + tail-n1 read "Excluded: 0 of 12" as 12 and passed a zero-cut run.
+    while IFS= read -r exmatch; do
+        exnum=$(printf '%s' "$exmatch" | grep -Eo '[0-9]+' | head -n1 || true)
         if [[ -n "$exnum" && "$exnum" -ge 1 ]]; then
             excluded_nonzero=1
             break
         fi
-    done < <(grep -Ei 'exclud(e|ed)[^0-9|]{0,30}[|:][^0-9]{0,8}[0-9]+' $SCAN_FILES || true)
+    done < <(grep -hEoi 'exclud(e|ed)[^0-9|]{0,30}[|:][^0-9]{0,8}[0-9]+' "${SCAN_FILES[@]}" || true)
     named_lowest=0
-    if grep -Eiq '(lowest[ -]scoring|lowest[^.]{0,30}cleared|weakest[^.]{0,20}(included|kept|survivor)|marginal[ -]keep|lowest[^.]{0,20}that cleared)' $SCAN_FILES; then
+    if grep -Eiq '(lowest[ -]scoring|lowest[^.]{0,30}cleared|weakest[^.]{0,20}(included|kept|survivor)|marginal[ -]keep|lowest[^.]{0,20}that cleared)' "${SCAN_FILES[@]}"; then
         named_lowest=1
     fi
     if [[ "$excluded_nonzero" -eq 1 ]]; then
@@ -737,9 +798,9 @@ fi
 # The scan body is the deliverable doc unioned with the report, mirroring SCAN_FILES but
 # computed locally so W1/W2 work even on a report-absent run.
 # ===========================================================================
-WARN_SCAN=""
-[[ -n "$DELIVERABLE_DOC" && -f "$DELIVERABLE_DOC" ]] && WARN_SCAN="$DELIVERABLE_DOC"
-[[ -f "$REPORT" ]] && WARN_SCAN="$WARN_SCAN $REPORT"
+WARN_SCAN=()
+[[ -n "$DELIVERABLE_DOC" && -f "$DELIVERABLE_DOC" ]] && WARN_SCAN+=("$DELIVERABLE_DOC")
+[[ -f "$REPORT" ]] && WARN_SCAN+=("$REPORT")
 
 # The exact verbatim banner string. Asserted character-for-character — this is the
 # load-bearing public contract (Directive 03 acceptance criterion).
@@ -758,22 +819,24 @@ PRIMARY_BANNER="NO PRIMARY EVIDENCE — all findings are literature-derived pred
 # "meta-analysis"; Level 2 carries "RCT" / "randomized" — then read that row's last
 # integer cell as the count.
 # ---------------------------------------------------------------------------
-if [[ -z "$WARN_SCAN" ]]; then
+if [[ ${#WARN_SCAN[@]} -eq 0 ]]; then
     okwarn W1 "no deliverable doc to read evidence-level distribution from; banner check deferred"
 else
     # Level 1 row: a leading `| 1 |` whose description names a systematic review /
-    # meta-analysis. Count = last integer on the row (the count cell).
-    lvl1=$(grep -EI '^\|[[:space:]]*1[[:space:]]*\|.*(systematic[[:space:]]+review|meta[ -]?analysis)' $WARN_SCAN \
+    # meta-analysis. Count = last integer on the row (the count cell). grep -Ei (NOT -EI:
+    # capital I is skip-binary, not case-insensitive, so a Title-Cased "Systematic Review"
+    # row never matched and the no-primary-evidence backstop silently cleared).
+    lvl1=$(grep -Ei '^\|[[:space:]]*1[[:space:]]*\|.*(systematic[[:space:]]+review|meta[ -]?analysis)' "${WARN_SCAN[@]}" \
         | head -n1 \
         | grep -Eo '[0-9]+' | tail -n1 || true)
     # Level 2 row: a leading `| 2 |` whose description names an RCT / randomized trial /
     # strong experiment. Count = last integer on the row.
-    lvl2=$(grep -EI '^\|[[:space:]]*2[[:space:]]*\|.*(RCT|randomi[sz]ed|strong[[:space:]]+experiment)' $WARN_SCAN \
+    lvl2=$(grep -Ei '^\|[[:space:]]*2[[:space:]]*\|.*(RCT|randomi[sz]ed|strong[[:space:]]+experiment)' "${WARN_SCAN[@]}" \
         | head -n1 \
         | grep -Eo '[0-9]+' | tail -n1 || true)
     # Banner already present verbatim in the deliverable?
     banner_present=0
-    if grep -Fq "$PRIMARY_BANNER" $WARN_SCAN; then
+    if grep -Fq "$PRIMARY_BANNER" "${WARN_SCAN[@]}"; then
         banner_present=1
     fi
     if [[ -z "$lvl1" && -z "$lvl2" ]]; then
@@ -811,13 +874,13 @@ fi
 #   (a) a falsification query in the Phase 2 search plan/log (a `falsif`-bearing line)
 #   (b) a literal `steel-man` contrarian subsection in Phase 4
 # ---------------------------------------------------------------------------
-if [[ -z "$WARN_SCAN" ]]; then
+if [[ ${#WARN_SCAN[@]} -eq 0 ]]; then
     okwarn W2 "no deliverable doc to read Bias-Guard Summary from; skew check deferred"
 else
-    agree=$(grep -Ei '^\|[^|]*agree[d]?[[:space:]]+with[[:space:]]+source' $WARN_SCAN \
+    agree=$(grep -Ei '^\|[^|]*agree[d]?[[:space:]]+with[[:space:]]+source' "${WARN_SCAN[@]}" \
         | head -n1 \
         | grep -Eo '[0-9]+' | tail -n1 || true)
-    disagree=$(grep -Ei '^\|[^|]*disagree[d]?[[:space:]]+with[[:space:]]+source' $WARN_SCAN \
+    disagree=$(grep -Ei '^\|[^|]*disagree[d]?[[:space:]]+with[[:space:]]+source' "${WARN_SCAN[@]}" \
         | head -n1 \
         | grep -Eo '[0-9]+' | tail -n1 || true)
     if [[ -z "$agree" || -z "$disagree" ]]; then
@@ -827,11 +890,11 @@ else
         if [[ "$agree" -gt $(( disagree * 3 )) ]]; then
             # Remediation presence checks (footnoted, not blocking).
             has_falsif=0
-            if grep -Eiq 'falsif' $WARN_SCAN; then
+            if grep -Eiq 'falsif' "${WARN_SCAN[@]}"; then
                 has_falsif=1
             fi
             has_steelman=0
-            if grep -Eiq 'steel[- ]?man' $WARN_SCAN; then
+            if grep -Eiq 'steel[- ]?man' "${WARN_SCAN[@]}"; then
                 has_steelman=1
             fi
             missing=""
