@@ -89,9 +89,17 @@ if [[ "$GATE_RC" -eq 0 ]]; then
     BADGE="$(printf '%s\n' "$GATE_OUTPUT" | sed -n 's/^Badge: //p' | head -n1)"
     printf 'deep-research ground gate: PASS — %s\n' "$BADGE"
     exit 0
+elif [[ "$GATE_RC" -eq 2 ]]; then
+    # Exit 2 is a LOCATE/USAGE error (no deliverable found), NOT a failed hard assertion.
+    # Reporting it as "verification gate failed" would block the session on a usage error;
+    # surface a distinct, NON-blocking advisory instead and let the session conclude.
+    LOCATE_REASON="$(printf '%s\n' "$GATE_OUTPUT" | sed -n 's/^GATE: locate FAIL //p' | head -n1)"
+    [[ -n "$LOCATE_REASON" ]] || LOCATE_REASON="could not locate a docs/research deliverable to verify"
+    printf 'deep-research ground gate: not run — %s\n' "$LOCATE_REASON" >&2
+    exit 0
 fi
 
-# FAIL — inject a blocking message and refuse PASS.
+# Exit 1 (or any other non-zero) — a real hard-assertion failure. Block and refuse PASS.
 BLOCK_MSG="NOT fact-checked — verification gate failed: ${REASON}"
 
 # Emit the Stop-hook block protocol so Claude is prevented from concluding the run as

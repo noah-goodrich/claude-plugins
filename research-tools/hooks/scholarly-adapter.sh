@@ -282,12 +282,15 @@ cmd_search() {
     query="$1"; shift
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --backend) backend="$2"; shift 2 ;;
-            --limit) limit="$2"; shift 2 ;;
-            --topic) topic="$2"; shift 2 ;;
-            --out) out="$2"; shift 2 ;;
-            --perspective) persp="$2"; shift 2 ;;
-            --mailto) UA_MAILTO="$2"; shift 2 ;;
+            # Each value-taking flag requires a following value. Without the arity guard a
+            # trailing value-less flag dereferences an unset $2 under `set -u` and aborts
+            # with a raw "$2: unbound variable" (exit 1), bypassing die()'s usage exit 2.
+            --backend) [[ $# -ge 2 ]] || die "$1 requires a value"; backend="$2"; shift 2 ;;
+            --limit) [[ $# -ge 2 ]] || die "$1 requires a value"; limit="$2"; shift 2 ;;
+            --topic) [[ $# -ge 2 ]] || die "$1 requires a value"; topic="$2"; shift 2 ;;
+            --out) [[ $# -ge 2 ]] || die "$1 requires a value"; out="$2"; shift 2 ;;
+            --perspective) [[ $# -ge 2 ]] || die "$1 requires a value"; persp="$2"; shift 2 ;;
+            --mailto) [[ $# -ge 2 ]] || die "$1 requires a value"; UA_MAILTO="$2"; shift 2 ;;
             *) die "unknown search flag: $1" ;;
         esac
     done
