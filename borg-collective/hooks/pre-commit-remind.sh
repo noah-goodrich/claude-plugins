@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Built by scripts/build-plugin.sh — self-contained, no external source deps.
+command -v borg >/dev/null 2>&1 || exit 0
+
 # pre-commit-remind.sh — PreToolUse hook: nudge to run /simplify and /borg-assimilate before commit
 # Fires on all Bash tool calls. Emits additionalContext reminder when command is git commit.
 # Always exits 0 — reminder only, never blocks.
