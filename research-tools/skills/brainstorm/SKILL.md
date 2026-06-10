@@ -31,7 +31,15 @@ is a signal that the options haven't been discovered yet, not that the task is s
 
 ---
 
-## Before You Begin
+## Before You Begin — Lazy Reference Loading (Directive 04)
+
+This skill keeps one reference file under `references/`, loaded ONLY at the phase that needs it — do
+not read it up front:
+
+- `references/contradiction-resolution.md` — load at **Phase 4.5**, and only when Phase 1 surfaced a
+  genuine constraint tension. It carries the separation heuristics, the Ideal Final Result prompt,
+  the 40 principles as a reasoning menu, the refusal of the discredited 39x39 matrix, and the worked
+  contrasts. If Phase 4.5 does not fire, this file is never read.
 
 Before Phase 1, load all available context (in priority order). Read each that exists:
 
@@ -39,7 +47,7 @@ Before Phase 1, load all available context (in priority order). Read each that e
 2. `CLAUDE.md` — tech stack, architecture, deployment, conventions
 3. Any files passed as arguments (`/brainstorm "question" --context path/to/file.md`)
 4. `docs/brainstorms/` — scan for prior brainstorms on related problems (avoid re-solving)
-5. `docs/research/` — existing research documents (evaluated via recency gates in Phase 1)
+5. `docs/research/` — existing research documents to reuse as track input
 
 **No project context?** Degrade gracefully — skip steps 1–5, run on the problem statement alone.
 Offer to save output to a user-specified path at the end.
@@ -63,16 +71,15 @@ Produce:
 
 ### 1b. Research inventory
 
-Scan `docs/research/` for existing research relevant to the problem. For each document found,
-apply recency gates:
+Scan `docs/research/` for existing research relevant to the problem. List what you find and note
+whether each document looks reusable as track input. Surface the inventory at the Phase 2
+checkpoint — do not silently reuse or silently discard.
 
-| Age | Action |
-|-----|--------|
-| < 45 days | Available for track reuse as-is. Surface at Phase 2 checkpoint. |
-| 45–90 days | Flag for evaluation. Track agent reads §4 Analysis headings and checks whether key claims are likely to have shifted. **Tech and competitive tracks**: apply higher scrutiny — frameworks, APIs, and market landscape shift fast. **Behavioral/domain tracks**: more tolerant — cognitive science doesn't change in 6 weeks. |
-| > 90 days | Default to re-run. Novelty probe runs first before invoking the full pipeline (see Phase 3). |
-
-Surface the inventory at the Phase 2 checkpoint. Do not silently reuse or silently discard.
+**Stale evidence is deep-research's job, not brainstorm's.** If a track's correctness is
+load-bearing and your model knowledge (or the existing research) is stale, run `/deep-research`
+separately and feed its §1–§2 back in as that track's findings. Brainstorm stays fast; deep-
+research owns evidence rigor and freshness checks (its Phase 1.0 novelty probe gates whether a
+full run is even warranted).
 
 ---
 
@@ -83,50 +90,47 @@ more for broad ones. Each track gets:
 
 1. **Name** — short label (e.g., "user/behavioral", "competitive", "technical", "domain")
 2. **Question** — the specific question this track answers
-3. **Depth** — `lightweight` or `evidence-backed` (see classification guide below)
-4. **Research source** — `fresh` / `reuse:[path]` / `supplement:[path]`
+3. **Research source** — `fresh` / `reuse:[path]` / `supplement:[path]`
 
-### Track depth classification
+### One evidentiary standard, one escape hatch (Directive 04)
 
-**`lightweight`** — WebSearch/WebFetch/Read, 3–5 key findings, 1–2 cited sources per finding.
-Right for:
-- Competitive landscape ("what do existing apps do, and where do they fall short?")
-- Technical feasibility ("can we build X with the current stack?")
-- Current market state ("what tools/frameworks exist for this today?")
-- Topics where model knowledge is reliable and a few searches catch any updates
+Every track runs the SAME lightweight research and returns the SAME unified finding shape (see
+Phase 3) — a single brainstorm no longer carries two incompatible evidentiary standards side by
+side. There is no `lightweight` vs `evidence-backed` depth tag and no inline novelty-probe /
+recency-band / recursive-`/deep-research` machinery: that ~85-line apparatus had a 0% utilization
+rate across the corpus and taxed every read (`audit.md:278-287`), so it is replaced by one line:
 
-**`evidence-backed`** — Invokes `/deep-research` as a sub-pipeline (with novelty probe
-gate — see Phase 3). Right for:
-- Behavioral, psychological, or clinical claims where model knowledge is likely confidently wrong
-- Any track where a wrong answer would meaningfully mislead the synthesis
-- Contested topics where institutional or academic sources are needed to separate signal from noise
+> **Escape hatch:** if a track's correctness is load-bearing and your model knowledge is stale,
+> run `/deep-research` separately and feed its §1–§2 back in as that track's findings.
 
-**Classification heuristic:** *"If this track's findings are wrong due to outdated or fabricated
-model knowledge, does the entire synthesis go in the wrong direction?"* If yes → `evidence-backed`.
+deep-research owns evidence rigor; brainstorm stays fast.
 
 ### Common track patterns
 
 Most problems fit one of these decompositions:
 
-| Track | Typical depth | Answers |
-|-------|--------------|---------|
-| User/behavioral | evidence-backed | How do real users behave in this context? What does psychology say? |
-| Competitive | lightweight | What do existing products do? Where do they succeed/fail? |
-| Technical | lightweight | What's feasible given our stack? What are the known implementation patterns? |
-| Domain | evidence-backed | What do subject-matter experts say about this specific problem? |
+| Track | Answers |
+|-------|---------|
+| User/behavioral | How do real users behave in this context? What does psychology say? |
+| Competitive | What do existing products do? Where do they succeed/fail? |
+| Technical | What's feasible given our stack? What are the known implementation patterns? |
+| Domain | What do subject-matter experts say about this specific problem? |
 
-Not every problem needs all four. Two well-scoped tracks often beat four shallow ones.
+Not every problem needs all four. Two well-scoped tracks often beat four shallow ones. For any
+track whose correctness is load-bearing, use the escape hatch above rather than trusting model
+knowledge.
 
 ### Phase 2 checkpoint
 
 Present the full track plan before proceeding:
 - Sharpened problem statement
 - Constraint list (with tensions flagged)
-- Track table (name, question, depth, research source)
+- Track table (name, question, research source)
 - Research inventory findings (reuse decisions)
+- Any track flagged for the `/deep-research` escape hatch (load-bearing + stale knowledge)
 
-**Do not run Phase 3 until this checkpoint is confirmed.** User can adjust track angles, depth
-tags, and reuse decisions. This is the cheapest moment to course-correct.
+**Do not run Phase 3 until this checkpoint is confirmed.** User can adjust track angles, reuse
+decisions, and which tracks warrant the escape hatch. This is the cheapest moment to course-correct.
 
 ---
 
@@ -135,52 +139,36 @@ tags, and reuse decisions. This is the cheapest moment to course-correct.
 Spawn one agent per track using the Agent tool. Independent tracks run in parallel; only sequence
 if one track's findings are needed to frame another (rare — avoid sequencing as a default).
 
-### Lightweight track agents
-
-Each agent receives:
+Every track runs the SAME lightweight research and returns the SAME unified finding shape. Each
+agent receives:
 - The track question
 - The problem statement and constraints
 - Access to: WebSearch, WebFetch, Read
 
+### Unified finding shape (Directive 04)
+
+Each finding carries a **minimal source record** — the same minimal evidentiary fields a
+`/deep-research` source card front-matter carries (full citation, URL, access date), so brainstorm
+findings and deep-research findings speak one evidentiary language. A finding is NOT a free-form
+"the source basically says X"; it is a discrete claim with a citable source attached.
+
 Returns:
 ```
 Track: [name]
-Depth: lightweight
 Research source: fresh | reused:[date] | supplemented:[date]
 
-Key findings:
-- [Finding] — Source: [title, URL, access date]
+Key findings (each a discrete claim + minimal source record):
+- [Finding claim] — Source: [author/outlet, title, URL, access date YYYY-MM-DD]
 [3–5 findings]
 
 Confidence note: [one sentence — "findings well-supported" OR "claim X is weakly sourced — flagging"]
 ```
 
-### Evidence-backed track agents
-
-Before invoking the full `/deep-research` pipeline, every evidence-backed track agent runs a
-**novelty probe** — 2–3 targeted searches:
-
-1. `"[topic]" after:[existing-research-date]` — if existing research exists
-2. `"[topic]" 2025 OR 2026 new research OR update`
-3. One domain-specific probe (framework changelog for tech tracks; new study framing for
-   behavioral/domain tracks)
-
-**Early termination:** If the probe finds nothing materially new — same sources surfacing, no
-new studies or frameworks, no contradicting findings — terminate the deep-research invocation.
-Use existing research (if available) or model knowledge. Note the kill explicitly:
-
-> "Novelty probe: no significant new developments found since [date]. Deep-research terminated
-> early. Using [existing doc / model knowledge]."
-
-The track still returns 3–5 key findings; they're drawn from the existing source rather than a
-fresh pipeline run.
-
-**Run the full pipeline:** If the probe finds new, updated, or conflicting information, invoke
-`/deep-research` with the track question as the research question. The pipeline runs to completion.
-The track agent then extracts §1 Recommendations + §2 Summary as its findings input to Phase 4.
-
-Returns the same format as lightweight tracks, with depth noted as `evidence-backed (early-terminated)`
-or `evidence-backed (full run)`.
+**Escape hatch (the only path to deeper rigor).** If a track's correctness is load-bearing and
+your model knowledge is stale, run `/deep-research` separately and feed its §1–§2 back in as that
+track's Key findings (keeping the same minimal-source-record shape). Brainstorm itself runs no
+second, lower-rigor research pipeline — there is one evidentiary standard here, and deep-research
+is where evidence rigor lives.
 
 ---
 
@@ -251,11 +239,87 @@ This is the Pragmatist's input point and feeds directly into the council review.
 
 ---
 
+## Phase 4.5: Contradiction Forge (GATED)
+
+**This phase fires ONLY when Phase 1 surfaced a genuine constraint tension** — two constraints that
+pull against each other so that satisfying one appears to sacrifice the other (the tensions you
+flagged in the Phase 1 constraint list and the Phase 2 checkpoint). If Phase 1 surfaced no real
+tension, SKIP this phase entirely — say so in one line and proceed to Phase 5. Do not manufacture a
+tension to trigger the forge.
+
+When it fires, **load `references/contradiction-resolution.md` now** (and not before). It carries the
+separation heuristics, the Ideal Final Result prompt, the 40 principles as a reasoning menu, the
+refusal of the discredited 39x39 contradiction matrix, and the worked contrasts to reason against.
+
+### 4.5a. Resolve, do not trade off
+
+Pick the top 1–2 contradictions from Phase 1. For **each** one, the unforgivable default — the move
+Phase 4's options already make — is to concede a pole. Here you do the opposite: propose **≥1 NEW
+option that holds BOTH poles**. State the Ideal Final Result first ("the benefit appears without the
+cost, by the system itself"), then reach for a separation move (time / space / condition / scale) or
+2–3 principles from the menu. **Tag every new option with the exact separation move it used.** If you
+cannot name the move, you have not separated anything — you have a re-skinned trade-off, and it does
+not qualify as a resolution.
+
+### 4.5b. New options re-enter the council as full Option blocks
+
+Each resolved option is written as a **complete Phase-4 Option block** (What it is / How it works /
+Pros / Cons / Key tradeoffs / Feasibility / Estimate / Visual / minimum viable version), with one
+added line: **`Separation move:` [time | space | condition | scale | principle: name]**. It then
+competes against the Phase-4 options in Phase 5 on equal footing — it is not pre-blessed for being
+clever.
+
+### 4.5c. Optional empirical probe (the reveal-portrait pattern)
+
+If a resolved option has a **cheap real-world test that measures the actual poles**, run it instead
+of arguing about it. Spawn a Task agent that builds and runs the probe and **commits the harness**
+(so the result is reproducible, not a claim). The council then scores that option on the **MEASURED
+result**, not the prose.
+
+A probe is trusted ONLY if it passes a validity check FIRST, stated explicitly in the output:
+
+> **Probe validity:** Is this probe decisive, and does it measure the contradiction's actual poles?
+
+A probe that measures a proxy is validation theater (the A-Lab failure — 41 "new" materials collapsed
+to ~zero under independent re-analysis). If the validity check fails, discard the probe result and
+treat the option as untested.
+
+### 4.5d. No probe → stamp it
+
+When no decisive probe is possible, stamp the resolved option **`NO PRIMARY EVIDENCE`** (the same
+shared vocabulary Directive 03 uses for literature-only conclusions). It enters the council as a
+reasoned-but-unmeasured candidate — never silently passed off as proven.
+
+---
+
 ## Phase 5: Council Review
 
 Five personas evaluate the options. Each voice speaks once, references options by letter, and
 cites specific findings from the track research. No hand-waving. Keep each voice to one focused
 paragraph — the Adult in the Collective model; these personas have a different job.
+
+**Dissent is mandatory — scripted consensus is a failure of this phase.** A council where all five
+voices independently ratify the cheapest option is a cost-estimator with four extra paragraphs of
+prose. Authentic dissent reliably broadens search and improves quality; scripted devil's advocacy
+mostly bolsters the original view (Nemeth; `analysis.md:71-72`). Therefore, **before the Recommender
+speaks, at least one persona MUST do one of these two things** — and it must be genuine, not staged:
+
+- **Formally DISAGREE with the Recommender's choice**, and the disagreement is logged as a named risk
+  in the `Dissent` field of the output, OR
+- **Kill an option for a reason OTHER than effort/feasibility** — a strategic, user, or correctness
+  objection. ("It's more work" / "it's harder to build" does NOT count; the Pragmatist's effort
+  argument can never be the sole dissent.)
+
+The `Dissent` field in the output template is **non-empty by construction**. If the council genuinely
+reaches consensus, the dissent is still recorded as the strongest surviving objection and why it did
+not win — silence is not an option.
+
+**If Phase 4.5 produced resolved options, the council MUST explicitly judge each one:** does it
+**truly hold BOTH poles, or did it smuggle a hidden cost** back in (conceding a pole, deferring it,
+or paying it through a proxy)? A resolved option is an authentic-dissent surface to attack — not a
+rubber-stamp for being clever. Name the smuggled cost if you find one; if the probe (4.5c) measured
+the poles, score on that result; if the option is stamped `NO PRIMARY EVIDENCE`, weigh it as reasoned
+but unmeasured. The Technical Realist and the User Advocate are the natural challengers here.
 
 ---
 
@@ -290,9 +354,13 @@ minimum viable version suffice for an initial ship?"
 **The Recommender**
 Domain: Synthesizes all four voices. Names one option (or one option with a specific scope
 constraint). States the reasoning in 2–3 sentences. Does not equivocate or list multiple
-"it depends" paths.
+"it depends" paths. **Must engage the mandatory dissent** — name the strongest objection raised
+against the chosen option and say explicitly why it does not change the call (or why it does, if it
+flips the recommendation). The Recommender may NOT default to the lowest-estimate option on effort
+grounds alone.
 Voice: Decisive. "The recommendation is Option [X] because [specific reason it beats the
-alternatives given the constraints]. The minimum viable version to ship first is [Y]."
+alternatives given the constraints]. The dissent — [Y's objection] — does not win because [reason].
+The minimum viable version to ship first is [Z]."
 
 ---
 
@@ -316,9 +384,9 @@ user-specified path or present inline.
 
 ## Research Summary
 
-### Track 1: [Name] ([depth] — [fresh/reused:[date]/supplemented:[date]])
-- [Finding] — [source]
-- [Finding] — [source]
+### Track 1: [Name] ([fresh/reused:[date]/supplemented:[date]])
+- [Finding claim] — Source: [author/outlet, title, URL, access date]
+- [Finding claim] — Source: [author/outlet, title, URL, access date]
 [Confidence note if anything flagged]
 
 ### Track 2: [Name] (...)
@@ -332,6 +400,21 @@ user-specified path or present inline.
 ### Option B: [Name]
 ...
 
+## Contradiction Forge (Phase 4.5)
+
+*Include this section ONLY if Phase 4.5 fired. If it did not, omit it and note "No genuine
+constraint tension surfaced in Phase 1 — contradiction forge skipped."*
+
+**Contradiction:** [the two poles in tension, e.g. "account earmarking clarity vs. flexibility"]
+
+### Option [letter]: [Name] *(resolved)*
+[Full Phase-4 Option block, PLUS:]
+**Separation move:** [time | space | condition | scale | principle: name]
+**Ideal Final Result:** [the one-sentence IFR this option chases]
+**Probe:** [either: "Probe run — harness committed at [path]. Probe validity: decisive? measures the
+actual poles? → [yes/no + 1 line]. Measured result: [result]." OR the stamp `NO PRIMARY EVIDENCE`
+with a one-line reason no decisive probe was possible.]
+
 ## Council Review
 
 **The Product Strategist:** "[prose]"
@@ -342,8 +425,20 @@ user-specified path or present inline.
 
 **The Pragmatist:** "[prose]"
 
-**The Recommender:** "[prose — names Option X, states why it beats alternatives, names
-minimum viable version]"
+**The Recommender:** "[prose — names Option X, states why it beats alternatives, engages the dissent,
+names minimum viable version]"
+
+### Resolved-option verdict *(only if Phase 4.5 fired)*
+
+For each resolved option: **does it hold both poles, or smuggle a hidden cost?** [verdict + the
+smuggled cost if any, scored on the measured probe result where one exists]
+
+### Dissent *(non-empty by construction)*
+
+[The formal disagreement: which persona dissented, against which option/recommendation, and the
+named risk it logs — OR an option killed for a reason other than effort/feasibility. If the council
+reached genuine consensus, record the strongest surviving objection and why it did not win. This
+field is NEVER empty.]
 
 ## Recommendation
 
@@ -351,11 +446,15 @@ minimum viable version]"
 
 **Minimum viable ship:** [What to build first to test the core bet]
 
+**Logged dissent / risk:** [restate the dissent as a risk to carry into planning]
+
 ## Next Steps
 
 - [ ] [If recommendation approved: run /borg-plan with this document as context]
 - [ ] [Any research track flagged for follow-up]
 - [ ] [Any constraint tension that needs resolution before implementation]
+- [ ] [Carry the logged Dissent risk into planning — do not let it evaporate]
+- [ ] [Any resolved option stamped NO PRIMARY EVIDENCE that warrants a real probe before commit]
 ```
 
 ---
@@ -365,10 +464,12 @@ minimum viable version]"
 | I need to... | Do this |
 |---|---|
 | Decide whether to run this skill | Ask: "Can I specify the implementation before knowing the options?" No → brainstorm |
-| Classify track depth | "If this track is wrong, does it sink the synthesis?" Yes → evidence-backed |
-| Reuse existing research | < 45 days: reuse. 45–90 days: evaluate (tech: high scrutiny; domain: lenient). > 90 days: novelty probe first |
-| Kill deep-research early | Probe finds nothing new → terminate, note the kill, use existing or model knowledge |
+| Get deeper evidence for a track | Escape hatch: run `/deep-research` separately, feed its §1–§2 back in |
+| Shape a track finding | One unified shape: a discrete claim + minimal source record (author, title, URL, date) |
 | Choose visual format | UI/interaction pattern → Claude Design prompt. Flow/architecture/journey → Mermaid |
 | Handle no project context | Skip context loading, degrade gracefully, offer to save output to user-specified path |
 | Move from brainstorm to implementation | Feed output document into /borg-plan as context |
 | Validate "distinct" options | If two options are the same approach with different labels, merge them |
+| Resolve a constraint tension | Phase 4.5: load the contradiction-resolution ref, separate the poles, tag the move |
+| Satisfy the dissent rule | ≥1 persona disagrees with the Recommender (risk-logged) OR kills an option non-effort |
+| Trust a Phase-4.5 probe | Only if validity passes (decisive + measures the poles); else stamp NO PRIMARY EVIDENCE |

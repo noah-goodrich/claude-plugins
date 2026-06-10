@@ -1,0 +1,1 @@
+OpenAlex is keyless and CC0, which is why it is the default backend rather than Semantic Scholar. The fallback path exists but is globally throttled.

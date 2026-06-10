@@ -1,0 +1,1 @@
+OBJECTIVE: We assessed whether a free open scholarly index can feed inspectable source cards. METHODS: A keyless OpenAlex query returned peer-reviewed abstracts that were carded under the standard template. RESULTS: The carded abstracts passed the deterministic ground gate without backend-specific fields.

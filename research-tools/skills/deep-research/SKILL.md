@@ -16,30 +16,43 @@ exclusion decision is traceable.
 Built on six established frameworks (CREDIBLE, CRAAP, SIFT, RADAR, PRISMA, DeepTRACE) but
 extends them into a unified end-to-end pipeline that no single existing framework covers.
 
-## Before You Begin
+## Before You Begin — Lazy Reference Loading (Directive 04)
 
-**Reference loading is mandatory.** Before doing any research — before Phase 1, before
-any search, before any source evaluation — load ALL SEVEN reference documents into
-context. The references are not optional reading; they are the operational contract. If
-you skip a reference because the task "feels small" or "is obvious," you will skip the
-structure that reference enforces, and the deliverable will fail the Phase 6 manifest
-check.
+**References load at the phase that consumes them — NOT all up front.** The old protocol
+demanded all seven reference documents (~14k tokens) loaded before Phase 1. A 4-source
+product question and a 65-source clinical synthesis paid the identical entry tax, and that
+undifferentiated up-front wall was the activation-energy spike that killed task initiation
+(`audit.md:175-181`). It is removed. There is no pre-load checklist to clear before Phase 1.
 
-Verify each reference has been read before proceeding:
+**Only two things carry inline — read them now:**
 
-- [ ] 1. `references/source-evaluation-rubric.md` — 10-dimension scoring system with anchors
-- [ ] 2. `references/evidence-hierarchy.md` — 9-level evidence classification
-- [ ] 3. `references/source-card-template.md` — per-source evaluation card format
-- [ ] 4. `references/inclusion-decision-matrix.md` — keep/throw decision tree with override
-      rules
-- [ ] 5. `references/research-document-template.md` — final document structure and language
-      guide
-- [ ] 6. `references/methodology-section-template.md` — "show your work" section structure
-- [ ] 7. `references/example-evaluation.md` — worked example evaluating Morgan Housel's
-      "The Psychology of Money"
+1. **The card-field skeleton** (so you know the shape every source card must take):
+   Full citation · URL · Date accessed · Evidence level · Research topic area ·
+   the 10-dimension Credibility Scores table · Score band (`keep`/`borderline`/`reject`) ·
+   Bias Guard Check · Key Findings · `## Verified Quote(s)` + Location reference ·
+   `Access status:` (`live`/`cached/partial`/`inaccessible`) · Inclusion Decision ·
+   `Perspective category:` (one of the five enum values). The full template with anchors is
+   `references/source-card-template.md` — load it at Phase 3, when you actually fill a card.
+2. **The §1–§7 deliverable outline** (so you know the shape the final document must take):
+   §1 Recommendations · §2 Summary · §3 Framework (if one emerged) · §4 Analysis ·
+   §5 Research · §6 Methodology · §7 Bibliography, in that order. The full template is
+   `references/research-document-template.md` — load it at Phase 6, when you write the doc.
 
-Do not start Phase 1 until every box above is checked. SKILL.md is the overview; the
-references are the manual.
+**Load each reference at the phase that consumes it** (the Quick Reference table at the end
+of this file is the lazy-load map):
+
+- Phase 1 (Research Design) → `references/example-evaluation.md` is optional context; nothing
+  is required to start. Run the novelty probe (below) first.
+- Phase 2 (Discovery) → `references/evidence-hierarchy.md` when you start classifying.
+- Phase 3 (Evaluation) → `references/source-evaluation-rubric.md`, `source-card-template.md`,
+  and `evidence-hierarchy.md` — loaded at the triage screen and the scoring step.
+- Phase 4 (Inclusion) → `references/inclusion-decision-matrix.md`.
+- Phase 6 (Documentation) → `references/research-document-template.md` and
+  `methodology-section-template.md`.
+
+The references are still the operational contract; you just pay for each one when you reach
+the step that uses it, not all at once at the moment of least commitment. SKILL.md is the
+overview; the references are the manual.
 
 ---
 
@@ -47,7 +60,51 @@ references are the manual.
 
 ### Phase 1: Research Design
 
-Before searching for anything, define:
+#### Phase 1.0: Novelty probe — "is this worth a full run?" gate (Directive 04)
+
+**Run this FIRST, before designing anything.** Promoted here from brainstorm, where it lived
+in the wrong skill — a direct `/deep-research` previously always ran the full heavy pipeline
+with no "should I even run this?" gate (`audit.md:191-199,444-447`). The probe is a universal
+pre-flight: 2–3 targeted searches to decide whether a full pipeline is warranted at all.
+
+1. `"[topic]" after:[date-of-any-existing-research]` — if prior research on disk exists.
+2. `"[topic]" 2025 OR 2026 new research OR update`.
+3. One domain-specific probe (a framework changelog for tech topics; a new-study framing for
+   behavioral/clinical/domain topics).
+
+**Early termination.** If the probe surfaces nothing materially new — same sources recurring,
+no new studies/frameworks, no contradicting findings — and prior research or reliable model
+knowledge already answers the question, STOP. Do NOT run the full pipeline. Note the kill
+explicitly to the user:
+
+> "Novelty probe: no significant new developments found since [date]. Full deep-research not
+> warranted. Answering from [existing doc / model knowledge]; run the full pipeline only if you
+> need a fresh defensible evidence base."
+
+**Proceed** to the tier choice (below) only if the probe finds new, updated, or conflicting
+information, or no prior research exists and the question genuinely needs an evidence base.
+
+#### Phase 1.1: Stakes / tier selection (Directive 04)
+
+Choose the tier BEFORE designing, and tie document size to the size of the decision it informs
+(`audit.md:261-268`). Confirm the tier with the user at the Phase 1 checkpoint.
+
+- **rapid tier** — when the decision is low-stakes, has ≤~4 candidate sources, is
+  internal/reversible, or you are under a tight time budget. Deliverable: **§1 + §2 + §5 + a
+  short methodology note ONLY**. Verification: self-check only, stamped `UNVERIFIED —
+  self-check only`.
+- **full tier** — when the decision is high-stakes, externally published, costly/irreversible,
+  or the evidence base is contested. Deliverable: **the complete §1–§7 manifest**. Verification:
+  an independent Phase 3.5 verification subagent.
+
+The **rapid tier is HONEST about its reduced guarantees** — see "Rapid Tier" below. It is the
+documented escape valve so that under time pressure the pipeline produces a smaller *compliant*
+artifact, not a quietly non-compliant full one (troth: 65 cards, no verification —
+`audit.md:183-189`). The **full manifest fires only for high-stakes / external-publication runs.**
+
+#### Phase 1.2: Design
+
+Once the tier is chosen, define:
 
 1. **Research questions** — What specifically are you trying to answer? Write 1-3 explicit
    questions. Vague questions produce vague research.
@@ -72,6 +129,46 @@ Before searching for anything, define:
 
 **Checkpoint:** Present the research design to the user for validation before proceeding to
 Phase 2. Do not search until the design is confirmed.
+
+---
+
+### Rapid Tier — HONEST reduced guarantees (Directive 04)
+
+The rapid tier exists so that under time pressure (or for a genuinely low-stakes decision) the
+pipeline produces a smaller **compliant** artifact rather than a quietly non-compliant full one
+or a non-start (`audit.md:183-189`). It is NOT "the full pipeline with steps skipped silently" —
+it wears its rigor level on its face.
+
+**What rapid keeps:**
+
+- Phase 1.0 novelty probe and Phase 1.2 design (always).
+- Phase 2 discovery and the Phase 3 **triage screen** (the fast keep/cut — see Phase 3).
+- Full 10-dimension source cards ONLY for the handful of sources that survive triage.
+- A deliverable capped at **§1 Recommendations + §2 Summary + §5 Research + a short
+  methodology note** (search-log + which sources were triaged in/out + the honest stamp).
+  §3, §4, §6 (full), and §7 are NOT produced in rapid — the full manifest fires only for the
+  full tier.
+
+**What rapid honestly gives up:** independent Phase 3.5 verification. A rapid run does NOT spawn
+a fresh, independent verifier subagent. Therefore:
+
+- **Stamp the artifact `UNVERIFIED — self-check only`** — the SAME honest-fallback vocabulary
+  Directive 01 defined for the Task-tool-unavailable case. Put the stamp in BOTH the §2 Summary
+  AND the short methodology note (the rapid analogue of the §6 Source Evaluation subsection and
+  the manifest's verification-report item). Also stamp the artifact `NOT INDEPENDENTLY VERIFIED`
+  in §2 so a reader sees it at a glance.
+- **Never fabricate a verifier ID.** Record in any report header that no distinct verifier agent
+  ran; never copy the synthesis ID into the verifier field to satisfy a check.
+- Because a rapid run carries no distinct verifier ID, the executable ground gate
+  (`hooks/deep-research-verify.sh`, Assertion 4) **correctly FAILS it** and the `Stop` hook
+  surfaces it as `NOT fact-checked` — by design. **The verifier never prints `Gate result: PASS`
+  on a rapid run, and that is the honest, intended outcome.** A rapid artifact is a smaller
+  compliant deliverable for its tier; it is explicitly NOT a fact-checked one, and it does not
+  pretend to be.
+
+If a rapid run's decision turns out to be higher-stakes than first judged, **upgrade to the full
+tier**: produce the missing sections (§3/§4/§6/§7) and run the Phase 3.5 verification subagent so
+the deliverable can earn a real `PASS`.
 
 ---
 
@@ -100,6 +197,61 @@ say it, look for data. This is non-negotiable.
 
 **When to stop searching:** When new searches are returning sources you've already seen, and
 all 5 source categories have at least some representation for each major topic area.
+
+**Backend routing (Directive 06 — optional scholarly adapter).** deep-research has no
+web-scale corpus of its own: discovery rides the host's general WebSearch/WebFetch
+(`audit.md:201-206`). For academic and clinical questions that is a real gap, so an OPTIONAL
+first-party adapter (`hooks/scholarly-adapter.sh`) can pull peer-reviewed abstracts + DOIs +
+open-access PDF links from a keyless scholarly API into the SAME source-card pipeline. Route
+each Phase 2 query by topic:
+
+- **academic / clinical → OpenAlex** (the adapter default; 250M+ works, CC0, keyless, not
+  throttled). Run `hooks/scholarly-adapter.sh search "<query>" --topic <area>` — it writes one
+  standard source card per result to `docs/research/sources/` and one fetch-time abstract
+  SNAPSHOT to `docs/research/snapshots/`.
+- **AI / ML / CS → Semantic Scholar** (the documented FALLBACK; 200M+ papers, keyless but
+  GLOBALLY THROTTLED, which is exactly why it is NOT the default). Add `--backend
+  semanticscholar`; expect rate-limited/empty responses and fall back to OpenAlex or WebSearch.
+- **general web → WebSearch / WebFetch** (the existing default path; everything above is
+  additive).
+
+The adapter is OPTIONAL and adds NO hard dependency: with no scholarly backend invoked, the
+pipeline runs exactly as before, and neither backend needs a secret (both are keyless).
+Adapter-pulled cards use the STANDARD template with NO backend-specific fields — a reader
+cannot tell OpenAlex from Semantic Scholar from a card, so the corpus stays swappable and the
+open-corpus advantage never becomes new lock-in. Each card's `## Verified Quote(s)` blockquote
+is a verbatim span of the snapshotted abstract, so the Phase 3.5 verifier (and the executable
+ground gate) check the card against the fetch-time snapshot exactly as they check a web card
+against its live page — consistent with the Directive 01 ground-ledger contract. We are NOT
+Elicit-scale; this adds a free academic backend, not a 138M-paper index (`audit.md:204-206`).
+
+**Evidence-floor classifier (Directive 03 — advisory now, blocking later).** Before you
+finish Phase 2, classify EACH research question on one axis: *is it cheaply testable
+in-environment?* A question is cheaply testable when you could answer it by directly
+observing a UX flow, a prompt's behavior, an API's output, or the household's own data —
+rather than only by reading what others have written. The reveal portrait research is the
+worked example: instead of defaulting to the published-consensus answer, it ran a single
+n=1 in-environment probe (21 live calls, MAE 3.32/255) and that one measurement reframed
+the entire recommendation.
+
+- **When a question IS cheaply testable**, the pipeline PREFERS at least one
+  direct-observation artifact over more source-scoring: a small probe PLUS the committed
+  harness that produced its numbers (a script, a notebook, a logged transcript). Absence of
+  such an artifact does NOT block in this directive — it surfaces in §2 so the reader knows
+  the testable question was answered from literature rather than measurement.
+- **When you declare a question UNTESTABLE** (to skip the direct-observation preference),
+  that declaration REQUIRES a one-line justification in §2 — e.g. "Q3 is not cheaply
+  testable in-environment: it depends on multi-week household behavior we cannot observe in
+  this session." This anti-gaming note exists because the classifier is otherwise an
+  honor-system escape hatch: a tired agent can declare everything untestable to dodge the
+  preference. The one-line justification leaves a paper trail; it does not have to be long,
+  it has to exist.
+- **Falsification query (confirmation-skew remediation).** If the run's Bias-Guard Summary
+  ends up skewed `>3:1` agree:disagree (see Phase 6), the Phase 2 search plan MUST include
+  at least one deliberate FALSIFICATION query — a search framed to find evidence the thesis
+  is WRONG ("counterexamples to X," "evidence X fails," "when X backfires"), not merely a
+  contrarian-flavored rephrase of the thesis. Log it in the search-log table like any other
+  query. The executable gate footnotes its absence (warning W2); it does not yet block.
 
 **Paywall surfacing.** If during source discovery you encounter sources behind paywalls
 (academic journals, paid industry reports, gated analyst notes, subscription-only trade
@@ -133,7 +285,33 @@ scan was actually performed.
 
 ### Phase 3: Source Evaluation
 
-For every source pulled from discovery, complete a source evaluation card (see
+#### Phase 3.0: Triage screen — fast keep/cut BEFORE expensive scoring (Directive 04)
+
+**Apply a fast keep/cut screen to ALL discovered sources first; write full 10-dimension cards
+only for the sources that pass.** This moves the inclusion cut BEFORE the expensive scoring
+(`audit.md:434-438`) — previously every discovered source paid the full 10-dimension card cost
+even when it was obviously off-topic or strictly dominated by a stronger source.
+
+For each discovered source, spend ~15 seconds on three keep/cut questions:
+
+1. **On-topic?** Does it actually address a research question or topic-map subtopic? Off-topic →
+   **cut** (note it in the search log so the cut is visible; do not card it).
+2. **Minimally credible?** Is the author/outlet plausibly authoritative, or is this content-farm
+   / SEO-spam / undated rehash? Obvious junk → **cut**.
+3. **Non-redundant?** Does it add something a source you have already kept does not? If a stronger
+   already-kept source strictly dominates it → **cut** (record the superseding source).
+
+A source that clears all three is **kept for full evaluation** (gets a 10-dimension card below).
+A source that fails any one is **triaged out** — log it as a cut in the §6 search-log /
+methodology note with a one-line reason; it does NOT get a card. The triage screen is the cheap
+front gate; the 10-dimension rubric is the expensive back gate only the survivors reach.
+
+(In the **rapid tier** the triage screen is the primary instrument: card only the few survivors
+and write the short methodology note from the triage log.)
+
+#### Phase 3.1: Full source evaluation
+
+For every source that PASSED triage, complete a source evaluation card (see
 `references/source-card-template.md`) and write it to disk at
 `[project]/docs/research/sources/<topic>-<slug>.md`.
 
@@ -169,7 +347,10 @@ not satisfied this gate; go back and pull the quote before proceeding.
    - If you disagree → score those three dimensions MORE GENEROUSLY (you're primed to punish)
    - Check the appropriate box on the source card
 
-4. **Calculate the composite score** using the weighted formula in the rubric
+4. **Assign the score band** (`keep` / `borderline` / `reject`) using the weighted
+   average in the rubric. Report the band word on the card, not a 2-decimal composite —
+   the band is the disposition (see `references/source-evaluation-rubric.md`). Every run
+   must cut ≥1 source or name the lowest source that cleared the bar.
 
 5. **Extract key findings** — 3-5 bullet points of discrete, citable claims or insights
 
@@ -204,7 +385,9 @@ by what the larger document needs the source to say.
 minimum of 3**. If there are fewer than 10 cards total, verify ALL of them. Sample
 selection is random across the full set — not weighted toward "important" sources
 (important sources are exactly the ones most worth fabricating, so weighting defeats
-the purpose).
+the purpose). The executable gate (Assertion 7) reads the reported sample size against
+the card count on disk and hard-fails any run below the 30% floor — an under-sampled
+"verification" of a handful of hand-picked cards does not satisfy this phase.
 
 **Per-card verification protocol.** For each sampled card, the verifier:
 
@@ -217,7 +400,12 @@ the purpose).
    normalized whitespace). A "close paraphrase" is a failure.
 3. **Confirms attribution.** The author/speaker named on the card must be the one to
    whom the quote is attributed in the source. A quote correctly reproduced but
-   misattributed is a failure.
+   misattributed is a failure. **Domain rule (machine-checked):** if the quote's
+   attribution credits a domain OTHER than the card's own `URL:` host, the card is an
+   automatic `failed` regardless of access status — the quote did not come from the
+   source the card claims (this is the reveal s11 defect: a quote credited to
+   `Lavivienpost.net` on a card whose URL is `stable-diffusion-art.com`). The gate
+   enforces this as Assertion 9.
 4. **Confirms location reference.** The page/section/timestamp/paragraph offset on
    the card must point to the actual location of the quote. Off-by-one paragraph is
    acceptable; "wrong section entirely" is a failure.
@@ -255,11 +443,26 @@ failed), DO NOT proceed to Phase 4.** Three remediation paths, in preference ord
 2. **Re-source the claims the failed cards supported.** If a card's quote turns out to
    not exist, the claim that quote supported in the analysis is now unsourced. Find a
    real source for the claim or remove the claim.
-3. **Document as access-limited.** If the failure is genuinely an access problem (the
-   source changed, the URL now redirects, the paywall hardened), reclassify the card's
-   `Access` field to `cached/partial` with a note explaining what changed. Then re-run
-   verification — the reclassified card now counts as `inaccessible` rather than
-   `failed`, and may bring the rate under 5%.
+3. **Document as access-limited — but NOT to game the rate.** A `cached/partial` flag is
+   honored ONLY if it documents a genuine access problem that existed at synthesis time
+   (the source was already paywalled/dead/geo-blocked when the card was written).
+   Retroactively flipping a `failed` card to `cached/partial` AFTER verification, solely
+   to move it out of the failure denominator and bring the rate under 5%, is forbidden
+   rate-gaming — it converts the honest "this attempt failed" into a laundered
+   "unverifiable, not our fault." The executable gate (Assertion 8) enforces this two
+   ways, with NO git/mtime provenance check (that is out of scope):
+   - A card scored `inaccessible` in the report whose card file lacks the canonical
+     `Access status:` enum is treated as `failed`, not excluded. (A missing enum is
+     exactly what let the reveal s11 card be scored `inaccessible` on a `cached/partial`
+     flag it never carried — see `references/source-card-template.md`.)
+   - A retroactive-reclassification note in the report (e.g. "reclassified to
+     cached/partial after synthesis," "now counts as inaccessible") hard-fails the gate.
+   If a source genuinely became inaccessible between synthesis and verification, the
+   honest path is to re-source the claim (path #2) or stamp the deliverable
+   `low-confidence` — never to relabel a real failure as an honest gap. And the
+   inaccessible exclusions themselves are capped: if more than ~30% of the sample lands
+   in `inaccessible`, the deliverable is stamped `low-confidence`, not `passed`
+   (Assertion 10).
 
 After any remediation path, **re-run Phase 3.5 from scratch** on a freshly-drawn sample
 before proceeding to Phase 4. A subagent that "patched the failed ones and moved on"
@@ -276,10 +479,27 @@ verification report file exists.
 
 **Executable gate (not honor-system).** Phase 3.5 is now enforced by a no-model script,
 `hooks/deep-research-verify.sh`, run by the plugin's `Stop` hook. The script is
-context-blind, deterministic, and makes zero model calls; it asserts the six on-disk
-integrity facts (report exists; §6 has the three numbers; the band is canonical; a
-distinct verifier ID is recorded; every card has the `Access status:` enum line and a
-`## Verified Quote(s)` heading; no corrected-then-recounted card is scored `verified`).
+context-blind, deterministic, and makes zero model calls. Directive 01 shipped the first
+six integrity facts (A1–A6): report exists; §6 has the three numbers; the band is
+canonical; a distinct verifier ID is recorded; every card has the `Access status:` enum
+line and a `## Verified Quote(s)` heading; no corrected-then-recounted card is scored
+`verified`. Directive 02 adds six more (A7–A12):
+
+- **A7** — the verification sample is ≥30% of total cards (rounded up, min 3; all cards
+  if fewer than 10). Fails an under-sampled run (e.g. 5/53 ≈ 9%).
+- **A8** — a card scored `inaccessible` whose file lacks the canonical `Access status:`
+  enum is treated as `failed`; and any retroactive cached/partial reclassification note
+  hard-fails (no rate-gaming). No git/mtime provenance is read.
+- **A9** — a quote attributed to a domain other than the card's own URL host is an
+  automatic `failed`, regardless of access status.
+- **A10** — inaccessible exclusions are capped at ~30% of the sample; above the cap the
+  deliverable must be stamped `low-confidence`, not `passed`.
+- **A11** — every present `Perspective category:` value is exactly one of the five enum
+  values (Academic / Institutional / Practitioner / Boots-on-the-ground / Contrarian); a
+  bespoke or hybrid value fails.
+- **A12** — every run must exclude ≥1 source OR explicitly name the lowest-scoring source
+  that cleared the bar.
+
 On any failure it exits non-zero and the `Stop` hook injects a blocking
 `NOT fact-checked — verification gate failed: <reason>` message and refuses to let the
 deliverable be presented as PASS. The honest badge it prints on a pass is
@@ -287,6 +507,25 @@ deliverable be presented as PASS. The honest badge it prints on a pass is
 "cannot lie": the script proves a distinct verifier ID was recorded and a quote exists
 on the page, but it cannot prove the verifier's mind was uninfluenced. The box is now
 checked by the script, not the agent.
+
+Directive 03 adds two NON-BLOCKING advisory warnings on the same no-model script — they
+emit `WARN:` lines and a `Warnings:` tally but NEVER change the exit code, so a clean
+deliverable with warnings still passes the hard gate:
+
+- **W1 — NO-PRIMARY-EVIDENCE banner.** When the §6 evidence-level distribution shows
+  Level 1 and Level 2 both at 0, the verifier asserts the verbatim banner
+  `NO PRIMARY EVIDENCE — all findings are literature-derived predictions` as a warning; if
+  §2 already carries that exact string, the warning is satisfied.
+- **W2 — confirmation skew.** A `>3:1` agree:disagree ratio in the Bias-Guard Summary
+  raises a warning and footnotes whether the Phase 2 falsification query and the Phase 4
+  steel-man subsection are present.
+
+**Promotion path (documented, not done here).** W1 and W2 stay ADVISORY until two
+conditions are met: (a) the Directive 01 hard gate has fired in production, AND (b) the
+banner/skew warnings have run clean on `>=2` real deliverables. Only then may they graduate
+to blocking. Because each warning is written to the same ground-ledger-shaped record the A*
+assertions read, promotion is a one-line change (move the warning's verdict into the
+failure accumulator) with no rewrite of the detection logic.
 
 **Honest fallback (Task-tool unavailable).** If you cannot spawn a fresh, independent
 Task-tool verification subagent in this environment, do NOT silently downgrade to
@@ -319,6 +558,15 @@ matches.
 2. Why you're overriding
 3. What role this source plays in the final document
 
+**Steel-man the contrarian (confirmation-skew remediation).** If the run's Bias-Guard
+Summary is skewed `>3:1` agree:disagree (see Phase 6), Phase 4 MUST include a
+`### Steel-man the contrarian` subsection. State the STRONGEST version of the position that
+contradicts the thesis — on its own terms, charitably, before weighing it — not a strawman
+set up to be knocked down. The point is to counterbalance the documented agreement skew: a
+corpus selected to confirm a thesis needs the dissenting case argued at full strength, not
+just noted in passing. The executable gate footnotes the subsection's absence (warning W2);
+it does not yet block.
+
 ---
 
 ### Phase 5: Synthesis
@@ -326,8 +574,8 @@ matches.
 With included sources identified and scored, synthesize findings.
 
 **Weighting:** When multiple sources address the same question, weight their contributions
-by composite credibility score. A source scoring 8.5 carries more weight than one scoring 5.2,
-but both contribute.
+by credibility band. A `keep` source carries more weight than a `borderline` one, but both
+contribute; a `reject` source was already cut and does not appear here.
 
 **Handling contradictions:** When credible sources disagree:
 1. State both positions clearly and fairly
@@ -350,6 +598,14 @@ specific source citations.
 
 ### Phase 6: Documentation
 
+**Tier check first (Directive 04).** If this is a **rapid** run, the deliverable is capped at
+**§1 Recommendations + §2 Summary + §5 Research + a short methodology note** (search-log + the
+triage in/out log + the `UNVERIFIED — self-check only` and `NOT INDEPENDENTLY VERIFIED` stamps).
+Skip §3, §4, the full §6, and §7 — and skip the full Deliverable Manifest below (it governs the
+full tier). A rapid deliverable does not run the Phase 3.5 verification subagent, so the ground
+gate correctly fails it as `NOT fact-checked` — that is the honest outcome for the tier, not a
+defect. The rest of this section governs the **full** tier.
+
 Produce the final deliverable at `[project]/docs/research/analysis.md` (or a named
 equivalent under `[project]/docs/research/`) using
 `references/research-document-template.md`.
@@ -360,6 +616,15 @@ not invent new top-level sections that displace these seven, and do not reorder 
 1. `## 1. Recommendations` — actionable bullets, each starting with a verb, each
    referencing the analysis section that backs it. See template L17-30.
 2. `## 2. Summary` — the "tired dad at 4am" version (2-3 pages max). See template L34-44.
+   **NO-PRIMARY-EVIDENCE banner (Directive 03):** if no primary experimental evidence was
+   collected — i.e. the §6 evidence-level distribution table reports Level 1 (systematic
+   review / meta-analysis) AND Level 2 (RCT) both at 0 — §2 MUST carry this exact string,
+   verbatim, on its own line: `NO PRIMARY EVIDENCE — all findings are literature-derived
+   predictions`. The executable gate asserts this string as a non-blocking warning (W1); it
+   surfaces the floor without failing the deliverable. Also state in §2 the testability
+   classification from Phase 2 — for each cheaply-testable question with no
+   direct-observation artifact, say so; for each question declared untestable, carry its
+   one-line justification.
 3. `## 3. [Domain-Specific Framework]` — include ONLY if a framework, typology, or model
    emerged from the research. If no framework emerged, omit this section entirely (do not
    ship an empty heading). See template L48-61.
@@ -367,13 +632,13 @@ not invent new top-level sections that displace these seven, and do not reorder 
    consensus / contested / gaps / institutional-vs-ground-truth structure. See
    template L65-92.
 5. `## 5. Research` — full findings by topic area, with per-source citations including
-   composite score and evidence level in brackets. See template L96-106.
+   score band and evidence level in brackets. See template L96-106.
 6. `## 6. Methodology` — see `references/methodology-section-template.md`. MUST include
    all required subsections: research design, search-log table, source-evaluation
    framework, inclusion/exclusion summary + all four distribution tables (evidence level,
    source category, credibility score), perspective-balance matrix, bias-guard summary,
    limitations.
-7. `## 7. Bibliography` — every included source with full citation, composite score,
+7. `## 7. Bibliography` — every included source with full citation, score band,
    evidence level, inclusion decision, and one-line contribution summary. See template
    L119-134.
 
@@ -402,6 +667,17 @@ bias-guard discipline up from per-source bookkeeping to deliverable-level accoun
 if the agree-with count dwarfs the disagree-with count, the reader can see the asymmetry
 and weight conclusions accordingly.
 
+**Confirmation-skew gate (Directive 03 — advisory now, blocking later).** When the
+Bias-Guard Summary's agree:disagree ratio exceeds `3:1` (e.g. eating-out's 27:3,
+agent-teams' 10:2), the run carries a confirmation-skew risk the methodology cannot
+self-correct — the same agent scored the source AND decided whether it "agreed," so the
+guard is self-graded confirmation bias with a paper trail. A `>3:1` skew REQUIRES two
+remediations: (a) a deliberate FALSIFICATION query in the Phase 2 search plan, and (b) a
+`### Steel-man the contrarian` subsection in Phase 4. The executable gate reads the two
+Bias-Guard counts and, on a `>3:1` skew, raises warning W2: it footnotes whichever
+remediation is missing, and even when both are present it flags the skew as a research-
+design risk the reader should weight. W2 is a footnote/warning first — it does NOT block.
+
 **Required-artifacts verification (Deliverable Manifest).** Before declaring the research
 complete, verify each item below exists on disk. Do not present the deliverable to the user
 until every box is checked:
@@ -422,7 +698,7 @@ until every box is checked:
       is non-compliant.
 - [ ] §6 Methodology includes a Bias-Guard Summary (counts of sources that fired the
       agree-with check, the disagree-with check, and the neutral box).
-- [ ] §7 Bibliography lists every included source with composite score, evidence level,
+- [ ] §7 Bibliography lists every included source with score band, evidence level,
       inclusion decision, and a one-line contribution summary.
 - [ ] Source counts reconcile: source-card files on disk == sources reported in the
       methodology counts == sources cited in §5 Research. If the three counts disagree,
@@ -460,14 +736,18 @@ For large research projects spanning multiple sessions:
 
 ---
 
-## Quick Reference: When to Use Each Reference Document
+## Quick Reference: Lazy-Load Map (Directive 04)
 
-| I need to... | Read... |
-|--------------|---------|
-| Score a source | `source-evaluation-rubric.md` |
-| Classify evidence type | `evidence-hierarchy.md` |
-| Fill out a source evaluation | `source-card-template.md` |
-| Decide keep/throw | `inclusion-decision-matrix.md` |
-| Structure the final document | `research-document-template.md` |
-| Write the methodology section | `methodology-section-template.md` |
-| See a worked example | `example-evaluation.md` |
+This table is the lazy-load contract: load each reference at the phase that consumes it, NOT all
+up front. Only the card-field skeleton and the §1–§7 outline carry inline (see "Before You
+Begin"). The 14k-token up-front pre-load wall is removed.
+
+| I need to... | Load... | At phase |
+|--------------|---------|----------|
+| See a worked example (optional) | `example-evaluation.md` | Phase 1 (optional) |
+| Classify evidence type | `evidence-hierarchy.md` | Phase 2 / Phase 3 |
+| Triage keep/cut, then score a source | `source-evaluation-rubric.md` | Phase 3 |
+| Fill out a source evaluation card | `source-card-template.md` | Phase 3 |
+| Decide keep/throw (final inclusion) | `inclusion-decision-matrix.md` | Phase 4 |
+| Structure the final document | `research-document-template.md` | Phase 6 |
+| Write the methodology section | `methodology-section-template.md` | Phase 6 |
