@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Built by scripts/build-plugin.sh — self-contained, no external source deps.
+command -v borg >/dev/null 2>&1 || exit 0
+
 # tool-count-nudge.sh — PostToolUse hook: remind to check progress after sustained work.
 # Counts tool calls per session. After 75 calls, injects a review reminder.
 # Always exits 0 — reminder only, never blocks.
