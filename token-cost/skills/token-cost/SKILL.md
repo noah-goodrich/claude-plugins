@@ -5,37 +5,33 @@ description: "Token cost estimation appended to every response. UNIVERSAL skill 
 
 # Token Cost Estimation
 
-Append an estimated token count and cost to every response. Lightweight awareness, not a precise
-calculator — but it MUST account for delegated work (subagents / workflows), which is usually the
-dominant cost and is invisible to a naive main-loop estimate.
+Append a rough token/cost line to every response for awareness. IMPORTANT: the inline estimate is a
+LOWER BOUND, not an invoice — from inside a turn you cannot see two of the biggest cost drivers:
+extended-thinking tokens (billed as output) and cache reads of the growing context (which usually
+dominate a long session). For accurate spend, a SessionEnd hook writes per-session, per-model data to
+`~/.claude/token-spend.jsonl` — see "Accurate spend" below.
 
 ## What to Do
 
-At the end of every response, add this line. On turns where a subagent/workflow ran, include the
-delegated clause:
+At the end of every response add this line (drop the delegated clause when no subagent/workflow ran):
 
 ```
-Tokens — main ~Xk in / ~Y out; delegated ~D subagent-tok ≈ $S. Turn ≈ $T.
+Tokens — main ~Xk in / ~Y out; delegated ~$S (subagents). Turn ≈ $T (rough lower bound).
+```
+```
+Tokens — main ~Xk in / ~Y out ≈ $T (rough lower bound).
 ```
 
-On the common case (no delegation this turn), drop the delegated clause:
+## Main-loop estimate (rough, runs LOW)
 
-```
-Tokens — main ~Xk in / ~Y out ≈ $T.
-```
-
-## Main-loop estimate
-
-You don't see exact counts, so approximate:
-- **Input:** the context visible to you. A user message is 50-200 tokens; a loaded skill 1-3k;
-  prior turns accumulate. Round to the nearest thousand.
-- **Output:** your response length. ~0.75 tokens/word (~1 token per 4 chars). Short reply 100-300,
-  medium 500-1500, long 2000-5000+.
+- **Input:** visible context. A user message is 50-200 tokens; a loaded skill 1-3k; prior turns
+  accumulate.
+- **Output:** your visible reply (~0.75 tok/word) PLUS extended thinking, which you cannot see and which
+  can be several times the visible text. Assume real output is well above what you can count.
+- **Cache reads** of the accumulated context are billed every turn and usually DOMINATE — invisible to
+  you mid-turn. This is the main reason the inline line is only a lower bound.
 
 ## Pricing (USD per million tokens)
-
-Cache reads/writes matter. Long-context and subagent work is dominated by **cache reads**, which are
-~10x cheaper than fresh input — do not price cached context as fresh input.
 
 | Model  | input | output | cache write (5m) | cache read |
 |--------|-------|--------|------------------|------------|
@@ -43,46 +39,47 @@ Cache reads/writes matter. Long-context and subagent work is dominated by **cach
 | Sonnet | $3    | $15    | $3.75            | $0.30      |
 | Haiku  | $0.25 | $1.25  | $0.31            | $0.025     |
 
-Default to the model you are actually running as (check the environment); fall back to Sonnet if
-unknown.
+Price each side by the model actually running it — the main loop and subagents usually differ (main on
+Opus; subagents on Sonnet/Haiku). Cache reads are ~10x cheaper than fresh input; never price cached
+context as fresh input.
 
-## Delegated work (subagents & workflows) — the part that used to be missing
+## Where the cost actually is (measured)
 
-Subagents / nanoprobes / workflow agents run in SEPARATE contexts; their tokens never pass through
-the main loop, so they are invisible to the main-loop estimate above. They are usually the bulk of
-the spend — count them explicitly.
+A real heavy multi-agent session measured **~96% main loop** (Opus: thinking-as-output + tens of
+millions of cache reads) and only **~4% subagents** (Sonnet/Haiku). Takeaways:
+- The orchestrator / main loop is usually the dominant cost, NOT delegation. The harness already routes
+  subagents to cheaper tiers, so delegated spend is typically small.
+- Biggest main-loop levers: keep the context lean (don't pull large tool outputs into the main context —
+  they get cached and re-read every turn), fewer/shorter turns, less unnecessary thinking.
 
-When a workflow or background Task completes you receive a `<usage>` block, e.g.
-`<usage><agent_count>7</agent_count><subagent_tokens>382603</subagent_tokens>...</usage>`.
+## Delegated work (subagents & workflows)
 
-**What `subagent_tokens` is (measured against transcripts, not assumed):** the sum over agents of
-each agent's *final-message context size* (`input_tokens + cache_read_input_tokens +
-cache_creation_input_tokens` at its last turn). It is a peak-context-footprint proxy — NOT output,
-and NOT total throughput. It undercounts real token throughput by ~50-60x (one heavy wave reported
-382k while ~24.5M tokens were actually processed) because you pay cache-read on every turn but this
-counts each agent's context only once.
+Subagents run in SEPARATE contexts; their tokens never pass through the main loop, so the main-loop
+estimate misses them — count them when present (usually a small addition).
 
-**Quick proxy (use for the inline line):** delegated cost ≈ `subagent_tokens × $0.16 / 1k` for Opus
-workflows (observed $0.147-0.177 per 1k across runs on 2026-06-10; lands within ~10%). Scale by
-model — Sonnet ≈ 1/5 of Opus. Good enough for the awareness line.
+The workflow `<usage>` block reports `subagent_tokens` = the sum over agents of each agent's
+FINAL-message context footprint (input + cache_read + cache_creation). It is a context-footprint signal
+— NOT output, NOT throughput, and NOT a reliable cost figure (it ignores per-turn cache reads, output,
+and the agents' models). Use it only as a rough size signal; for cost, use the accurate source below.
 
-**Accurate (use for a cost post-mortem or when the number matters):** sum the real usage from the
-subagent transcripts and apply cache-aware pricing. The workflow result names a transcript dir
-containing `agent-*.jsonl`:
+## Accurate spend (source of truth)
+
+The token-cost SessionEnd hook appends one per-session record to `~/.claude/token-spend.jsonl` with
+per-model raw counts (main + subagents, kept separate) and a cache-aware `est_cost_usd`. Sum or group it
+for real numbers and trends:
 
 ```
-jq -s '[.[]|.message.usage?|select(.!=null)]
-  | {inp:(map(.input_tokens//0)|add), out:(map(.output_tokens//0)|add),
-     cc:(map(.cache_creation_input_tokens//0)|add), cr:(map(.cache_read_input_tokens//0)|add)}
-  | .cost=((.inp*15)+(.cc*18.75)+(.cr*1.5)+(.out*75))/1e6' <transcript-dir>/agent-*.jsonl
+jq -s 'map(.est_cost_usd) | add' ~/.claude/token-spend.jsonl                       # all-time total
+jq -s 'group_by(.project) | map({project:.[0].project,
+        cost:(map(.est_cost_usd)|add)})' ~/.claude/token-spend.jsonl               # by project
 ```
 
-(swap the four rates for the model used). Two real Opus waves cost $56.14 and $43.08 by this method;
-the `× $0.16/1k` proxy estimated $61 and $39 — within ~10%.
+To recompute a session's cost from transcripts directly, the hook is the reference: sum
+input/output/cache_creation/cache_read from the assistant `.message.usage` blocks and apply the
+per-model rates above. `est_cost_usd` is API-pay-as-you-go-equivalent — useful for relative trends, not
+your actual subscription billing.
 
 ## Notes
 
-- Within 2x is fine for the inline line; the point is intuition, not an invoice.
-- The proxy rate is model- and workload-dependent (cache-hit ratio, turns per agent). Re-derive it
-  if Opus pricing or the harness's `subagent_tokens` definition changes.
-- Keep the line brief. Don't show the math inline.
+- The inline line is a rough lower bound for awareness; `~/.claude/token-spend.jsonl` is the truth.
+- Keep the inline line brief. Don't show the math inline.
