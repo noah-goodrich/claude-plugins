@@ -1,0 +1,17 @@
+{
+  "description": "Per-session token-spend logging (SessionEnd → append to ~/.claude/token-spend.jsonl)",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/token-spend-log.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
