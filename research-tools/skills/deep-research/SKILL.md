@@ -229,6 +229,15 @@ adversarial check, not a sympathetic reviewer.
 **Verification report.** Write the report to
 `docs/research/[date]/verification-report.md`. Required contents:
 
+- **Report header IDs (machine-checked).** Record two distinct IDs in the report header:
+  a **Synthesis agent ID** (the agent that authored the cards) and a **Verifier agent
+  ID** (the fresh Task-tool subagent spawned above). Use the form
+  `**Synthesis agent ID:** <id>` and `**Verifier agent ID:** <id>` (a session ID is
+  fine). These two IDs MUST differ — that difference is the on-disk proof that the
+  verification was independent rather than self-graded. The executable ground gate
+  (`hooks/deep-research-verify.sh`, Assertion 4) fails the deliverable if the verifier
+  ID is absent or equal to the synthesis ID, so a missing or duplicate ID hard-blocks
+  the run; it is not a stylistic nicety.
 - Sample size, sample-selection method, list of sampled card filenames
 - Per-card outcome table (filename | outcome | notes if failed/inaccessible)
 - Aggregate counts: verified / failed / inaccessible
@@ -264,6 +273,31 @@ without re-sampling has skipped the gate.
 These three numbers appear in the Source Evaluation subsection of the methodology
 template. A methodology that omits them has not satisfied the gate even if the
 verification report file exists.
+
+**Executable gate (not honor-system).** Phase 3.5 is now enforced by a no-model script,
+`hooks/deep-research-verify.sh`, run by the plugin's `Stop` hook. The script is
+context-blind, deterministic, and makes zero model calls; it asserts the six on-disk
+integrity facts (report exists; §6 has the three numbers; the band is canonical; a
+distinct verifier ID is recorded; every card has the `Access status:` enum line and a
+`## Verified Quote(s)` heading; no corrected-then-recounted card is scored `verified`).
+On any failure it exits non-zero and the `Stop` hook injects a blocking
+`NOT fact-checked — verification gate failed: <reason>` message and refuses to let the
+deliverable be presented as PASS. The honest badge it prints on a pass is
+`a distinct verifier agent ran and the files prove it` — NOT "blind," NOT "true," NOT
+"cannot lie": the script proves a distinct verifier ID was recorded and a quote exists
+on the page, but it cannot prove the verifier's mind was uninfluenced. The box is now
+checked by the script, not the agent.
+
+**Honest fallback (Task-tool unavailable).** If you cannot spawn a fresh, independent
+Task-tool verification subagent in this environment, do NOT silently downgrade to
+self-verification and claim a pass. Instead, stamp the deliverable
+`UNVERIFIED — self-check only` in BOTH the §6 Methodology Source Evaluation subsection
+AND the Deliverable Manifest's verification-report item, and record in the report header
+that no distinct verifier agent ran (omit a fabricated verifier ID — never copy the
+synthesis ID into the verifier field to satisfy the check). The ground gate exits
+non-zero on any attempt to print `Gate result: PASS` without a distinct verifier ID, so
+a self-check-only deliverable correctly fails the gate and is surfaced as NOT
+fact-checked rather than laundered into a green stamp.
 
 ---
 
@@ -397,6 +431,12 @@ until every box is checked:
       with documented failure rate ≤5%. The report must include sample size, per-card
       outcomes, and the aggregate verified/failed/inaccessible counts (see Phase 3.5).
       If the rate is >5%, you are not done — return to Phase 3.5 and remediate.
+      **This box is checked by the executable gate, not by you.** The `Stop`-hook
+      verifier (`hooks/deep-research-verify.sh`) asserts this item plus the report's
+      distinct verifier ID, canonical band, and per-card enum/quote-heading facts, and
+      hard-blocks the deliverable on any failure. If Task-tool spawning was unavailable
+      and the deliverable is stamped `UNVERIFIED — self-check only`, the gate fails and
+      the run is presented as NOT fact-checked — that is the correct, honest outcome.
 
 If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
 user presentation with an unchecked box.
