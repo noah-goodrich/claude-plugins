@@ -178,9 +178,13 @@ question, could you do it in one sentence?
 
 ---
 
-## Computing the Composite Score
+## Computing the Score Band
 
-Weighted average using these weights:
+Compute the weighted average using these weights — but report it as a **3-bucket band**,
+not a 2-decimal composite. A score like `7.95` implies a precision a single LLM scoring
+prose cannot deliver, and in practice the 2-decimal composite never rejects anything: it
+gets back-filled to justify an inclusion decision already made on vibes. The band forces an
+honest keep / borderline / reject judgment.
 
 | Dimension | Weight |
 |-----------|--------|
@@ -195,9 +199,30 @@ Weighted average using these weights:
 | Specificity | 5% |
 | Relevance | 5% |
 
-**Formula:** `(Authority × 0.25) + (Evidence × 0.20) + (Intent × 0.10) + (Currency × 0.10)
+**Weighted average (intermediate, NOT reported to 2 decimals):**
+`(Authority × 0.25) + (Evidence × 0.20) + (Intent × 0.10) + (Currency × 0.10)
 + (Bias × 0.10) + (Logic × 0.05) + (Corroboration × 0.05) + (Honesty × 0.05) +
 (Specificity × 0.05) + (Relevance × 0.05)`
 
 The weights reflect a hierarchy: WHO said it and HOW WELL they proved it matter most. WHY they
 said it and WHEN they said it matter next. Everything else is refinement.
+
+**Map the weighted average to ONE of three bands:**
+
+| Band | Weighted average | Disposition |
+|------|------------------|-------------|
+| **keep** | ≥ 7.0 | Strong enough to include without reservation. |
+| **borderline** | 5.0 – 6.9 | Include only with a documented reason (gap-fill / sole source) OR cut. Name the call. |
+| **reject** | < 5.0 | Cut. Do not back-fill a higher score to rescue it. |
+
+Report the band word (`keep` / `borderline` / `reject`) on the source card — not a
+2-decimal number. The intermediate weighted average may be noted in the justification, but
+the disposition is the band.
+
+**The real-cut rule.** Every research run must EITHER exclude at least one source OR
+explicitly name the lowest-scoring source that cleared the bar (the weakest `keep`, or the
+`borderline` source you chose to include and why). A run that includes every source it
+evaluated, with no cut and no named marginal keep, is making the inclusion decision on
+vibes — the executable gate (Assertion 12) hard-fails it. If the corpus genuinely contains
+no source worth cutting, say so by naming the lowest one that survived and defending the
+keep.

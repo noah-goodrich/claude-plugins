@@ -90,6 +90,20 @@ Bash: jq '.projects | to_entries | map({name: .key, path: .value.path,
           summary: .value.summary})' ~/.config/borg/registry.json
 ```
 
+Volatile status lives in each project's `<workspace>/.borg/state.json`, not the registry. Read
+`state.json` for the live `status` / `last_activity` and overlay it on the registry row when both exist.
+
+## Reaper-aware status (match the CLI)
+
+Apply the same staleness rule as `borg next`/`borg ls`: a project whose `state.json` says
+`active`/`waiting` but has no live tmux window AND a `last_activity` older than
+`BORG_REAP_STALE_HOURS` (default 12h) should be reported as **idle (stale)**. The authoritative
+implementation is `lib/reaper.sh:_borg_should_reap` — do not re-specify the predicate here.
+
+Check for a live window: `tmux list-windows -t borg -F '#W' 2>/dev/null | grep -qx <project>`.
+Do not rewrite `state.json` — that is what `borg reap` is for. If you find stale sessions,
+mention the user can run `borg reap` to persist the downgrade.
+
 ## Command Patterns
 
 Use these patterns — they avoid `for` loops and `$()` inside `echo`, which trigger permission

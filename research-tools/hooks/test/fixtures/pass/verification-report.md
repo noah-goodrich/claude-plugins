@@ -32,3 +32,9 @@
 - **Failure-rate band: ≤5%**
 
 Inaccessible cards are excluded from the denominator per the rubric.
+
+## Inclusion Cut
+
+No source was excluded in this run. The lowest-scoring source that cleared the bar is
+`t2-example-beta.md` (borderline band) — named here so the marginal keep is owned rather
+than hidden.

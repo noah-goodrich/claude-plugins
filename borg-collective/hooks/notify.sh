@@ -6,7 +6,17 @@ set -euo pipefail
 # writes status=waiting to the bind-mounted registry and borg-notifyd pops on the host.
 [[ -f /.dockerenv ]] && exit 0
 
-source "$HOME/.claude/lib/borg-hooks.sh"
+# Usage: _borg_osa_notify <title> <subtitle> <message>
+_borg_osa_notify() {
+    local title="$1" subtitle="$2" message="$3"
+    title="${title//\\/\\\\}";       title="${title//\"/\\\"}"
+    subtitle="${subtitle//\\/\\\\}"; subtitle="${subtitle//\"/\\\"}"
+    message="${message//\\/\\\\}";   message="${message//\"/\\\"}"
+    local script="display notification \"$message\" with title \"$title\""
+    [[ -n "$subtitle" ]] && script+=" subtitle \"$subtitle\""
+    script+=" sound name \"Glass\""
+    osascript -e "$script" 2>/dev/null || true
+}
 
 INPUT=$(cat /dev/stdin 2>/dev/null || true)
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)

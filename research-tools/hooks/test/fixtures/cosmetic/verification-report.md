@@ -32,3 +32,9 @@
 
 The band label uses an en-dash and is reported with cosmetic spacing; it is still the
 canonical middle band.
+
+## Inclusion Cut
+
+Excluded | 1
+
+One source was cut this run, so the real-cut assertion is satisfied.
