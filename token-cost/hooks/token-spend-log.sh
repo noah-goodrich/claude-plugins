@@ -75,7 +75,8 @@ SUB_COST=$(_costof "$SUB_BM"); [ -n "$SUB_COST" ] || SUB_COST=0
 COST=$(jq -n --argjson a "$MAIN_COST" --argjson b "$SUB_COST" '(($a + $b) * 100 | round) / 100' 2>/dev/null)
 [ -n "$COST" ] || COST=0
 
-TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Timestamp: live session end time, or TOKEN_SPEND_TS when replaying (backfill).
+TS="${TOKEN_SPEND_TS:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 PROJECT="${CWD##*/}"
 
 mkdir -p "$(dirname "$LOG")"
