@@ -163,7 +163,7 @@ discover_latest_deliverable() {
         [[ "$(basename "$d")" == "sources" ]] && continue
         [[ -d "$d/sources" ]] || ls "$d"/*.md >/dev/null 2>&1 || continue
         local m
-        m=$(stat -f %m "$d" 2>/dev/null || stat -c %Y "$d" 2>/dev/null || echo 0)
+        m=$(stat -c %Y "$d" 2>/dev/null || stat -f %m "$d" 2>/dev/null || echo 0)
         if [[ "$m" -gt "$newest_mtime" ]]; then
             newest_mtime="$m"
             newest="$d"
@@ -209,7 +209,7 @@ _largest=0
 for f in "$RESEARCH_DIR"/*.md; do
     [[ -e "$f" ]] || continue
     [[ "$f" == "$REPORT" ]] && continue
-    sz=$(stat -f %z "$f" 2>/dev/null || stat -c %s "$f" 2>/dev/null || echo 0)
+    sz=$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f" 2>/dev/null || echo 0)
     if [[ "$sz" -gt "$_largest" ]]; then
         _largest="$sz"
         DELIVERABLE_DOC="$f"
@@ -220,7 +220,7 @@ done
 if [[ -z "$DELIVERABLE_DOC" ]]; then
     for f in "$RESEARCH_DIR"/../*.md; do
         [[ -e "$f" ]] || continue
-        sz=$(stat -f %z "$f" 2>/dev/null || stat -c %s "$f" 2>/dev/null || echo 0)
+        sz=$(stat -c %s "$f" 2>/dev/null || stat -f %z "$f" 2>/dev/null || echo 0)
         if [[ "$sz" -gt "$_largest" ]]; then
             _largest="$sz"
             DELIVERABLE_DOC="$f"
@@ -498,9 +498,11 @@ else
     fi
 
     # Band string present at all (canonicality is A3): any of the three legal bands,
-    # tolerant of <= vs ≤ and -/–/— in the middle band.
+    # tolerant of <= vs ≤ and -/–/— in the middle band. The middle-band grep uses sed
+    # to normalise en/em-dashes to ASCII hyphen before grep so it works in POSIX/C
+    # locale (multi-byte chars inside [...] are unreliable without UTF-8 locale).
     if grep -Eq '(≤|<=)[[:space:]]*5[[:space:]]*%' "${SCAN_FILES[@]}" \
-       || grep -Eq '>[[:space:]]*5[[:space:]]*%[[:space:]]*[-–—][[:space:]]*10[[:space:]]*%' "${SCAN_FILES[@]}" \
+       || cat "${SCAN_FILES[@]}" | sed 's/–/-/g; s/—/-/g' | grep -Eq '>[[:space:]]*5[[:space:]]*%[[:space:]]*[-][[:space:]]*10[[:space:]]*%' \
        || grep -Eq '>[[:space:]]*10[[:space:]]*%' "${SCAN_FILES[@]}" \
        || grep -Eiq 'band[[:space:]]*[:|]' "${SCAN_FILES[@]}"; then
         has_band=1
@@ -547,7 +549,8 @@ else
             *) [[ -z "$noncanonical" ]] && noncanonical="$tok" ;;
         esac
     done < <(printf '%s\n' "$band_lines" \
-             | grep -Eo '(≤|<=|>)[[:space:]]*[0-9]+[[:space:]]*%([[:space:]]*[-–—][[:space:]]*[0-9]+[[:space:]]*%)?' || true)
+             | sed 's/–/-/g; s/—/-/g' \
+             | grep -Eo '(≤|<=|>)[[:space:]]*[0-9]+[[:space:]]*%([[:space:]]*[-][[:space:]]*[0-9]+[[:space:]]*%)?' || true)
     if [[ -n "$noncanonical" ]]; then
         fail A3 "non-canonical band present: '$(printf '%s' "$noncanonical" | tr -s '[:space:]' ' ')'"
     elif [[ "$canonical_band" -eq 1 ]]; then
