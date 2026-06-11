@@ -156,9 +156,11 @@ setup() {
 
 @test "project mode: has_uncommitted_changes=false on clean git repo" {
     _use_fakes
-    local proj="$BATS_TMPDIR/clean-repo"
+    local proj="$BATS_TEST_TMPDIR/clean-repo"
     mkdir -p "$proj"
     git -C "$proj" init -q
+    git -C "$proj" config user.email "test@borg.local"
+    git -C "$proj" config user.name "borg test"
     git -C "$proj" commit --allow-empty -m "init" -q
 
     bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"$proj\"}" 2>/dev/null
@@ -168,9 +170,11 @@ setup() {
 
 @test "project mode: has_uncommitted_changes=true on dirty git repo" {
     _use_fakes
-    local proj="$BATS_TMPDIR/dirty-repo"
+    local proj="$BATS_TEST_TMPDIR/dirty-repo"
     mkdir -p "$proj"
     git -C "$proj" init -q
+    git -C "$proj" config user.email "test@borg.local"
+    git -C "$proj" config user.name "borg test"
     git -C "$proj" commit --allow-empty -m "init" -q
     printf 'change\n' > "$proj/file.txt"
     git -C "$proj" add "$proj/file.txt"
