@@ -1,0 +1,72 @@
+name: test
+
+on:
+  push:
+    paths:
+      - "research-tools/**"
+      - "borg-collective/hooks/**"
+      - "token-cost/hooks/**"
+      - "**/test/**"
+      - ".github/workflows/test.yml"
+  pull_request:
+    paths:
+      - "research-tools/**"
+      - "borg-collective/hooks/**"
+      - "token-cost/hooks/**"
+      - "**/test/**"
+      - ".github/workflows/test.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: existing research-tools test suite (bash, no bats required)
+  # ---------------------------------------------------------------------------
+  research-tools:
+    name: research-tools hook suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y --no-install-recommends jq
+
+      - name: Run research-tools regression suite
+        run: bash research-tools/hooks/test/run-tests.sh
+
+  # ---------------------------------------------------------------------------
+  # Job 2: borg-collective + token-cost hook BATS suites + shellcheck
+  # ---------------------------------------------------------------------------
+  hook-bats:
+    name: hook BATS suites + shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (jq, shellcheck, bats)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends jq shellcheck bats
+
+      - name: Verify bats version
+        run: bats --version
+
+      - name: shellcheck — borg-link-down.sh
+        run: shellcheck --severity=error borg-collective/hooks/borg-link-down.sh
+
+      - name: shellcheck — borg-link-up.sh
+        run: shellcheck --severity=error borg-collective/hooks/borg-link-up.sh
+
+      - name: shellcheck — token-spend-log.sh
+        run: shellcheck --severity=error token-cost/hooks/token-spend-log.sh
+
+      - name: BATS — borg-link-down
+        run: bats borg-collective/hooks/test/borg-link-down.bats
+
+      - name: BATS — borg-link-up
+        run: bats borg-collective/hooks/test/borg-link-up.bats
+
+      - name: BATS — token-spend-log
+        run: bats token-cost/hooks/test/token-spend-log.bats
