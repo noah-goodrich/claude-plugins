@@ -54,13 +54,13 @@ jobs:
         run: bats --version
 
       - name: shellcheck — borg-link-down.sh
-        run: shellcheck --severity=error borg-collective/hooks/borg-link-down.sh
+        run: shellcheck --severity=warning borg-collective/hooks/borg-link-down.sh
 
       - name: shellcheck — borg-link-up.sh
-        run: shellcheck --severity=error borg-collective/hooks/borg-link-up.sh
+        run: shellcheck --severity=warning borg-collective/hooks/borg-link-up.sh
 
       - name: shellcheck — token-spend-log.sh
-        run: shellcheck --severity=error token-cost/hooks/token-spend-log.sh
+        run: shellcheck --severity=warning token-cost/hooks/token-spend-log.sh
 
       - name: BATS — borg-link-down
         run: bats borg-collective/hooks/test/borg-link-down.bats
