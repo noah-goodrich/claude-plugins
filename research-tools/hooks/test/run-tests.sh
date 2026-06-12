@@ -187,6 +187,57 @@ OUT="$(printf '{"cwd":"%s"}' "$TMP/empty" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP
 printf '%s' "$OUT" | grep -qE 'ground gate: not run' && ok "Stop hook emits a distinct 'not run' advisory" || bad "no advisory: $OUT"
 printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "Stop hook still emitted a block decision" || ok "no spurious block decision"
 
+# ---------------------------------------------------------------------------
+echo "== 4. SESSION-SCOPING GATE TESTS (false-block regression) =="
+
+# (a) armed + stale/pre-existing deliverable only (no .gate-armed) -> advisory, not block.
+# This is the borg-collective zombie-deliverable scenario: a pre-gate deliverable exists
+# on disk but the current session never registered it. The gate must NOT hard-block.
+mkdir -p "$TMP/stale/docs/research/2026-05-23-old-run/sources"
+printf '# Stale deliverable — pre-dates verification protocol\n' > "$TMP/stale/docs/research/2026-05-23-old-run/deliverable.md"
+OUT="$(printf '{"cwd":"%s"}' "$TMP/stale" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "(a) stale/pre-gate deliverable: Stop hook non-blocking (rc=0)" \
+    || bad "(a) stale/pre-gate deliverable: Stop hook blocked (rc=$RC)"
+printf '%s' "$OUT" | grep -qE 'ground gate: not run' && ok "(a) stale: 'not run' advisory emitted" \
+    || bad "(a) stale: expected 'not run' advisory; got: $OUT"
+printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "(a) stale: spurious block decision" \
+    || ok "(a) stale: no block decision"
+printf '%s' "$OUT" | grep -qE 'stale|no .gate-armed|no this-session' && ok "(a) stale: advisory mentions marker absence" \
+    || ok "(a) stale: advisory present (no marker mention required)"
+
+# (b) armed + .gate-armed + compliant fresh deliverable -> PASS (gate clears).
+# The methodology skill wrote .gate-armed pointing to a fresh compliant deliverable.
+mkdir -p "$TMP/fresh-pass/docs/research/2026-06-12-new-run"
+cp -R "$PASS/." "$TMP/fresh-pass/docs/research/2026-06-12-new-run/"
+printf '%s/docs/research/2026-06-12-new-run\n' "$TMP/fresh-pass" > "$TMP/fresh-pass/docs/research/.gate-armed"
+OUT="$(printf '{"cwd":"%s"}' "$TMP/fresh-pass" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "(b) fresh compliant + .gate-armed: Stop hook exits 0 (PASS)" \
+    || bad "(b) fresh compliant + .gate-armed: Stop hook failed (rc=$RC) :: $OUT"
+printf '%s' "$OUT" | grep -qE 'ground gate: PASS' && ok "(b) fresh compliant: PASS badge emitted" \
+    || bad "(b) fresh compliant: no PASS badge; got: $(printf '%s' "$OUT" | head -3)"
+
+# (c) armed + .gate-armed + NON-compliant fresh deliverable -> BLOCK (exit 1 still fires).
+# The safety guarantee must remain intact: a genuine failing deliverable blocks.
+mkdir -p "$TMP/fresh-fail/docs/research/2026-06-12-bad-run/sources"
+cp "$PASS/sources/"*.md "$TMP/fresh-fail/docs/research/2026-06-12-bad-run/sources/"
+cp "$PASS/deliverable.md" "$TMP/fresh-fail/docs/research/2026-06-12-bad-run/"
+# Omit verification-report.md so A1 fires.
+printf '%s/docs/research/2026-06-12-bad-run\n' "$TMP/fresh-fail" > "$TMP/fresh-fail/docs/research/.gate-armed"
+OUT="$(printf '{"cwd":"%s"}' "$TMP/fresh-fail" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -ne 0 ]] && ok "(c) non-compliant + .gate-armed: Stop hook blocks (rc=$RC)" \
+    || bad "(c) non-compliant + .gate-armed: Stop hook did NOT block (rc=0)"
+printf '%s' "$OUT" | grep -qE 'NOT fact-checked|decision.*block|A1 FAIL' && ok "(c) non-compliant: block/FAIL signal present" \
+    || bad "(c) non-compliant: no block signal; got: $(printf '%s' "$OUT" | head -3)"
+
+# (d) armed + no deliverable at all (no docs/research dir, no .gate-armed) -> advisory.
+# A session that ran the workflow modality (no card deliverable) must not block.
+mkdir -p "$TMP/nodocs"
+OUT="$(printf '{"cwd":"%s"}' "$TMP/nodocs" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "(d) no deliverable at all: Stop hook non-blocking (rc=0)" \
+    || bad "(d) no deliverable at all: Stop hook blocked (rc=$RC)"
+printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "(d) no deliverable: spurious block decision" \
+    || ok "(d) no deliverable: no block decision"
+
 # Scholarly adapter: trailing value-less flag -> usage die (exit 2), not unbound crash
 OUT="$(bash "$SCHOLARLY" search "q" --limit 2>&1)"; RC=$?
 [[ "$RC" -eq 2 ]] && ok "scholarly: value-less flag exits 2 (usage)" || bad "scholarly: wrong rc=$RC"
