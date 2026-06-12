@@ -4,13 +4,30 @@
 # Directive 01 — Fail-Closed Ground Gate (research-tools).
 #
 # Behavior:
-#   - Invokes deep-research-verify.sh against the current project's most-recent
-#     docs/research/ deliverable (or a dir passed through DEEP_RESEARCH_DIR).
+#   - Invokes deep-research-verify.sh against a deliverable registered for THIS session
+#     via the docs/research/.gate-armed marker (written by the methodology skill at the
+#     start of Phase 3 / when it creates the deliverable directory), or against a dir
+#     passed through DEEP_RESEARCH_DIR (tests / manual runs).
 #   - On NON-ZERO verifier exit: injects a BLOCKING message
 #       "NOT fact-checked — verification gate failed: <reason>"
 #     and refuses to let the deliverable be presented as PASS. The block is surfaced
 #     to Claude via stderr + the Stop-hook block protocol (JSON decision=block).
 #   - On ZERO verifier exit: permits presentation and prints the honest badge.
+#   - Armed-but-no-registered-deliverable: exits 0 with a NON-BLOCKING advisory. This
+#     covers (a) the workflow/harness modality that produces no card deliverable, (b) a
+#     session whose cwd carries stale pre-gate deliverables it never touched, and (c) a
+#     rapid-tier run that produces no verification report. NEVER auto-discovers the
+#     newest docs/research/ dir and hard-blocks on it.
+#
+# Session scoping — WHY we use the .gate-armed marker (not just the transcript):
+#   The transcript grep fires on ANY deep-research Skill invocation, including the
+#   workflow/harness modality that returns a JSON report and writes NO docs/research/
+#   card deliverable. Without an explicit registered path the stop hook would fall back
+#   to auto-discover — latching the newest pre-existing deliverable and hard-blocking on
+#   it even though the current session never touched it. The .gate-armed marker is
+#   written only by the methodology skill, only when it creates an on-disk deliverable,
+#   and contains the exact path the verifier should target. That makes the gate both
+#   session-scoped (no stale zombie blocks) and modality-specific (no workflow blocks).
 #
 # This hook is the enforcement arm. The verifier is no-model and deterministic; this
 # hook only composes its machine-readable status lines into a user-facing verdict.
@@ -49,33 +66,52 @@ if [[ -n "$TRANSCRIPT" && -r "$TRANSCRIPT" ]]; then
     fi
 fi
 
-# Honor an explicit target dir for testing; otherwise the verifier auto-discovers
-# the most-recent deliverable relative to the project cwd.
+# Honor an explicit target dir for testing / manual runs. Always engages, unchanged.
 TARGET="${DEEP_RESEARCH_DIR:-}"
 
 # Scope guard. As a plugin-global Stop hook this fires on EVERY session's Stop, so it
 # must NOT block an arbitrary project just because it happens to carry a docs/research/
-# tree (ingle, reveal, troth, borg-collective all do). On the auto-discover path it
-# engages when a deep-research run armed it this session, signalled by ANY of:
-#   1. the transcript proves THIS session ran the deep-research skill (TRANSCRIPT_ARMED —
-#      automatic and specific: the agent cannot skip it and unrelated sessions never trip it),
-#   2. the DEEP_RESEARCH_GATE_ARM env var is set, or
-#   3. a `.gate-armed` marker the skill dropped for a run is present.
-# When none of these hold (including an absent/empty/unreadable transcript) it stays dormant.
-# An explicit DEEP_RESEARCH_DIR (tests / manual runs) always engages, unchanged.
+# tree (ingle, reveal, troth, borg-collective all do). Engagement requires:
+#   1. an explicit DEEP_RESEARCH_DIR (tests / manual runs), OR
+#   2. the gate being armed this session, signalled by ANY of:
+#       a. TRANSCRIPT_ARMED (the transcript proves THIS session ran the deep-research skill)
+#       b. DEEP_RESEARCH_GATE_ARM env var is set (test/CI override)
+#       c. a .gate-armed marker file exists at docs/research/.gate-armed
+# When none of the above hold the hook exits dormant. An unreadable/absent transcript
+# counts as NOT armed — fail-safe dormancy is correct when we cannot confirm arming.
 if [[ -z "$TARGET" ]]; then
-    [[ -d "$CWD/docs/research" ]] || exit 0
     if [[ -z "$TRANSCRIPT_ARMED" && -z "${DEEP_RESEARCH_GATE_ARM:-}" && ! -f "$CWD/docs/research/.gate-armed" ]]; then
+        exit 0
+    fi
+    # The gate is armed this session. Resolve the registered deliverable path from the
+    # .gate-armed marker. The marker contains the path (absolute or relative-to-cwd) of
+    # the docs/research/<deliverable> directory that THIS session created. If the marker
+    # is absent (workflow/harness modality, rapid tier, or any run that produced no card
+    # deliverable), we CANNOT target a specific this-session deliverable — emit an advisory
+    # (exit 2 semantics, NON-blocking) rather than auto-discovering and hard-blocking on a
+    # stale or pre-existing deliverable.
+    MARKER="$CWD/docs/research/.gate-armed"
+    if [[ -f "$MARKER" ]]; then
+        REGISTERED_DIR="$(tr -d '[:space:]' < "$MARKER")"
+        # Resolve to absolute path: if not already absolute, treat as relative to CWD.
+        case "$REGISTERED_DIR" in
+            /*) TARGET="$REGISTERED_DIR" ;;
+            *)  TARGET="$CWD/$REGISTERED_DIR" ;;
+        esac
+        if [[ -z "$REGISTERED_DIR" || ! -d "$TARGET" ]]; then
+            printf 'deep-research ground gate: not run — .gate-armed marker present but registered dir not found (%s)\n' "${TARGET:-empty}" >&2
+            exit 0
+        fi
+    else
+        # Armed but no .gate-armed marker: the skill ran but produced no card deliverable
+        # (workflow modality, rapid tier, early-termination, etc.). Never auto-discover.
+        printf 'deep-research ground gate: not run — gate armed but no this-session deliverable registered (no .gate-armed marker); stale deliverables not checked\n' >&2
         exit 0
     fi
 fi
 
 set +e
-if [[ -n "$TARGET" ]]; then
-    GATE_OUTPUT="$("$VERIFY" "$TARGET" 2>&1)"
-else
-    GATE_OUTPUT="$(cd "$CWD" && "$VERIFY" 2>&1)"
-fi
+GATE_OUTPUT="$("$VERIFY" "$TARGET" 2>&1)"
 GATE_RC=$?
 set -e
 
