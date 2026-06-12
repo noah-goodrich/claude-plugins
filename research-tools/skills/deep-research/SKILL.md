@@ -315,6 +315,15 @@ For every source that PASSED triage, complete a source evaluation card (see
 `references/source-card-template.md`) and write it to disk at
 `[project]/docs/research/sources/<topic>-<slug>.md`.
 
+**Gate-arm marker.** When you create the deliverable directory (e.g.
+`[project]/docs/research/[date]/`) for this session, write the directory's absolute
+path — and nothing else — to `[project]/docs/research/.gate-armed`. Example:
+`/home/user/myproject/docs/research/2026-06-12` (one line, no extra text). The Stop
+hook reads this file to scope the hard verification gate to THIS session's deliverable;
+without it the gate stays dormant and every run silently takes the advisory path.
+Do NOT write this marker on a **rapid-tier** run (the gate correctly fails rapid
+deliverables as `NOT fact-checked` — that is the honest outcome for the tier).
+
 **Gate — do not proceed to Phase 4 until every evaluated source has a card file on disk
 at `[project]/docs/research/sources/<topic>-<slug>.md`, using the template exactly.**
 Inline summaries inside the analysis document do not satisfy this requirement. A subagent
@@ -713,6 +722,10 @@ until every box is checked:
       hard-blocks the deliverable on any failure. If Task-tool spawning was unavailable
       and the deliverable is stamped `UNVERIFIED — self-check only`, the gate fails and
       the run is presented as NOT fact-checked — that is the correct, honest outcome.
+- [ ] `docs/research/.gate-armed` contains the absolute path of this session's deliverable
+      directory (written at Phase 3.1 setup). Without it the Stop hook stays dormant and
+      the hard gate never fires. Confirm the path in the file matches the actual deliverable
+      directory on disk.
 
 If any box is unchecked, return to the relevant phase and fix the gap. Do not skip to
 user presentation with an unchecked box.
