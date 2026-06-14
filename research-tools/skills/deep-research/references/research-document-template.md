@@ -12,6 +12,14 @@ Run through this checklist before presenting the document to the user. Every box
 checked. If a box cannot be checked, return to the relevant phase and fix the gap; do not
 deliver an incomplete document.
 
+- [ ] **`Generated: YYYY-MM-DD`** is the first line of the document (today's date).
+- [ ] **Glossary** block near the top defines the unavoidable jargon and every acronym; every term is
+      also defined inline on first use in the body.
+- [ ] **`noah-voice` + `ai-scoring` passes run** on the final text; `ai-scoring` ≥ 75; the score is
+      recorded in the header line. (See `../../reading-deliverable-standard.md`.)
+- [ ] **Epub generated** by default (pandoc, date in `--metadata date=`) and saved under
+      `~/Documents/Claude/<Project>/` or `~/Documents/Personal/<area>/`; both paths told to the user —
+      unless the user opted out.
 - [ ] **§1 Recommendations** present and is the first top-level section.
 - [ ] **§2 Summary** present and is the second top-level section.
 - [ ] **§3 Framework** present if a framework / typology / model emerged; otherwise
@@ -34,10 +42,21 @@ deliver an incomplete document.
 ---
 
 ```markdown
+Generated: YYYY-MM-DD
+
 # [Research Title]
 
-*Conducted: [date range]*
-*Methodology: deep-research v0.1.0*
+*Conducted: [date range] | Methodology: deep-research | AI-scoring: NN/100*
+
+---
+
+## Glossary — read this first
+
+[A short block (≤ ~12 terms) defining the unavoidable jargon and EVERY acronym the report leans on.
+Each term is ALSO defined inline on first use in the body — this block is for the skimmer, not a
+substitute for inline definitions. Omit only if the report genuinely uses no jargon.]
+
+- **[Term / acronym]** — [plain-language definition]
 
 ---
 
@@ -175,8 +194,11 @@ Apply these rules throughout the document:
    single 25-year-old making $120K in San Francisco — and advice that works for one can
    actively hurt the other."
 
-3. **Define on first use.** Example: "**Zero-based budgeting** (giving every dollar a job
-   before the month starts, so your income minus your planned spending equals zero)..."
+3. **Define every term AND every acronym on first use, inline.** Example: "**Zero-based budgeting**
+   (giving every dollar a job before the month starts, so your income minus your planned spending
+   equals zero)..." The first time an acronym appears, expand it right there (e.g. "ICP (Ideal
+   Customer Profile)"). An undefined acronym is a defect. Also keep the top-of-document Glossary in
+   sync with these inline definitions.
 
 4. **Show the tension.** The most interesting finding is usually WHERE experts disagree or
    where institutional advice diverges from reality. Lead with tension, not consensus.

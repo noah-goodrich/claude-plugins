@@ -16,6 +16,13 @@ exclusion decision is traceable.
 Built on six established frameworks (CREDIBLE, CRAAP, SIFT, RADAR, PRISMA, DeepTRACE) but
 extends them into a unified end-to-end pipeline that no single existing framework covers.
 
+**This skill produces a reading deliverable, so the [Reading-Deliverable Standard](../reading-deliverable-standard.md)
+is MANDATORY.** It is enforced at Phase 6 (Documentation), but it shapes the whole run: write
+plain-language and define-as-you-go from the first word, not as a cleanup pass at the end. The four
+clauses — readability (`noah-voice` + `ai-scoring` passes, ELI10, define every term/acronym, top-of-doc
+Glossary), a `Generated: YYYY-MM-DD` line, epub-by-default, and markdown-in-repo / epub-in-`~/Documents`
+pathing — are non-negotiable. A defensible-but-unreadable report is a failed deliverable.
+
 ## Before You Begin — Lazy Reference Loading (Directive 04)
 
 **References load at the phase that consumes them — NOT all up front.** The old protocol
@@ -613,11 +620,36 @@ triage in/out log + the `UNVERIFIED — self-check only` and `NOT INDEPENDENTLY 
 Skip §3, §4, the full §6, and §7 — and skip the full Deliverable Manifest below (it governs the
 full tier). A rapid deliverable does not run the Phase 3.5 verification subagent, so the ground
 gate correctly fails it as `NOT fact-checked` — that is the honest outcome for the tier, not a
-defect. The rest of this section governs the **full** tier.
+defect. The rest of this section governs the **full** tier. **The Reading-Deliverable Standard below
+applies to BOTH tiers** — a rapid run is smaller, but it is still something a human reads, so it still
+gets the `Generated:` date header, the readability + `noah-voice`/`ai-scoring` passes, the
+define-every-term/Glossary discipline, the epub-by-default, and the repo/Documents pathing.
 
-Produce the final deliverable at `[project]/docs/research/analysis.md` (or a named
-equivalent under `[project]/docs/research/`) using
+Produce the final deliverable at `[project]/docs/research/<YYYY-MM-DD>-<slug>/analysis.md`
+(date-and-slug subdirectory — match the existing convention, e.g.
+`docs/research/2026-06-13-people-photo-firstprinciples/analysis.md`) using
 `references/research-document-template.md`.
+
+**Reading-Deliverable Standard gate (MANDATORY — see `../reading-deliverable-standard.md`).** This
+document is something a human will READ, so all four clauses apply before you present it:
+
+1. **Date header.** The FIRST line of the document (above or just under the title) MUST be
+   `Generated: YYYY-MM-DD` with today's date. The failed reveal report had none — that omission alone
+   makes a report untrustworthy. The same date goes into the epub metadata (`--metadata date=`).
+2. **Readability + the two enforcement passes.** The document must be plain-language / ELI10, assume NO
+   prior knowledge, DEFINE every term and acronym inline on first use, and carry a short **Glossary**
+   near the top for the unavoidable jargon. Then run, on the FINAL text, in order: the **`noah-voice`**
+   pass (voice rules) and the **`ai-scoring`** pass (0–100 human-vs-AI score). The deliverable must
+   score **≥ 75**; revise against flagged passages and re-score if it does not. Record the final score
+   in the document (`AI-scoring: NN/100`). These are the same passes Noah's global rules require before
+   ANY written content is shown; the pipeline now runs them explicitly so they are not skipped.
+3. **Epub by default.** After the markdown is finalized and has passed the two passes, generate an epub
+   with pandoc UNLESS the user opted out (`pandoc analysis.md -o "<title>.epub" --metadata
+   title="..." --metadata author="Claude (deep-research)" --metadata date=<YYYY-MM-DD> --toc`).
+4. **Pathing.** Markdown stays in the repo at the path above. The epub goes to
+   `~/Documents/Claude/<Project>/<Human Readable Title>.epub` for project work (match the existing
+   folder, e.g. `~/Documents/Claude/reveal/`) or `~/Documents/Personal/<area>/` for personal work. Tell
+   the user both paths.
 
 **The document MUST contain the following top-level headings, in this exact order. Do
 not invent new top-level sections that displace these seven, and do not reorder them:**
@@ -661,12 +693,14 @@ the §1-§7 order above):
 6. Write the Recommendations (§1) — what to DO based on all of the above.
 7. Write the Summary (§2) LAST — hardest to write, requires distilling everything.
 
-**Language rules** (from the document template):
-- ELI10 throughout — clear, not condescending
-- Define every term on first use
-- Concrete examples over abstractions
-- Show the tension (where experts disagree is more interesting than where they agree)
-- No orphaned claims — every factual statement has a citation
+**Language rules (enforced by the Reading-Deliverable Standard — `../reading-deliverable-standard.md`,
+clause 1).** These are not aspirational; the `ai-scoring` ≥ 75 gate above checks them:
+- ELI10 throughout — clear, not condescending. Plain words over long ones.
+- Define every term AND every acronym inline on first use. An undefined acronym is a defect.
+- A short top-of-document Glossary (≤ ~12 terms) for the unavoidable jargon the report leans on.
+- Concrete examples over abstractions.
+- Show the tension (where experts disagree is more interesting than where they agree).
+- No orphaned claims — every factual statement has a citation.
 
 **Bias-guard summary required in the deliverable.** Per-card bias-guard checkboxes are
 not enough. The §6 Methodology section MUST contain a Bias-Guard Summary table reporting
@@ -691,10 +725,17 @@ design risk the reader should weight. W2 is a footnote/warning first — it does
 complete, verify each item below exists on disk. Do not present the deliverable to the user
 until every box is checked:
 
-- [ ] Final document file at `[project]/docs/research/analysis.md` (or a named equivalent
-      under `[project]/docs/research/`), containing numbered top-level sections
-      **§1 Recommendations, §2 Summary, §3 Framework (if applicable), §4 Analysis,
-      §5 Research, §6 Methodology, §7 Bibliography — in that order**.
+- [ ] Final document file at `[project]/docs/research/<YYYY-MM-DD>-<slug>/analysis.md`,
+      containing numbered top-level sections **§1 Recommendations, §2 Summary, §3 Framework
+      (if applicable), §4 Analysis, §5 Research, §6 Methodology, §7 Bibliography — in that order**.
+- [ ] **Reading-Deliverable Standard satisfied** (`../reading-deliverable-standard.md`):
+      `Generated: YYYY-MM-DD` is the first line; every term/acronym is defined inline on first use;
+      a top-of-document Glossary covers the unavoidable jargon; the `noah-voice` pass was applied and
+      the `ai-scoring` pass scored **≥ 75** (score recorded in the document).
+- [ ] **Epub generated** with pandoc (date in `--metadata date=`) and saved under
+      `~/Documents/Claude/<Project>/` (project) or `~/Documents/Personal/<area>/` (personal) with a
+      human-readable title — UNLESS the user explicitly opted out. Both the markdown path and the epub
+      path were told to the user.
 - [ ] One source-card file per evaluated source at
       `[project]/docs/research/sources/<topic>-<slug>.md`, using the exact template
       from `references/source-card-template.md` (table format for the 10 scores, bias-guard
