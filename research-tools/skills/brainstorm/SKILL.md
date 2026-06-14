@@ -14,6 +14,13 @@ description: "Multi-track design council for open-ended product and UX problems.
 A structured process for turning vague, high-stakes problems into a concrete recommendation
 backed by parallel research and adversarial council review.
 
+**The Phase 6 output is a reading deliverable, so the
+[Reading-Deliverable Standard](../reading-deliverable-standard.md) is MANDATORY.** Before you present
+the brainstorm document it must: open with a `Generated: YYYY-MM-DD` line; be plain-language and
+define every term/acronym on first use (with a short Glossary for unavoidable jargon); pass the
+`noah-voice` and `ai-scoring` passes (score ≥ 75); be generated as an epub by default; and follow the
+markdown-in-repo / epub-in-`~/Documents` pathing. See Phase 6.
+
 ## When to use
 
 **Use `/brainstorm` when:** The implementation approach can't be specified before the options
@@ -366,13 +373,37 @@ The minimum viable version to ship first is [Z]."
 
 ## Phase 6: Output Document
 
-Save to `docs/brainstorms/YYYY-MM-DD-[slug].md` in the current project. Slug is 3–5 words
+Save the markdown to `docs/brainstorms/YYYY-MM-DD-[slug].md` in the current project. Slug is 3–5 words
 from the problem statement, hyphenated. If no project context, offer to save to a
 user-specified path or present inline.
 
+**Reading-Deliverable Standard gate (MANDATORY — `../reading-deliverable-standard.md`).** This document
+is something a human will READ, so all four clauses apply before you present it:
+
+1. **Date header.** The document opens with a `Generated: YYYY-MM-DD` line (today's date). Same date
+   into the epub metadata.
+2. **Readability + the two passes.** Plain-language / ELI10, assume NO prior knowledge, define every
+   term and acronym inline on first use, and include a short **Glossary** near the top for unavoidable
+   jargon. Then run, on the FINAL text, the **`noah-voice`** pass and the **`ai-scoring`** pass; the
+   document must score **≥ 75** (revise and re-score if not) and the score is recorded in the document.
+   The council prose and option blocks are prose a human reads — they are in scope for these passes.
+3. **Epub by default.** After the markdown is final and has passed the two passes, generate an epub with
+   pandoc UNLESS the user opted out (`pandoc <file>.md -o "<title>.epub" --metadata title="..."
+   --metadata author="Claude (brainstorm)" --metadata date=<YYYY-MM-DD> --toc`).
+4. **Pathing.** Markdown stays in the repo at `docs/brainstorms/...`. The epub goes to
+   `~/Documents/Claude/<Project>/<Human Readable Title>.epub` (project work — match the existing folder)
+   or `~/Documents/Personal/<area>/` (personal work). Tell the user both paths.
+
 ```markdown
 # Brainstorm: [Problem Statement]
-*Date: YYYY-MM-DD | Tracks: N | Options: N*
+*Generated: YYYY-MM-DD | Tracks: N | Options: N | AI-scoring: NN/100*
+
+## Glossary
+
+*Define the handful of terms/acronyms the rest of the document leans on. Each is also defined inline on
+first use — this block is for the skimmer. Omit only if the document genuinely uses no jargon.*
+
+- **[Term / acronym]** — [plain-language definition]
 
 ## Problem Definition
 
@@ -469,6 +500,7 @@ field is NEVER empty.]
 | Choose visual format | UI/interaction pattern → Claude Design prompt. Flow/architecture/journey → Mermaid |
 | Handle no project context | Skip context loading, degrade gracefully, offer to save output to user-specified path |
 | Move from brainstorm to implementation | Feed output document into /borg-plan as context |
+| Finalize the output document | Reading-Deliverable Standard: `Generated:` date, define terms + Glossary, noah-voice + ai-scoring (≥75), epub by default, md in repo / epub in ~/Documents |
 | Validate "distinct" options | If two options are the same approach with different labels, merge them |
 | Resolve a constraint tension | Phase 4.5: load the contradiction-resolution ref, separate the poles, tag the move |
 | Satisfy the dissent rule | ≥1 persona disagrees with the Recommender (risk-logged) OR kills an option non-effort |
