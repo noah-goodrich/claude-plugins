@@ -77,7 +77,15 @@ COST=$(jq -n --argjson a "$MAIN_COST" --argjson b "$SUB_COST" '(($a + $b) * 100 
 
 # Timestamp: live session end time, or TOKEN_SPEND_TS when replaying (backfill).
 TS="${TOKEN_SPEND_TS:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
-PROJECT="${CWD##*/}"
+
+# Project name: cwd basename, EXCEPT Claude Desktop's local agent-mode sessions, whose cwd is
+# always .../Claude/local-agent-mode-sessions/<uuid>/.../outputs and would otherwise all collapse
+# into a meaningless "outputs" bucket. Label those claude-desktop instead.
+case "$CWD" in
+    */local-agent-mode-sessions/*) PROJECT="claude-desktop" ;;
+    */.claude/worktrees/*)         _wt="${CWD%/.claude/worktrees/*}"; PROJECT="${_wt##*/}" ;;
+    *)                             PROJECT="${CWD##*/}" ;;
+esac
 
 mkdir -p "$(dirname "$LOG")"
 jq -nc --arg ts "$TS" --arg sid "$SESSION_ID" --arg proj "$PROJECT" --arg cwd "$CWD" \
