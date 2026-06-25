@@ -275,3 +275,48 @@ _mk_transcript() {
     [ "$val" = "2025-01-15T10:00:00Z" ]
     unset TOKEN_SPEND_TS
 }
+
+# ---------------------------------------------------------------------------
+# 8. Claude Desktop project attribution
+# ---------------------------------------------------------------------------
+
+@test "desktop: cwd under local-agent-mode-sessions yields project=claude-desktop" {
+    local t="$BATS_TMPDIR/transcripts/desktop.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local desktop_cwd="/Users/x/Library/Application Support/Claude/local-agent-mode-sessions/abc-uuid/def/outputs"
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"$desktop_cwd\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.project' "$TOKEN_SPEND_LOG")
+    [ "$val" = "claude-desktop" ]
+}
+
+@test "desktop: normal cwd still yields project from basename" {
+    local t="$BATS_TMPDIR/transcripts/normal-proj.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/home/user/my-project\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.project' "$TOKEN_SPEND_LOG")
+    [ "$val" = "my-project" ]
+}
+
+# ---------------------------------------------------------------------------
+# 9. Claude Code worktree project attribution
+# ---------------------------------------------------------------------------
+
+@test "worktree: cwd under .claude/worktrees yields parent project name" {
+    local t="$BATS_TMPDIR/transcripts/worktree.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/Users/x/dev/my-project/.claude/worktrees/abc-slug\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.project' "$TOKEN_SPEND_LOG")
+    [ "$val" = "my-project" ]
+}
+
+@test "worktree: normal cwd still yields project from basename (regression guard)" {
+    local t="$BATS_TMPDIR/transcripts/worktree-normal.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/Users/x/dev/some-project\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.project' "$TOKEN_SPEND_LOG")
+    [ "$val" = "some-project" ]
+}
