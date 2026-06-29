@@ -3,6 +3,7 @@ name: borg-nanoprobe
 description: Single-task project worker. The orchestrator delegates here instead of editing inline.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: sonnet
+effort: medium
 background: true
 permissionMode: acceptEdits
 ---
