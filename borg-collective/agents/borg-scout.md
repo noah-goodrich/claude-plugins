@@ -4,7 +4,7 @@ description: >
   Cheap read-only locate/search worker. Answers "where is X / does Y exist / what are the
   naming conventions" questions by returning locations and short excerpts — never whole files.
   A cheap alternative to routing read-only search work to the inherited Opus main model.
-tools: Bash, Read, Grep, Glob
+tools: Read, Grep, Glob
 model: haiku
 effort: low
 maxTurns: 20

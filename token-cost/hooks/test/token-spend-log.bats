@@ -13,7 +13,6 @@
 #  10. by_type — per-agent-type breakdown populated from meta.json siblings
 #  11. by_type — unknown fallback when meta.json is absent
 #  12. schema version bumped to 2
-#   7. Empty transcript — no crash, exits 0, nothing written
 
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)/token-spend-log.sh"
 FIXTURES="$(dirname "$BATS_TEST_FILENAME")/fixtures"
