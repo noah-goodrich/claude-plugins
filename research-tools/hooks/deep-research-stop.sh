@@ -52,16 +52,18 @@ if command -v jq >/dev/null 2>&1; then
 fi
 [[ -n "$CWD" ]] || CWD="$PWD"
 
-# Did THIS session actually run the deep-research skill? The reliable, automatic, and
-# specific signal is a `Skill` tool_use entry in the Stop hook's own transcript whose
-# skill field is exactly the deep-research skill — either the plugin-namespaced form
-# `research-tools:deep-research` or the bare `deep-research`. This is the literal JSON the
-# harness logs for a Skill invocation; it does NOT match a mere prose mention of "deep
-# research" (the same transcript carries both, so a naive word grep would false-positive).
+# Did THIS session actually run the evidence-mode research skill? The reliable, automatic,
+# and specific signal is a `Skill` tool_use entry in the Stop hook's own transcript whose
+# skill field is the unified research front door (`research`) or its evidence-mode alias
+# (`deep-research`) — in plugin-namespaced (`research-tools:research`) or bare form. This is
+# the literal JSON the harness logs for a Skill invocation; it does NOT match a mere prose
+# mention of "deep research" (the same transcript carries both, so a naive word grep would
+# false-positive). decision-design runs also match `research` but produce no .gate-armed
+# marker, so they hit the non-blocking advisory branch below — never a hard block.
 # Absent / empty / unreadable transcript -> NOT armed (stay dormant, never block).
 TRANSCRIPT_ARMED=""
 if [[ -n "$TRANSCRIPT" && -r "$TRANSCRIPT" ]]; then
-    if grep -Eq '"name":"Skill","input":\{"skill":"(research-tools:)?deep-research"' "$TRANSCRIPT"; then
+    if grep -Eq '"name":"Skill","input":\{"skill":"(research-tools:)?(deep-research|research)"' "$TRANSCRIPT"; then
         TRANSCRIPT_ARMED="1"
     fi
 fi

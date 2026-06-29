@@ -1,7 +1,7 @@
 {
   "name": "research-tools",
-  "version": "0.2.0",
-  "description": "Research and ideation methodology — brainstorm design council for open-ended problems, deep-research pipeline for evidence synthesis.",
+  "version": "0.3.0",
+  "description": "Research and ideation methodology — one /research front door routing to evidence, decision-design, or hybrid mode.",
   "author": {
     "name": "Noah Goodrich"
   },
