@@ -33,7 +33,7 @@
 #
 # BACKEND-AGNOSTIC CARD SCHEMA (load-bearing — no new lock-in)
 #   Pulled results flow into the STANDARD source-card template
-#   (skills/deep-research/references/source-card-template.md). There are NO
+#   (skills/research/references/source-card-template.md). There are NO
 #   backend-specific fields on the card: the card carries Full citation, URL, Date
 #   accessed, Evidence level, Key Findings, a `## Verified Quote(s)` heading with one
 #   verbatim abstract quote + Access status, and an Inclusion Decision with a Perspective
