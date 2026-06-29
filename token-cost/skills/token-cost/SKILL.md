@@ -1,19 +1,29 @@
 ---
 name: token-cost
-description: "Token cost estimation appended to every response. UNIVERSAL skill that applies to EVERY SINGLE response regardless of topic or task. Whenever you finish responding to the user, append an estimated token count and cost line. This skill triggers on all prompts, all tasks, all conversations. No exceptions. If you just responded to the user, you should have included the token estimate line."
+description: "Token cost estimation appended to substantial or delegated responses. Append a token/cost line when non-trivial work was done (multi-step tasks, file edits, tool chains) or a subagent/workflow ran. Skip on trivial conversational replies: one-line answers, clarifications, yes/no responses, or simple lookups that require no tools."
 ---
 
 # Token Cost Estimation
 
-Append a rough token/cost line to every response for awareness. IMPORTANT: the inline estimate is a
-LOWER BOUND, not an invoice — from inside a turn you cannot see two of the biggest cost drivers:
-extended-thinking tokens (billed as output) and cache reads of the growing context (which usually
-dominate a long session). For accurate spend, a SessionEnd hook writes per-session, per-model data to
-`~/.claude/token-spend.jsonl` — see "Accurate spend" below.
+Append a rough token/cost line to substantial or delegated responses for awareness. IMPORTANT: the
+inline estimate is a LOWER BOUND, not an invoice — from inside a turn you cannot see two of the
+biggest cost drivers: extended-thinking tokens (billed as output) and cache reads of the growing
+context (which usually dominate a long session). For accurate spend, a SessionEnd hook writes
+per-session, per-model data to `~/.claude/token-spend.jsonl` — see "Accurate spend" below.
 
 ## What to Do
 
-At the end of every response add this line (drop the delegated clause when no subagent/workflow ran):
+**Append the cost line when:**
+- A subagent or workflow ran (delegated work happened).
+- Non-trivial work was done: multi-step reasoning, file reads/edits, tool chains, research, or
+  any response that took more than a handful of tokens to produce.
+
+**Skip the cost line when:**
+- The reply is a one-line answer, clarification, or yes/no.
+- The reply is purely conversational with no tool use and minimal reasoning.
+
+At the end of qualifying responses, add this line (drop the delegated clause when no
+subagent/workflow ran):
 
 ```
 Tokens — main ~Xk in / ~Y out; delegated ~$S (subagents). Turn ≈ $T (rough lower bound).
