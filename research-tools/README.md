@@ -1,28 +1,46 @@
 # Research Tools
 
-Research and ideation methodology plugin for Claude Code. Two complementary pipelines covering
-the full spectrum from open-ended problem exploration through rigorous evidence synthesis.
+Research and ideation methodology plugin for Claude Code. One front door — `/research` — routes
+to the right pipeline by **mode**, covering the full spectrum from open-ended problem exploration
+through rigorous evidence synthesis.
 
 ## Skills
 
 | Skill | Trigger | When to use |
 |-------|---------|-------------|
-| `brainstorm` | `/brainstorm` | Open-ended problems where the implementation approach can't be specified before the options are known. Decomposes into parallel research tracks, synthesizes 3–5 distinct solution options, and convenes a 5-persona design council that makes a recommendation. |
-| `deep-research` | `/deep-research` | Evidence synthesis with academic rigor. Full pipeline: design, discovery, 10-dimension source evaluation, citation verification, inclusion/exclusion decisions, synthesis, and documentation. Use when you need a defensible evidence base, not just a recommendation. |
+| `research` | `/research` | The single research front door. Picks a **mode** at Phase 0 and runs the matching pipeline. |
+| `deep-research` | `/deep-research` | Thin alias → `research` in **evidence** mode. |
+| `brainstorm` | `/brainstorm` | Thin alias → `research` in **decision-design** mode. |
+
+### The three modes of `/research`
+
+- **evidence** — evidence synthesis with academic rigor. Full pipeline: design, discovery,
+  10-dimension source evaluation, citation verification, inclusion/exclusion decisions, synthesis,
+  and documentation. Carries an executable citation gate. Use when you need a defensible evidence
+  base, not just a recommendation. (This is the original `deep-research` pipeline, unchanged.)
+- **decision-design** — open-ended problems where the implementation approach can't be specified
+  before the options are known. Walls off prior work, runs parallel from-zero research tracks,
+  synthesizes 3–5 distinct options, convenes a 5-persona council, and subjects the recommendation
+  to a BLIND adversarial review (`borg-reviewer`). Carries a self-enforced design-review gate.
+  (This is the former `brainstorm` design council, absorbed.)
+- **hybrid** — evidence first, then decision-design, with the evidence synthesis fed in as
+  load-bearing input. The safe superset for high-stakes decisions.
 
 ## When to use which
 
 ```
-Need options before you can plan?          → /brainstorm
-Need a defensible evidence base?           → /deep-research
-Brainstorm track needs academic evidence?  → /brainstorm invokes /deep-research for that track
+"What does the evidence say?"              → /research (evidence)    [or the /deep-research alias]
+"What should we build/do?"                 → /research (decision-design) [or the /brainstorm alias]
+Both — evidence base, then a decision      → /research (hybrid)
 ```
 
-## How they fit together
+## How it fits together
 
-`/brainstorm` can invoke `/deep-research` for individual tracks that require evidence depth.
-The brainstorm output document feeds into `/borg-plan` for implementation planning. The typical
-flow for a vague, high-stakes problem is: brainstorm → borg-plan → implementation.
+Decision-design and hybrid delegate their research to the `borg-researcher` agent and their
+recommendation review to the `borg-reviewer` agent (both Sonnet, lean-return — never
+`general-purpose`). The output document feeds into `/borg-plan` for implementation planning. The
+typical flow for a vague, high-stakes problem is: research (decision-design or hybrid) → borg-plan
+→ implementation.
 
 ## Redundancy between the two skills (Directive 04)
 
