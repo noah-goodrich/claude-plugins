@@ -1,6 +1,7 @@
 # Directive 08: Research Front Door (`/research` mode router)
 *Parent plan: 2026-05-27-plugin-marketplace-consolidation*
 *Filed: 2026-06-29*
+*Shipped: 2026-06-29 — PR #21 merged to main (4b5936c). All 6 criteria met; 63/63 hook tests pass.*
 
 ## Objective
 
