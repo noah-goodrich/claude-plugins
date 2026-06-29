@@ -244,6 +244,35 @@ OUT="$(bash "$SCHOLARLY" search "q" --limit 2>&1)"; RC=$?
 printf '%s' "$OUT" | grep -q 'unbound variable' && bad "scholarly: raw unbound-variable crash leaked" || ok "scholarly: no unbound-variable crash"
 
 # ---------------------------------------------------------------------------
+echo "== 5. RESEARCH FRONT-DOOR RENAME + DECISION-DESIGN NON-BLOCK =="
+
+# The Stop hook must arm on the renamed `research` skill (evidence mode and its alias
+# `deep-research`), driven by the real transcript regex — not just the test env override.
+# And a decision-design run (the skill ran, but produced NO .gate-armed marker and no card
+# deliverable) must hit the non-blocking advisory branch, never a hard block.
+mk_transcript() {  # $1 = the skill field the harness would log for a Skill invocation
+    printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"%s"}}]}}\n' "$1" > "$TMP/tr.jsonl"
+}
+for skill in "research-tools:research" "research" "research-tools:deep-research" "deep-research"; do
+    mk_transcript "$skill"
+    rm -rf "$TMP/dd"; mkdir -p "$TMP/dd/docs/research"   # transcript-armed, NO .gate-armed marker
+    OUT="$(printf '{"cwd":"%s","transcript_path":"%s"}' "$TMP/dd" "$TMP/tr.jsonl" | bash "$STOP" 2>&1)"; RC=$?
+    [[ "$RC" -eq 0 ]] && ok "decision-design ($skill): transcript-armed, no marker -> non-blocking (rc=0)" \
+        || bad "decision-design ($skill): blocked (rc=$RC) :: $OUT"
+    printf '%s' "$OUT" | grep -qE 'ground gate: not run' && ok "decision-design ($skill): 'not run' advisory emitted" \
+        || bad "decision-design ($skill): no advisory; got: $OUT"
+    printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "decision-design ($skill): spurious block decision" \
+        || ok "decision-design ($skill): no block decision"
+done
+
+# Negative: a transcript that only MENTIONS "deep research" in prose must NOT arm the gate.
+printf '{"type":"assistant","message":{"content":[{"type":"text","text":"let us do some deep research now"}]}}\n' > "$TMP/tr.jsonl"
+rm -rf "$TMP/dd"; mkdir -p "$TMP/dd/docs/research"
+OUT="$(printf '{"cwd":"%s","transcript_path":"%s"}' "$TMP/dd" "$TMP/tr.jsonl" | bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "prose-only 'deep research' mention: stays dormant (rc=0)" || bad "prose mention blocked (rc=$RC)"
+printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "prose mention: spurious block decision" || ok "prose mention: no block decision"
+
+# ---------------------------------------------------------------------------
 echo
 if [[ "$fails" -eq 0 ]]; then
     printf '\033[32mALL TESTS PASSED\033[0m\n'
