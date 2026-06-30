@@ -43,15 +43,20 @@ Tokens — main ~Xk in / ~Y out ≈ $T (rough lower bound).
 
 ## Pricing (USD per million tokens)
 
-| Model  | input | output | cache write (5m) | cache read |
-|--------|-------|--------|------------------|------------|
-| Opus   | $15   | $75    | $18.75           | $1.50      |
-| Sonnet | $3    | $15    | $3.75            | $0.30      |
-| Haiku  | $0.25 | $1.25  | $0.31            | $0.025     |
+| Model                         | input | output | cache write (5m) | cache read |
+|-------------------------------|-------|--------|------------------|------------|
+| Fable 5 (claude-fable-5)      | $10   | $50    | $12.50           | $1.00      |
+| Opus 4.6+ (4.8 / 4.7 / 4.6)  | $5    | $25    | $6.25            | $0.50      |
+| Opus 4.5 & older (historical) | $15   | $75    | $18.75           | $1.50      |
+| Sonnet 4.6                    | $3    | $15    | $3.75            | $0.30      |
+| Haiku 4.5                     | $1    | $5     | $1.25            | $0.10      |
+
+Note: Opus pricing dropped ~3x at the 4.6 generation ($15/$75 → $5/$25); pre-4.6 Opus records keep
+the historical $15/$75 rates for accurate retrospective accounting.
 
 Price each side by the model actually running it — the main loop and subagents usually differ (main on
-Opus; subagents on Sonnet/Haiku). Cache reads are ~10x cheaper than fresh input; never price cached
-context as fresh input.
+Opus 4.6+; subagents on Sonnet/Haiku). Cache reads are ~10x cheaper than fresh input; never price
+cached context as fresh input.
 
 ## Where the cost actually is (measured)
 

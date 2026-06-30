@@ -43,12 +43,16 @@ _bymodel() {
 }
 
 # Cache-aware cost (USD) of a per-model breakdown. Rates per million tokens.
+# Tier order matters: check specific opus-4-[6-9] BEFORE the generic "opus" fallback so
+# that Opus 4.6/4.7/4.8+ get the $5/$25 rate while older Opus keeps $15/$75.
 _costof() {
     jq -n --argjson bm "$1" '
         def rate(m): (m|ascii_downcase) as $m
-          | if   ($m|test("opus"))   then {i:15,   o:75,   w:18.75, r:1.50}
-            elif ($m|test("sonnet")) then {i:3,    o:15,   w:3.75,  r:0.30}
-            elif ($m|test("haiku"))  then {i:0.25, o:1.25, w:0.31,  r:0.025}
+          | if   ($m|test("fable|mythos"))  then {i:10,   o:50,   w:12.50, r:1.00}
+            elif ($m|test("opus-4-[6-9]")) then {i:5,    o:25,   w:6.25,  r:0.50}
+            elif ($m|test("opus"))         then {i:15,   o:75,   w:18.75, r:1.50}
+            elif ($m|test("sonnet"))       then {i:3,    o:15,   w:3.75,  r:0.30}
+            elif ($m|test("haiku"))        then {i:1,    o:5,    w:1.25,  r:0.10}
             else {i:15, o:75, w:18.75, r:1.50} end;
         ([ $bm | to_entries[] | .value as $u | rate(.key) as $r
            | $u.input*$r.i + $u.output*$r.o + $u.cache_creation*$r.w + $u.cache_read*$r.r ]
