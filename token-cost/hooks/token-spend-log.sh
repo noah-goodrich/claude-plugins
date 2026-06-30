@@ -10,6 +10,12 @@
 # raw per-model counts make cost recomputable at ANY future pricing. A cache-aware
 # est_cost_usd is included as the headline number to sum across sessions.
 #
+# schema 2 adds subagents.by_type — per-agent-type token attribution, read from
+# the agent-*.meta.json sibling files that Claude Code writes alongside every
+# agent-*.jsonl. The agentType field in meta.json matches the agent name (e.g.
+# "borg-nanoprobe", "general-purpose", "Explore"). All existing fields are
+# unchanged; by_type is additive only.
+#
 # Reads the SessionEnd payload on stdin (session_id, transcript_path, cwd, reason).
 # ALWAYS exits 0 — must never disrupt session teardown. Override the log path with
 # TOKEN_SPEND_LOG. History is reconstructable from the durable transcripts if a
@@ -59,18 +65,69 @@ _costof() {
          | add // 0) / 1000000' 2>/dev/null
 }
 
+# Per-subagent-type token breakdown across the given agent-*.jsonl files.
+#
+# For each file, reads the sibling agent-*.meta.json to get agentType. Claude Code
+# writes meta.json alongside every agent transcript; in 373/373 real sessions audited
+# coverage was 100%. When meta.json is absent (e.g. older sessions or custom tooling),
+# the agent is bucketed under "unknown" — this is a BEST-EFFORT fallback, not a
+# reliable type, and is documented here so callers know to treat "unknown" as
+# "meta.json missing", not a real agent category.
+#
+# Returns: { "<agentType>": {input, output, cache_creation, cache_read}, ... }
+# Returns: {} on error or when called with no arguments (zero-subagent sessions).
+_bytype() {
+    [ "$#" -eq 0 ] && printf '{}' && return
+    local result='{}'
+    for f in "$@"; do
+        local meta agent_type usage
+        meta="${f%.jsonl}.meta.json"
+        if [ -f "$meta" ]; then
+            agent_type=$(jq -r '.agentType // "unknown"' "$meta" 2>/dev/null)
+        else
+            agent_type="unknown"
+        fi
+        # Normalise empty / null to "unknown"
+        case "$agent_type" in
+            ""| "null") agent_type="unknown" ;;
+        esac
+
+        # Token totals for this single subagent transcript
+        usage=$(jq -cs '[.[] | select(.message.usage? != null) | .message.usage]
+            | {input:(map(.input_tokens//0)|add//0),
+               output:(map(.output_tokens//0)|add//0),
+               cache_creation:(map(.cache_creation_input_tokens//0)|add//0),
+               cache_read:(map(.cache_read_input_tokens//0)|add//0)}' "$f" 2>/dev/null)
+        [ -z "$usage" ] && continue
+
+        # Accumulate into result by type
+        result=$(jq -nc --argjson r "$result" --arg t "$agent_type" --argjson u "$usage" '
+            ($r[$t] // {input:0,output:0,cache_creation:0,cache_read:0}) as $existing |
+            $r + {($t): {
+                input:     ($existing.input          + ($u.input//0)),
+                output:    ($existing.output         + ($u.output//0)),
+                cache_creation: ($existing.cache_creation + ($u.cache_creation//0)),
+                cache_read:     ($existing.cache_read     + ($u.cache_read//0))
+            }}' 2>/dev/null)
+        [ -z "$result" ] && result='{}'
+    done
+    printf '%s' "$result"
+}
+
 MAIN_BM=$(_bymodel "$TRANSCRIPT"); [ -n "$MAIN_BM" ] || MAIN_BM='{}'
 
 # Subagent transcripts (direct + workflow) live under <transcript>/subagents/.
 SUBDIR="${TRANSCRIPT%.jsonl}/subagents"
 AGENT_COUNT=0
 SUB_BM='{}'
+SUB_BT='{}'
 if [ -d "$SUBDIR" ]; then
     sub_files=()
     while IFS= read -r f; do sub_files+=("$f"); done < <(find "$SUBDIR" -name 'agent-*.jsonl' 2>/dev/null)
     AGENT_COUNT=${#sub_files[@]}
     if [ "$AGENT_COUNT" -gt 0 ]; then
         b=$(_bymodel "${sub_files[@]}"); [ -n "$b" ] && SUB_BM="$b"
+        t=$(_bytype  "${sub_files[@]}"); [ -n "$t" ] && SUB_BT="$t"
     fi
 fi
 
@@ -94,11 +151,13 @@ esac
 mkdir -p "$(dirname "$LOG")"
 jq -nc --arg ts "$TS" --arg sid "$SESSION_ID" --arg proj "$PROJECT" --arg cwd "$CWD" \
     --arg reason "$REASON" --argjson mainbm "$MAIN_BM" --argjson subbm "$SUB_BM" \
+    --argjson subbt "$SUB_BT" \
     --argjson agents "$AGENT_COUNT" --argjson maincost "$MAIN_COST" --argjson subcost "$SUB_COST" \
     --argjson cost "$COST" \
-    '{schema:1, ts:$ts, session_id:$sid, project:$proj, cwd:$cwd, end_reason:$reason,
+    '{schema:2, ts:$ts, session_id:$sid, project:$proj, cwd:$cwd, end_reason:$reason,
       main:{by_model:$mainbm, est_cost_usd:(($maincost*100|round)/100)},
-      subagents:{by_model:$subbm, agent_count:$agents, est_cost_usd:(($subcost*100|round)/100)},
+      subagents:{by_model:$subbm, by_type:$subbt, agent_count:$agents,
+                 est_cost_usd:(($subcost*100|round)/100)},
       est_cost_usd:$cost}' \
     >> "$LOG" 2>/dev/null
 
