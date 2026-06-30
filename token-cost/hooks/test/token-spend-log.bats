@@ -9,6 +9,10 @@
 #   5. Subagent dir — agent_count incremented when subagent transcripts exist
 #   6. Cost floor — est_cost_usd is a non-negative number
 #   7. Empty transcript — no crash, exits 0, nothing written
+#   8-9. Project attribution (Desktop / worktree)
+#  10. by_type — per-agent-type breakdown populated from meta.json siblings
+#  11. by_type — unknown fallback when meta.json is absent
+#  12. schema version bumped to 2
 
 HOOK="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)/token-spend-log.sh"
 FIXTURES="$(dirname "$BATS_TEST_FILENAME")/fixtures"
@@ -93,13 +97,13 @@ _mk_transcript() {
 # 3. Schema contract — required keys
 # ---------------------------------------------------------------------------
 
-@test "schema: record has schema=1" {
+@test "schema: record has schema=2" {
     local t="$BATS_TMPDIR/transcripts/schema.jsonl"
     _mk_transcript "$t" "claude-sonnet-4-5" 1000 500
 
     bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
     val=$(jq -r '.schema' "$TOKEN_SPEND_LOG")
-    [ "$val" = "1" ]
+    [ "$val" = "2" ]
 }
 
 @test "schema: record has ts field" {
@@ -319,4 +323,141 @@ _mk_transcript() {
     bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/Users/x/dev/some-project\",\"transcript_path\":\"$t\"}" 2>/dev/null
     val=$(jq -r '.project' "$TOKEN_SPEND_LOG")
     [ "$val" = "some-project" ]
+}
+
+# ---------------------------------------------------------------------------
+# 10. by_type — per-agent-type breakdown from meta.json
+# ---------------------------------------------------------------------------
+
+# Helper: write a meta.json sibling for a given agent jsonl path.
+_mk_meta() {
+    local agent_path="$1" agent_type="$2"
+    printf '{"agentType":"%s","description":"test agent","toolUseId":"toolu_test"}\n' \
+        "$agent_type" > "${agent_path%.jsonl}.meta.json"
+}
+
+@test "by_type: subagents.by_type is an object" {
+    local t="$BATS_TMPDIR/transcripts/bt-shape.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 100 50
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-grunt"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.subagents.by_type | type' "$TOKEN_SPEND_LOG")
+    [ "$val" = "object" ]
+}
+
+@test "by_type: agent type key present when meta.json exists" {
+    local t="$BATS_TMPDIR/transcripts/bt-key.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 200 80
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-nanoprobe"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    has=$(jq -r '.subagents.by_type | has("borg-nanoprobe")' "$TOKEN_SPEND_LOG")
+    [ "$has" = "true" ]
+}
+
+@test "by_type: token counts accumulate correctly for a type" {
+    local t="$BATS_TMPDIR/transcripts/bt-accum.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 300 100
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-grunt"
+    _mk_transcript "$subdir/agent-2.jsonl" "claude-haiku-3-5" 200 80
+    _mk_meta       "$subdir/agent-2.jsonl" "borg-grunt"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    inp=$(jq -r '.subagents.by_type["borg-grunt"].input' "$TOKEN_SPEND_LOG")
+    [ "$inp" -eq 500 ]
+}
+
+@test "by_type: multiple types are tracked separately" {
+    local t="$BATS_TMPDIR/transcripts/bt-multi.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 100 40
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-grunt"
+    _mk_transcript "$subdir/agent-2.jsonl" "claude-sonnet-4-5" 800 300
+    _mk_meta       "$subdir/agent-2.jsonl" "borg-nanoprobe"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    type_count=$(jq -r '.subagents.by_type | keys | length' "$TOKEN_SPEND_LOG")
+    [ "$type_count" -eq 2 ]
+}
+
+@test "by_type: missing meta.json falls back to unknown bucket" {
+    local t="$BATS_TMPDIR/transcripts/bt-nometa.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 150 60
+    # deliberately do NOT create a meta.json
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    has=$(jq -r '.subagents.by_type | has("unknown")' "$TOKEN_SPEND_LOG")
+    [ "$has" = "true" ]
+}
+
+@test "by_type: empty object when no subagents exist" {
+    local t="$BATS_TMPDIR/transcripts/bt-empty.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.subagents.by_type | type' "$TOKEN_SPEND_LOG")
+    [ "$val" = "object" ]
+    cnt=$(jq -r '.subagents.by_type | keys | length' "$TOKEN_SPEND_LOG")
+    [ "$cnt" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# 12. Back-compat: existing fields still present (regression guard for schema 2)
+# ---------------------------------------------------------------------------
+
+@test "back-compat: subagents.by_model still present in schema 2" {
+    local t="$BATS_TMPDIR/transcripts/bc-bm.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 100 40
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-grunt"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.subagents.by_model | type' "$TOKEN_SPEND_LOG")
+    [ "$val" = "object" ]
+}
+
+@test "back-compat: subagents.agent_count still present in schema 2" {
+    local t="$BATS_TMPDIR/transcripts/bc-ac.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    local subdir="${t%.jsonl}/subagents"
+    mkdir -p "$subdir"
+    _mk_transcript "$subdir/agent-1.jsonl" "claude-haiku-3-5" 100 40
+    _mk_meta       "$subdir/agent-1.jsonl" "borg-scout"
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.subagents.agent_count | type' "$TOKEN_SPEND_LOG")
+    [ "$val" = "number" ]
+}
+
+@test "back-compat: subagents.est_cost_usd still present in schema 2" {
+    local t="$BATS_TMPDIR/transcripts/bc-cost.jsonl"
+    _mk_transcript "$t" "claude-sonnet-4-5" 500 200
+
+    bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/tmp/p\",\"transcript_path\":\"$t\"}" 2>/dev/null
+    val=$(jq -r '.subagents.est_cost_usd | type' "$TOKEN_SPEND_LOG")
+    [ "$val" = "number" ]
 }
