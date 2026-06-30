@@ -20,6 +20,14 @@ Opus reasoning over large multi-project context — the durable win is the measu
 noise. Expensive sessions concentrate in `ingle`/`reveal`/`troth`/`claude-desktop`, **not** `borg-collective` — so
 levers must apply portfolio-wide.
 
+**Billing model (load-bearing correction, 2026-06-30):** This is a Claude **subscription** (`claude.ai/settings/usage`),
+NOT per-token API billing. Within the plan allotment, usage is **included** — the `est_cost_usd` figures are an
+*API-equivalent estimate*, not an invoice. Real money accrues only on **overage credits** beyond the plan (monthly cap
+— hit 2026-06-29). So the program's true value is **staying under the usage allotment + minimizing credit overage +
+preserving speed/headroom**, NOT cutting a per-token bill. Every lever (less context, lower effort, cheaper-tier
+subagents) reduces *usage consumed*, which extends the allotment and limits overage — still worth doing, just framed
+as "use less of the plan," not "$X saved."
+
 ## Acceptance Criteria
 
 - [ ] **C1 — Pricing correct, single-source (L0).** SKILL.md table + the hook `rate()` use model-aware rates
@@ -34,11 +42,12 @@ levers must apply portfolio-wide.
   with a marker stating lines cut + how to get the rest; ≤threshold output is byte-unchanged.
   - Verify: 500-line fixture → truncated + marker; 50-line → unchanged. **Regression guard:** enabling it does not
     raise turn/re-run count on a smoke task.
-- [ ] **C4 — 1-hour cache TTL enabled.** `ENABLE_PROMPT_CACHING_1H=1` set so idle pauses >5 min stop triggering
-  cold-start cache rewrites (the TTL default dropped 1h→5m on 2026-04-02; cited analyses measured 15–53% per-session
-  increases). Trades 2× write cost for eliminating rewrites — a win for bursty/idle-gap orchestration.
-  - Verify: env var present in settings.json; spot-check that a post-pause turn shows a cache **read**, not a full
-    rewrite, in `token-spend.jsonl`.
+- [x] **C4 — 1-hour cache TTL: VERIFIED N/A for this account; do NOT set the flag.** Confirmed against
+  `code.claude.com/docs/en/prompt-caching`: `ENABLE_PROMPT_CACHING_1H=1` is the **API-key / third-party** lever. On a
+  **Claude subscription** (this account), Claude Code **already requests the 1h TTL automatically and free within
+  plan**, and intentionally **drops to 5m when over the usage limit / on credits** to cap overage. Forcing the flag
+  while over-limit would *raise* credit spend (2× writes). **Decision: leave it unset.** (Real lever for idle-gap cost
+  on a subscription = just keep the session active, or accept the 5m drop while on credits.)
 - [ ] **C5 — Behavioral defaults encoded (L2/L3/routing).** `effortLevel: medium` default set **at session start**
   (never toggled mid-session — that busts the entire cache), with `/effort high` for planning blocks; CLAUDE.md
   carries compact-retain instructions + `/clear`-on-project-switch guidance; ROUTING.md (shipped in #22) is the
