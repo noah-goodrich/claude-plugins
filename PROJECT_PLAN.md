@@ -49,7 +49,7 @@ local marketplace to a remote registry.
    `docs/plans/directives/2026-05-27-borg-cairn-coordination.md` (or a
    subsequent decision) names one repo as canonical for borg-collective skill
    files, and the other as a downstream consumer.
-   *Status: open — directive drafted, decision pending.*
+   *Status: met (2026-07-01) — DECIDED: the standalone borg-collective repo is canonical/source for the borg-collective plugin; claude-plugins is the marketplace/build target (holds a synced mirror). The other 6 plugins are native to claude-plugins.*
 
 ## Non-goals (explicit)
 

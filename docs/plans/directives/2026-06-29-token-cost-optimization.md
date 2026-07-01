@@ -1,6 +1,6 @@
 # Directive: Token-Cost Optimization
 
-*Parent plan: 2026-05-27-plugin-marketplace-consolidation*
+*Standalone plan (split from 2026-05-27-plugin-marketplace-consolidation on 2026-07-01) — promote to PROJECT_PLAN.md after the marketplace-consolidation plan assimilates.*
 *Filed: 2026-06-29*
 
 ## Objective

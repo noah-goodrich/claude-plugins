@@ -3,3 +3,5 @@ dist/
 *.swp
 *.swo
 .borg/state.json
+.borg/checkpoints/
+.borg-project
