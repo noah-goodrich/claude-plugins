@@ -1,6 +1,6 @@
 # PROJECT_PLAN — Plugin Marketplace Consolidation
 
-**Status:** Proposed, awaiting Noah confirmation
+**Status:** ✅ ASSIMILATED — shipped 2026-07-01 to main (criteria 1–6 met; C6 resolved: borg-collective repo = source, claude-plugins = marketplace/build target per D1)
 **Drafted:** 2026-05-27 by borg link-up agent
 **Supersedes:** none (first PROJECT_PLAN.md for this repo)
 
