@@ -104,7 +104,7 @@ if [[ "$EVIDENCE_FOUND" == "false" && -n "$LAST_MSG" ]]; then
         "${TRANSCRIPT_PATH:-unknown}" >&2
 fi
 
-# ─── Zero-commit detection ──────────────────────────────────────────────────────
+# ─── Zero-commit detection ────────────────────────────────────────────────────
 # An empty branch = a 0-write run (the 15-read/0-write/32k-abort failure). Flag it
 # loudly so the orchestrator re-spawns instead of believing the work landed.
 ZERO_COMMIT=false
