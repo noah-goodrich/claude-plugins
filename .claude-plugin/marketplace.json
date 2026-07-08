@@ -39,6 +39,11 @@
       "name": "token-cost",
       "description": "Lightweight token cost estimation appended to every response.",
       "source": "./token-cost"
+    },
+    {
+      "name": "code-governance",
+      "description": "Code governance tools: capability indexing (scan a domain layer and emit a machine- and human-readable map of every pure exported function) and requirements reconciliation.",
+      "source": "./code-governance"
     }
   ]
 }
