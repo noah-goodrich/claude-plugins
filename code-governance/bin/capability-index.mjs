@@ -4,26 +4,53 @@
  *
  * Usage:
  *   node capability-index.mjs [target-dir] [--out-dir <dir>]
+ *                             [--project-root <dir>]
+ *                             [--surfaces <comma-sep-dirs>]
+ *                             [--fork-threshold <n>]
  *
- *   target-dir  Path to a domain directory (default: ./src/lib/domain).
- *   --out-dir   Where to write capability-index.md + capability-index.json
- *               (default: <target-dir>/../../../docs/capability-index).
+ *   target-dir        Path to a domain directory (default: ./src/lib/domain).
+ *   --out-dir         Where to write capability-index.md + capability-index.json
+ *                     (default: <target-dir>/../../../docs/capability-index).
+ *   --project-root    Root of the project for resolving surface dirs and for relative
+ *                     path display in fork output.  Defaults to 3 levels above target-dir
+ *                     (correct for src/lib/domain).
+ *   --surfaces        Comma-separated list of directories (relative to --project-root)
+ *                     to scan for direct DB table references.  When provided, the tool
+ *                     also emits a "fork alerts" section: tables referenced directly in
+ *                     >= --fork-threshold surface files instead of via a canonical domain fn.
+ *   --fork-threshold  Minimum number of surface files that must reference a table for it
+ *                     to be flagged as a fork candidate (default: 3).
  *
  * No external dependencies. Tolerant of missing JSDoc. Works on any project
  * that follows the "pure domain function" pattern: exported functions in .ts
  * files with optional block JSDoc comments.
+ *
+ * Surface fork detection: scans for Supabase-style `.from('table_name')` references
+ * across surface files (.ts and .tsx) and flags tables that appear in >= threshold
+ * files.  This catches the "write-path fork" class -- a resolver duplicated across
+ * surfaces that should instead call one canonical src/lib/domain function.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
-import { join, resolve, basename } from "node:path";
+import { join, resolve, basename, relative } from "node:path";
 
 // ---- CLI args ---------------------------------------------------------------
 const args = process.argv.slice(2);
 let targetDir = "./src/lib/domain";
 let outDir = null;
+let projectRoot = null;
+let surfaceDirsArg = null;
+let forkThreshold = 3;
+
 for (let i = 0; i < args.length; i++) {
     if (args[i] === "--out-dir" && args[i + 1]) {
         outDir = args[++i];
+    } else if (args[i] === "--project-root" && args[i + 1]) {
+        projectRoot = args[++i];
+    } else if (args[i] === "--surfaces" && args[i + 1]) {
+        surfaceDirsArg = args[++i];
+    } else if (args[i] === "--fork-threshold" && args[i + 1]) {
+        forkThreshold = parseInt(args[++i], 10) || 3;
     } else if (!args[i].startsWith("-")) {
         targetDir = args[i];
     }
@@ -34,6 +61,16 @@ if (!outDir) {
     outDir = resolve(targetDir, "../../../docs/capability-index");
 }
 outDir = resolve(outDir);
+
+if (!projectRoot) {
+    // Default: 3 levels up from target-dir (src/lib/domain → project root)
+    projectRoot = resolve(targetDir, "../../..");
+}
+projectRoot = resolve(projectRoot);
+
+const surfaceDirs = surfaceDirsArg
+    ? surfaceDirsArg.split(",").map((d) => d.trim()).filter(Boolean)
+    : [];
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -134,6 +171,118 @@ function parseFile(filePath) {
     return capabilities;
 }
 
+// ---- Surface fork detection -------------------------------------------------
+
+/**
+ * Recursively collect .ts and .tsx files under a directory, excluding
+ * test files, .d.ts files, node_modules, and hidden dirs.
+ */
+function collectSurfaceFiles(dir) {
+    const results = [];
+    let entries;
+    try {
+        entries = readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+        return results;
+    }
+    for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+            results.push(...collectSurfaceFiles(full));
+        } else if (entry.isFile()) {
+            const name = entry.name;
+            if (
+                (name.endsWith(".ts") || name.endsWith(".tsx")) &&
+                !name.endsWith(".test.ts") &&
+                !name.endsWith(".test.tsx") &&
+                !name.endsWith(".d.ts")
+            ) {
+                results.push(full);
+            }
+        }
+    }
+    return results;
+}
+
+/**
+ * Extract all DB table references from a source string using two patterns:
+ *
+ *   1. Supabase client:  .from('table_name')  or  .from("table_name")
+ *   2. Raw SQL strings:  FROM table_name / INTO table_name /
+ *                        UPDATE table_name / JOIN table_name
+ *      (case-insensitive; catches MCP tools that use pg/Postgres directly)
+ *
+ * Returns a Set of lowercase table name strings.
+ */
+function extractTableRefs(source) {
+    const tables = new Set();
+
+    // Pattern 1 — Supabase client
+    const supaRe = /\.from\(['"]([a-z][a-z0-9_]*)['"]\)/g;
+    let m;
+    while ((m = supaRe.exec(source)) !== null) {
+        tables.add(m[1]);
+    }
+
+    // Pattern 2 — raw SQL keywords followed by a snake_case table identifier.
+    // Matches FROM / INTO / UPDATE / JOIN + an identifier that MUST contain at
+    // least one underscore.  The underscore requirement filters out English prose
+    // in comments and string literals (words like "the", "a", "list", "rows"
+    // never appear as snake_case table names).  Short single-word table names
+    // (lists, items, meals) are already caught by Pattern 1 (Supabase client).
+    const sqlRe = /\b(?:FROM|INTO|UPDATE|JOIN)\s+([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b/gi;
+    while ((m = sqlRe.exec(source)) !== null) {
+        tables.add(m[1].toLowerCase());
+    }
+
+    return tables;
+}
+
+/**
+ * Scan surface directories for direct DB table references.
+ * Returns an array of fork alerts sorted by site count descending:
+ *   { table: string, site_count: number, sites: string[] }
+ * where sites are paths relative to projectRoot.
+ *
+ * A fork alert means the same table is queried directly in >= forkThreshold
+ * surface files -- a signal that resolution logic is scattered rather than
+ * routed through a canonical domain function.
+ */
+function scanForForks(surfaceDirList, projectRootPath, threshold) {
+    const tableToFiles = new Map();
+
+    for (const relDir of surfaceDirList) {
+        const absDir = resolve(projectRootPath, relDir);
+        const files = collectSurfaceFiles(absDir);
+        for (const file of files) {
+            let source;
+            try {
+                source = readFileSync(file, "utf8");
+            } catch (_) {
+                continue;
+            }
+            const tables = extractTableRefs(source);
+            for (const table of tables) {
+                if (!tableToFiles.has(table)) tableToFiles.set(table, new Set());
+                tableToFiles.get(table).add(file);
+            }
+        }
+    }
+
+    const alerts = [];
+    for (const [table, files] of tableToFiles) {
+        if (files.size >= threshold) {
+            const sites = [...files]
+                .map((f) => relative(projectRootPath, f))
+                .sort();
+            alerts.push({ table, site_count: files.size, sites });
+        }
+    }
+    alerts.sort((a, b) => b.site_count - a.site_count);
+    return alerts;
+}
+
 // ---- Main -------------------------------------------------------------------
 
 const files = readdirSync(targetDir)
@@ -151,11 +300,32 @@ for (const file of files) {
     allCapabilities.push(...caps);
 }
 
+// Run surface fork detection if --surfaces was provided
+const forkAlerts = surfaceDirs.length > 0
+    ? scanForForks(surfaceDirs, projectRoot, forkThreshold)
+    : [];
+
 mkdirSync(outDir, { recursive: true });
 
 // ---- JSON output ------------------------------------------------------------
+// capability-index.json keeps the original flat-array format for backward compat.
 const jsonPath = join(outDir, "capability-index.json");
 writeFileSync(jsonPath, JSON.stringify(allCapabilities, null, 2) + "\n");
+
+// fork-alerts.json is written only when --surfaces is provided.
+let forkJsonPath = null;
+if (surfaceDirs.length > 0) {
+    const forkOut = {
+        fork_alerts: forkAlerts,
+        fork_scan_meta: {
+            project_root: projectRoot,
+            surface_dirs: surfaceDirs,
+            fork_threshold: forkThreshold,
+        },
+    };
+    forkJsonPath = join(outDir, "fork-alerts.json");
+    writeFileSync(forkJsonPath, JSON.stringify(forkOut, null, 2) + "\n");
+}
 
 // ---- Markdown output --------------------------------------------------------
 const mdLines = [
@@ -195,6 +365,43 @@ for (const cap of allCapabilities) {
     }
 }
 
+// Fork alerts section
+if (surfaceDirs.length > 0) {
+    mdLines.push(
+        ``,
+        `---`,
+        ``,
+        `## Fork Alerts`,
+        ``,
+        `Tables referenced directly in \`>= ${forkThreshold}\` surface files instead of via a`,
+        `canonical \`src/lib/domain\` function. Each is a consolidation candidate.`,
+        ``,
+        `Surface dirs scanned (relative to project root \`${projectRoot}\`):`,
+    );
+    for (const d of surfaceDirs) mdLines.push(`- \`${d}\``);
+    mdLines.push(``);
+
+    if (forkAlerts.length === 0) {
+        mdLines.push(`No fork candidates found (threshold: ${forkThreshold} sites).`);
+    } else {
+        mdLines.push(
+            `| Table | Sites | Files |`,
+            `|---|---|---|`,
+        );
+        for (const alert of forkAlerts) {
+            const fileList = alert.sites.map((s) => `\`${s}\``).join(", ");
+            mdLines.push(`| \`${alert.table}\` | ${alert.site_count} | ${fileList} |`);
+        }
+        mdLines.push(``);
+        mdLines.push(`### Fork detail`);
+        for (const alert of forkAlerts) {
+            mdLines.push(``, `#### \`${alert.table}\` (${alert.site_count} sites)`);
+            mdLines.push(``, `Direct \`.from('${alert.table}')\` references found in:`);
+            for (const site of alert.sites) mdLines.push(`- \`${site}\``);
+        }
+    }
+}
+
 const mdPath = join(outDir, "capability-index.md");
 writeFileSync(mdPath, mdLines.join("\n") + "\n");
 
@@ -202,3 +409,13 @@ writeFileSync(mdPath, mdLines.join("\n") + "\n");
 console.log(`capability-index: ${allCapabilities.length} functions in ${files.length} modules`);
 console.log(`  JSON: ${jsonPath}`);
 console.log(`  MD:   ${mdPath}`);
+if (surfaceDirs.length > 0) {
+    console.log(`  Fork JSON: ${forkJsonPath}`);
+    console.log(`  Fork alerts (threshold >= ${forkThreshold} sites): ${forkAlerts.length}`);
+    for (const alert of forkAlerts) {
+        console.log(`    [FORK] ${alert.table}  (${alert.site_count} sites)`);
+        for (const site of alert.sites) {
+            console.log(`      - ${site}`);
+        }
+    }
+}
