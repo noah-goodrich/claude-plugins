@@ -23,6 +23,13 @@
 
 LOG="${TOKEN_SPEND_LOG:-$HOME/.claude/token-spend.jsonl}"
 
+# Synthetic sessions opt out. borg-usage-watch polls `claude -p "/usage"` every 120s; each poll
+# opens a real Claude Code session, so this hook fired ~720x/day and wrote a zero-token record
+# every time. Within 11 hours those records were 54% of the ledger. They carry no cost, so sums
+# stay correct, but every count/average over sessions is skewed by them. The poller sets this on
+# its own invocation only.
+[ "${BORG_NO_SPEND_RECORD:-}" = "1" ] && exit 0
+
 command -v jq >/dev/null 2>&1 || exit 0
 
 INPUT=$(cat 2>/dev/null || true)

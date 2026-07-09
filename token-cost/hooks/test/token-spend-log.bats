@@ -60,6 +60,41 @@ _mk_transcript() {
     [ ! -f "$TOKEN_SPEND_LOG" ]
 }
 
+# BORG_NO_SPEND_RECORD — synthetic sessions opt out.
+#
+# borg-usage-watch polls `claude -p "/usage"` every 120s. Each poll opens a real Claude Code
+# session, so this hook fired ~720x/day and appended a zero-token record every time; within 11
+# hours those records were 54% of the ledger. The transcript below is VALID — the hook would
+# otherwise write a record — so this proves the marker is what suppresses it, not a missing file.
+
+@test "synthetic: BORG_NO_SPEND_RECORD=1 writes nothing even for a valid transcript" {
+    local t="$BATS_TMPDIR/transcripts/synthetic.jsonl"
+    _mk_transcript "$t" "claude-opus-4-8" 100 50
+
+    BORG_NO_SPEND_RECORD=1 run bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/\",\"transcript_path\":\"$t\"}"
+    [ "$status" -eq 0 ]
+    [ ! -f "$TOKEN_SPEND_LOG" ]
+}
+
+@test "synthetic: the same transcript DOES write a record without the marker" {
+    local t="$BATS_TMPDIR/transcripts/synthetic.jsonl"
+    _mk_transcript "$t" "claude-opus-4-8" 100 50
+
+    run bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/\",\"transcript_path\":\"$t\"}"
+    [ "$status" -eq 0 ]
+    [ -f "$TOKEN_SPEND_LOG" ]
+    [ "$(wc -l < "$TOKEN_SPEND_LOG" | tr -d ' ')" -eq 1 ]
+}
+
+@test "synthetic: BORG_NO_SPEND_RECORD set to anything other than 1 still records" {
+    local t="$BATS_TMPDIR/transcripts/synthetic.jsonl"
+    _mk_transcript "$t" "claude-opus-4-8" 100 50
+
+    BORG_NO_SPEND_RECORD=0 run bash "$HOOK" <<< "{\"session_id\":\"s1\",\"cwd\":\"/\",\"transcript_path\":\"$t\"}"
+    [ "$status" -eq 0 ]
+    [ -f "$TOKEN_SPEND_LOG" ]
+}
+
 # ---------------------------------------------------------------------------
 # 2. Output shape — well-formed JSONL for a synthetic transcript
 # ---------------------------------------------------------------------------
