@@ -180,6 +180,12 @@ _borg_state_write() {
 }
 
 # Reaper predicate: sourced from lib/reaper.sh (single home shared with registry.zsh).
+#
+# This file is sourced by BOTH bash hooks and the zsh binaries bin/borg-notifyd and
+# bin/borg-cortex-watch. zsh has no BASH_SOURCE, so a bare "${BASH_SOURCE[0]}" expanded to
+# nothing there, sourced "/reaper.sh", and killed both agents with exit 127 on every fire --
+# while `launchctl list` reported them registered. zsh sets $0 to the sourced file's path, and
+# bash sets BASH_SOURCE[0], so the ":-" default covers both (verified under `set -u` in each).
 
 # Snapshot of live tmux window names (one per line). Empty when tmux is down.
 # Honors BORG_TMUX_SESSION (default "borg"), matching lib/tmux.zsh.
