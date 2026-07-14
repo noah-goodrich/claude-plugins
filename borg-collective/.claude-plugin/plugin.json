@@ -1,6 +1,6 @@
 {
   "name": "borg-collective",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "The cognitive-load layer for parallel AI coding — skills and lifecycle hooks for sustainable AI-assisted development.",
   "author": {
     "name": "Noah Goodrich"

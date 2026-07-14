@@ -28,11 +28,20 @@ export PATH
 BORG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/borg"
 BORG_REGISTRY="$BORG_DIR/registry.json"
 
+# BORG_NO_SESSION_HOOKS=1 opts an internal/synthetic session (e.g. the headless
+# `claude -p "/usage"` probe spawned by bin/borg-usage-watch) out of all
+# SessionStart context injection. Mirrors BORG_NO_SPEND_RECORD's opt-out for the
+# SessionEnd token-spend hook. Fail-safe: unset/anything-but-1 is a no-op.
+[[ "${BORG_NO_SESSION_HOOKS:-}" == "1" ]] && exit 0
+
 INPUT=$(cat /dev/stdin 2>/dev/null || true)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""' 2>/dev/null || echo "")
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || echo "")
 
-[[ -z "$CWD" ]] && exit 0
+# Empty CWD, or CWD="/" (e.g. a launchd timer with no WorkingDirectory set):
+# "/" can never be a real borg project, so treat it the same as empty and
+# bail before any project-resolution or cairn call is attempted.
+[[ -z "$CWD" || "$CWD" == "/" ]] && exit 0
 
 # shellcheck source=../lib/borg-hooks.sh
 # ── Inlined helpers (borg-hooks.sh + reaper.sh) — no external source deps ────
@@ -642,21 +651,7 @@ fi
 # Cairn knowledge (optional) — with health check and failure surfacing
 CAIRN_FAILED_FLAG="${BORG_DIR}/.cairn-write-failed"
 
-# Synthetic sessions touch cairn not at all. borg-usage-watch polls `claude -p "/usage"` every 120s
-# from a launchd agent, whose cwd is "/" — so PROJECT resolves to "/" (basename /) and this hook
-# logged a zero-hit `cairn search "/"` into call_log on every poll (~720 rows/day), dragging the
-# usage ledger's hit-rate metric to 0%, and opened a presence row for a session no human is in. The
-# poller already exports BORG_NO_SPEND_RECORD=1 to opt out of the token-spend hook; the same flag
-# means "this is not a real user session" for every cairn interaction below.
-if [[ "${BORG_NO_SPEND_RECORD:-}" == "1" ]]; then
-    SYNTHETIC_SESSION=1
-else
-    SYNTHETIC_SESSION=0
-fi
-
-if [[ "$SYNTHETIC_SESSION" == "1" ]]; then
-    : # no knowledge query, no presence row
-elif ! command -v cairn >/dev/null 2>&1; then
+if ! command -v cairn >/dev/null 2>&1; then
     CONTEXT_PARTS+=("⚠ CAIRN UNAVAILABLE: cairn not found in PATH.
 Cross-session knowledge is not being persisted to the graph. Checkpoints still save locally.
 To fix: ensure cairn is installed and in your PATH, then run 'borg setup'.")
@@ -695,7 +690,7 @@ fi
 # active sessions in the same project. Injects ONE distilled line into
 # CONTEXT_PARTS when a related session exists. Strictly silent on every
 # failure path — cairn down / unreachable / 404 / timeout is a no-op.
-if [[ "$SYNTHETIC_SESSION" != "1" ]] && command -v cairn >/dev/null 2>&1; then
+if command -v cairn >/dev/null 2>&1; then
     _p_branch=$(git -C "$CWD" branch --show-current 2>/dev/null || true)
     _p_paths=""
     if git -C "$CWD" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
