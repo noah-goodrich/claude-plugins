@@ -86,6 +86,26 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Agent|Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/borg-dispatch-guard.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/borg-supabase-guard.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUse": [
