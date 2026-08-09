@@ -12,17 +12,15 @@ command -v borg >/dev/null 2>&1 || exit 0
 # - Plan-mode nudge (if no PROJECT_PLAN.md)
 # - Uncommitted-changes reminder from previous session
 # - Latest checkpoint from .borg/checkpoints/ (written by /borg-link-up)
-# - Cairn knowledge (if available)
 #
 # Registered as a SessionStart hook in ~/.claude/settings.json
 
 set -euo pipefail
 
-# Ensure dotfiles bin (cairn client), Homebrew, pipx user bins, and common
-# system paths are available when this hook runs in Claude Code's stripped
-# PATH environment. Order mirrors a healthy interactive zsh PATH so brew
-# binaries shadow system equivalents (e.g. brew jq before /usr/bin/jq).
-PATH="${HOME}/.config/dotfiles/zsh/bin:${HOME}/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
+# Ensure pipx user bins and common system paths are available when this hook runs in
+# Claude Code's stripped PATH environment. Order mirrors a healthy interactive zsh PATH
+# so brew binaries shadow system equivalents (e.g. brew jq before /usr/bin/jq).
+PATH="${HOME}/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
 export PATH
 
 BORG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/borg"
@@ -40,7 +38,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || echo "")
 
 # Empty CWD, or CWD="/" (e.g. a launchd timer with no WorkingDirectory set):
 # "/" can never be a real borg project, so treat it the same as empty and
-# bail before any project-resolution or cairn call is attempted.
+# bail before any project-resolution is attempted.
 [[ -z "$CWD" || "$CWD" == "/" ]] && exit 0
 
 # shellcheck source=../lib/borg-hooks.sh
@@ -216,77 +214,6 @@ _borg_live_windows() {
     command -v tmux >/dev/null 2>&1 || return 0
     tmux has-session -t "$session" 2>/dev/null || return 0
     tmux list-windows -t "$session" -F '#W' 2>/dev/null || true
-}
-
-# ─── cairn health surfacing ──────────────────────────────────────────────────
-# Source of truth: `cairn health` -> {"status":"ok"|..., "db":"reachable"|..., "version":"..."}.
-# "Recording" freshness is approximated by the mtime of $BORG_DIR/.cairn-last-write, a marker
-# touched by borg-link-up.sh immediately after any successful `cairn record ...` call (there is
-# no last-write endpoint in the cairn CLI as of 0.5.3 — this file IS the minimal addition noted
-# in the task brief). Fail-OPEN contract: this function must never hang (bounded by `timeout`,
-# default 3s) or exit non-zero — every branch prints exactly one line and returns 0.
-#
-# Usage: _borg_cairn_health_line
-_borg_cairn_health_line() {
-    local timeout_secs="${BORG_CAIRN_HEALTH_TIMEOUT:-3}"
-    local compose_hint="${BORG_CAIRN_COMPOSE:-$HOME/dev/cairn/compose.yml}"
-    local dir="${BORG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/borg}"
-
-    if ! command -v cairn >/dev/null 2>&1; then
-        printf 'cairn: DEGRADED — not in PATH · run: borg setup\n'
-        return 0
-    fi
-
-    local raw status db
-    if command -v timeout >/dev/null 2>&1; then
-        raw=$(timeout "$timeout_secs" cairn health 2>/dev/null) || raw=""
-    else
-        raw=$(cairn health 2>/dev/null) || raw=""
-    fi
-    status=$(printf '%s' "$raw" | jq -r '.status // ""' 2>/dev/null || printf '')
-    db=$(printf '%s' "$raw" | jq -r '.db // ""' 2>/dev/null || printf '')
-
-    if [[ "$status" != "ok" ]]; then
-        printf 'cairn: DEGRADED — db %s · run: docker compose -f %s up -d\n' \
-            "${db:-unreachable}" "$compose_hint"
-        return 0
-    fi
-
-    local marker="$dir/.cairn-last-write" age="never"
-    if [[ -f "$marker" ]]; then
-        age=$(_borg_cairn_age_from_epoch "$(_borg_file_mtime_epoch "$marker")")
-    fi
-    printf 'cairn: healthy · recording (last write %s)\n' "$age"
-    return 0
-}
-
-# Cross-platform mtime -> epoch (BSD `stat -f` on macOS, GNU `stat -c` elsewhere).
-# Prints 0 on any failure (missing file, unsupported stat dialect).
-_borg_file_mtime_epoch() {
-    local m
-    m=$(stat -f %m "$1" 2>/dev/null)
-    case "$m" in
-        ''|*[!0-9]*) m=$(stat -c %Y "$1" 2>/dev/null) ;;
-    esac
-    case "$m" in
-        ''|*[!0-9]*) m=0 ;;
-    esac
-    printf '%s' "$m"
-}
-
-# Humanize an epoch-seconds age relative to now. "never" when epoch <= 0.
-_borg_cairn_age_from_epoch() {
-    local epoch="$1"
-    [[ "$epoch" =~ ^[0-9]+$ ]] || { printf 'never'; return; }
-    (( epoch <= 0 )) && { printf 'never'; return; }
-    local now delta
-    now=$(date -u +%s)
-    delta=$(( now - epoch ))
-    (( delta < 0 ))     && { printf 'just now'; return; }
-    (( delta < 60 ))    && { printf '%ds ago' "$delta"; return; }
-    (( delta < 3600 ))  && { printf '%dm ago' $(( delta / 60 )); return; }
-    (( delta < 86400 )) && { printf '%dh ago' $(( delta / 3600 )); return; }
-    printf '%dd ago' $(( delta / 86400 ))
 }
 
 # ── Inlined: reaper.sh ──────────────────────────────────────────────────────
@@ -489,7 +416,6 @@ _orch_next_hint() {
 
 if [[ "$MODE" == "orchestrator" ]]; then
     OVERVIEW=""
-    OVERVIEW+="$(_borg_cairn_health_line)"$'\n\n'
     if [[ -f "$BORG_REGISTRY" ]]; then
         # Read registry for identity fields, then overlay state.json for each project.
         # Build TSV: name, status, last_activity, path — sorted by last_activity desc.
@@ -586,9 +512,6 @@ fi
 # ── 2. Build context ─────────────────────────────────────────────────────────
 
 CONTEXT_PARTS=()
-
-# Cairn health callout — one line, always first, never blocks (fail-open helper).
-CONTEXT_PARTS+=("$(_borg_cairn_health_line)")
 
 # Git context (branch, status, recent commits)
 if git -C "$CWD" rev-parse --is-inside-work-tree &>/dev/null; then
@@ -721,88 +644,6 @@ if [[ -n "$CHECKPOINT_FILE" && -f "$CHECKPOINT_FILE" ]]; then
 
 $CHECKPOINT")
     fi
-fi
-
-# Cairn knowledge (optional) — with health check and failure surfacing
-CAIRN_FAILED_FLAG="${BORG_DIR}/.cairn-write-failed"
-
-if ! command -v cairn >/dev/null 2>&1; then
-    CONTEXT_PARTS+=("⚠ CAIRN UNAVAILABLE: cairn not found in PATH.
-Cross-session knowledge is not being persisted to the graph. Checkpoints still save locally.
-To fix: ensure cairn is installed and in your PATH, then run 'borg setup'.")
-else
-    # Surface any write failure from the previous session stop
-    if [[ -f "$CAIRN_FAILED_FLAG" ]]; then
-        _fail_msg=$(cat "$CAIRN_FAILED_FLAG" 2>/dev/null || true)
-        CONTEXT_PARTS+=("⚠ CAIRN WRITE FAILED (last session): ${_fail_msg}
-The session was NOT committed to the knowledge graph.
-Check cairn service health: cairn health")
-        rm -f "$CAIRN_FAILED_FLAG"
-    fi
-
-    # Attribute the retrieval to this session. cairn's usage ledger has always had a session_id
-    # column on call_log, but no caller ever populated it, so it was NULL on 100% of rows and the
-    # cost/query join returned zero rows in production. Guarded on non-empty: passing an empty
-    # --session-id would log the literal empty string rather than leaving it NULL.
-    CAIRN_SEARCH_ARGS=(--project "$PROJECT" --max 5)
-    [[ -n "$SESSION_ID" ]] && CAIRN_SEARCH_ARGS+=(--session-id "$SESSION_ID")
-    if command -v timeout >/dev/null 2>&1; then
-        CAIRN_OUT=$(timeout 5 cairn search "$PROJECT" "${CAIRN_SEARCH_ARGS[@]}" 2>/dev/null || true)
-    else
-        CAIRN_OUT=$(cairn search "$PROJECT" "${CAIRN_SEARCH_ARGS[@]}" 2>/dev/null || true)
-    fi
-    # Log hit metrics for the 4-week validation window. Brace-group the redirection so
-    # 2>/dev/null is in effect when bash OPENS the log for append: a bare
-    # `cmd >> "$dir/f" 2>/dev/null` opens the target before applying the stderr redirect,
-    # so a missing $BORG_DIR leaks a "No such file or directory" line to stderr — which a
-    # merging consumer (bats `run`) then splices into this hook's JSON stdout, breaking it.
-    CAIRN_BYTES=$(printf '%s' "$CAIRN_OUT" | wc -c | tr -d ' ')
-    { printf '%s\t%s\t%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$PROJECT" "$CAIRN_BYTES" \
-        >> "${BORG_DIR}/cairn-hits.log"; } 2>/dev/null || true
-
-    if [[ -n "$CAIRN_OUT" ]]; then
-        CONTEXT_PARTS+=("Cairn knowledge for $PROJECT:
-
-$CAIRN_OUT")
-    else
-        CONTEXT_PARTS+=("ℹ Cairn has no data for $PROJECT yet.
-Sessions will be committed to cairn after this session ends.")
-    fi
-fi
-
-# ── 2c. Presence ─────────────────────────────────────────────────────────────
-# Publish this session's presence row (open + heartbeat) and query related
-# active sessions in the same project. Injects ONE distilled line into
-# CONTEXT_PARTS when a related session exists. Strictly silent on every
-# failure path — cairn down / unreachable / 404 / timeout is a no-op.
-if command -v cairn >/dev/null 2>&1; then
-    _p_branch=$(git -C "$CWD" branch --show-current 2>/dev/null || true)
-    _p_paths=""
-    if git -C "$CWD" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        _p_paths=$(git -C "$CWD" status --porcelain 2>/dev/null \
-            | awk '{print $NF}' | paste -sd, - || true)
-    fi
-    if command -v timeout >/dev/null 2>&1; then
-        timeout 5 cairn presence open \
-            --session-id "$SESSION_ID" --project "$PROJECT" \
-            --branch "$_p_branch" --paths "$_p_paths" \
-            >/dev/null 2>&1 || true
-    else
-        cairn presence open \
-            --session-id "$SESSION_ID" --project "$PROJECT" \
-            --branch "$_p_branch" --paths "$_p_paths" \
-            >/dev/null 2>&1 || true
-    fi
-    if command -v timeout >/dev/null 2>&1; then
-        _p_line=$(timeout 5 cairn presence related \
-            --session-id "$SESSION_ID" --project "$PROJECT" \
-            --paths "$_p_paths" --format line 2>/dev/null || true)
-    else
-        _p_line=$(cairn presence related \
-            --session-id "$SESSION_ID" --project "$PROJECT" \
-            --paths "$_p_paths" --format line 2>/dev/null || true)
-    fi
-    [[ -n "$_p_line" ]] && CONTEXT_PARTS+=("$_p_line")
 fi
 
 # ── 3. Output ─────────────────────────────────────────────────────────────────
