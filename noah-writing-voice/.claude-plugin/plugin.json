@@ -1,9 +1,9 @@
 {
   "name": "noah-writing-voice",
-  "version": "0.1.31",
-  "description": "Noah Goodrich's writing voice enforcement and AI detection scoring. Foundational skills for all writing output.",
+  "version": "0.2.0",
+  "description": "Noah Goodrich's writing voice enforcement, AI detection scoring, and a brevity layer for scanning documents. Foundational skills for all writing output.",
   "author": {
     "name": "Noah Goodrich"
   },
-  "keywords": ["writing", "voice", "ai-detection", "style-guide"]
+  "keywords": ["writing", "voice", "ai-detection", "style-guide", "brevity"]
 }

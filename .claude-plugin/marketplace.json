@@ -17,7 +17,7 @@
     },
     {
       "name": "noah-content-tools",
-      "description": "Content creation skills for LinkedIn posts and Snowflake Builders Blog articles.",
+      "description": "Content creation skills for LinkedIn posts, Snowflake Builders Blog articles, design docs, and PR descriptions.",
       "source": "./noah-content-tools"
     },
     {
@@ -27,7 +27,7 @@
     },
     {
       "name": "noah-writing-voice",
-      "description": "Noah Goodrich's writing voice enforcement and AI detection scoring.",
+      "description": "Noah Goodrich's writing voice enforcement, AI detection scoring, and a brevity layer for scanning documents.",
       "source": "./noah-writing-voice"
     },
     {
