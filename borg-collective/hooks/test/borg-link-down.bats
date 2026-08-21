@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # borg-link-down.bats — smoke tests for borg-collective/hooks/borg-link-down.sh
 #
-# Focus: deterministic, hermetic behaviours that don't require a live borg/cairn.
+# Focus: deterministic, hermetic behaviours that don't require a live borg.
 # External commands are stubbed with PATH-prepended fakes in the per-test setup.
 #
 # Test categories:
@@ -40,12 +40,6 @@ setup() {
 
     # jq: real jq on CI; if missing, stub enough for the guard check only.
     # We rely on real jq being available (bats job installs it).
-
-    # Canonical fake for cairn (present, no-op). _use_fakes only PREPENDS to PATH, so without this
-    # stub the hook found the real `cairn` client and every project-mode test issued a live
-    # `cairn search` + `cairn presence open` against the production knowledge graph — polluting
-    # call_log with zero-hit rows for fixture projects like "myproject2". Tests must be hermetic.
-    _fake cairn "exit 0"
 
     export TOKEN_SPEND_LOG="$BATS_TMPDIR/spend.jsonl"
     export BORG_ORCHESTRATOR_ROOT="$BATS_TMPDIR/orchestrator-root"
@@ -137,7 +131,6 @@ setup() {
 
 @test "project mode: exits 0 for a simple project CWD" {
     _use_fakes
-    # cairn absent — ensure PATH doesn't accidentally find one
     local proj="$BATS_TMPDIR/myproject"
     mkdir -p "$proj"
     printf '{"projects":{}}' > "$BORG_REGISTRY"
@@ -236,39 +229,4 @@ setup() {
     [ "$status" -eq 0 ]
     ctx=$(printf '%s' "$output" | jq -r '.hookSpecificOutput.additionalContext // ""')
     printf '%s' "$ctx" | grep -qi "uncommitted"
-}
-
-# ---------------------------------------------------------------------------
-# 5. Synthetic sessions — no cairn query
-#
-# The borg-usage-watch launchd poller runs `claude -p "/usage"` every 120s. launchd agents inherit
-# cwd "/", so _borg_find_project falls through to `basename /` => PROJECT="/". Without a guard this
-# hook fired `cairn search "/" --project "/"` on every poll, writing ~720 zero-hit rows/day into
-# cairn's call_log and dragging the ledger's hit-rate metric to 0%. The poller already exports
-# BORG_NO_SPEND_RECORD=1 to opt its synthetic sessions out of the token-spend hook; honour the same
-# flag here.
-# ---------------------------------------------------------------------------
-
-@test "synthetic session: BORG_NO_SPEND_RECORD=1 skips the cairn search" {
-    _use_fakes
-    _fake cairn "echo CAIRN_WAS_CALLED >> '$BATS_TMPDIR/cairn-calls'"
-    rm -f "$BATS_TMPDIR/cairn-calls"
-    printf '{"projects":{}}' > "$BORG_REGISTRY"
-
-    BORG_NO_SPEND_RECORD=1 bash "$HOOK" <<< '{"session_id":"synthetic","cwd":"/"}' > /dev/null
-
-    [ ! -f "$BATS_TMPDIR/cairn-calls" ]
-}
-
-@test "real session: cairn search still runs when the flag is unset" {
-    _use_fakes
-    _fake cairn "echo CAIRN_WAS_CALLED >> '$BATS_TMPDIR/cairn-calls'"
-    rm -f "$BATS_TMPDIR/cairn-calls"
-    local proj="$BATS_TMPDIR/realproject"
-    mkdir -p "$proj"
-    printf '{"projects":{}}' > "$BORG_REGISTRY"
-
-    bash "$HOOK" <<< "{\"session_id\":\"s99\",\"cwd\":\"$proj\"}" > /dev/null
-
-    [ -f "$BATS_TMPDIR/cairn-calls" ]
 }
