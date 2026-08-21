@@ -9,11 +9,64 @@ Every piece of written content must pass through this scoring system before bein
 
 ## Dependencies
 
-This skill works alongside the `noah-voice` skill. Apply voice rules first during writing, then run this scoring pass before delivery.
+This skill works alongside a voice skill picked by document type: `noah-voice` for reading documents, `brevity`
+and its `references/portable-voice.md` for scanning documents. Apply voice rules first during writing, then run
+this scoring pass before delivery.
 
 ## How to Score
 
 Read the entire piece of writing and evaluate it against each of the detection categories below. For each category, assign a penalty based on severity. Start at 100 (fully human) and subtract points.
+
+## Document Modes
+
+Pick a mode before scoring.
+
+**Article mode is the default.** Reading documents: articles, blog posts, LinkedIn posts, newsletters, emails,
+research reports. Score all eight categories exactly as written below.
+
+**Scanning mode** applies to documents built to be skimmed under a heading structure: design docs, directives, plan
+files, PR descriptions, chat replies. Score **categories 3, 4, 6 and the banned-word list inside category 8**, and
+nothing else. Categories 1, 2, 5 and 7 are not scored, and the em-dash clause inside category 8 is not applied.
+
+### Why those categories are off in scanning mode
+
+Measured on Noah's five real directives, 2026-08-20. Full output with per-category penalties is committed at
+`noah-writing-voice/validation/baselines/2026-08-20-baseline.md`. Under all eight categories the five score 75, 77,
+85, 85 and 90, and every one of the 88 points they lose traces to three places:
+
+- **Category 1 (staccato) cost -15 on two of the five.** The flagged text is the status line, for example
+  `Filed: 2026-08-20 · Status: Accepted · Owner: Noah`, plus colon lead-ins that introduce a list. Both are
+  required directive structure, and neither is a sentence.
+- **Category 2 (parallel structure) cost -5 on three of the five.** Every hit is the identical flag: four
+  consecutive sentences opening with "No" or "Not". That is the `Non-Goals` section, a mandatory heading whose
+  contents are a list of things the document will not do.
+- **The category 8 em-dash clause cost -3 to -10 on all five**, 43 of the 88 points, against 54 em dashes. The
+  em-dash ban is an article rule from `noah-voice/references/voice-rules.md:10`. Scanning documents use em dashes
+  constantly and lose points for the house format.
+- **Category 5 (repetitive openings) never fired on any of the five.** It is off for the same structural reason as
+  category 2, since heading-anchored bullets repeat their openers on purpose. That is reasoning, not a measurement.
+- **Category 7 (specificity) also measured zero on all five**, because directives are dense with dates, file paths,
+  commit SHAs and PR numbers. Dropping it moves no measured score.
+
+The four checks that stay describe a habit rather than a shape, and a design doc can commit all of them: announcing
+a transition instead of making one, refusing to take a position, stacking discrete facts into a paragraph that is
+really a list, and reaching for "leverage" or "delve".
+
+### Scoring and reporting in scanning mode
+
+Still start at 100 and subtract. The maximum possible penalty is -45 (-15 transitions, -10 hedging, -10 lists,
+-10 banned words), so scanning scores share no scale with article scores and must never be averaged together. The
+article thresholds do not transfer. Treat any nonzero penalty as worth a revision pass, since a scanning document
+has to earn all four.
+
+Name the mode on the score line so the number is never read against the wrong scale:
+
+```
+AI DETECTION SCORE: [X]/100 (scanning mode: categories 3, 4, 6, 8-words)
+```
+
+All five directives score 100 in this mode. That is a floor, not a target. It means the rubric currently finds
+nothing wrong with documents Noah already considers finished, which is the point.
 
 ## AI Tell Categories
 
