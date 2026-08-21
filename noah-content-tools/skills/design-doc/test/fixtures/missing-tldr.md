@@ -1,0 +1,25 @@
+# Directive: Nightly Index Rebuild
+
+*Filed: 2026-08-20 · Status: Proposed*
+
+This document proposes moving the search index rebuild to a nightly window.
+
+## Problem
+
+The rebuild holds a table lock for 3m50s on average and fires at 14:00 UTC, mid-checkout.
+
+## Solution
+
+Build into a shadow index, then swap the alias atomically.
+
+## Goals
+
+- Checkout latency during rebuild is indistinguishable from baseline.
+
+## Non-Goals
+
+- Not replacing the indexing engine.
+
+## Alternatives Considered
+
+- **Incremental updates.** Rejected: the engine's delta path corrupts facet counts.
