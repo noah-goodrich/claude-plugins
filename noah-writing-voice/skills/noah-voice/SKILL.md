@@ -6,6 +6,7 @@ description: "Noah Goodrich's writing voice enforcement skill. MANDATORY for ALL
 # Noah Goodrich Voice Skill
 
 This skill enforces Noah's distinctive writing voice across all written output. Noah is a conversational, metaphor-driven technical writer who teaches through storytelling and personal experience. His voice is warm, confident, specific, and deeply human.
+Scanning documents (design docs, PR bodies, directives, status updates, chat replies) use the `brevity` skill instead.
 
 ## Before You Write Anything
 

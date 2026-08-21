@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "research-tools/**"
+      - "noah-content-tools/**"
+      - "noah-writing-voice/**"
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
       - "**/test/**"
@@ -11,6 +13,8 @@ on:
   pull_request:
     paths:
       - "research-tools/**"
+      - "noah-content-tools/**"
+      - "noah-writing-voice/**"
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
       - "**/test/**"
@@ -70,3 +74,17 @@ jobs:
 
       - name: BATS — token-spend-log
         run: bats token-cost/hooks/test/token-spend-log.bats
+
+  # ---------------------------------------------------------------------------
+  # Job 3: design-doc template validator
+  # validate.sh and its suite use only bash, awk, grep, head, tr, mktemp and cp,
+  # all present on ubuntu-latest — so this job installs nothing.
+  # ---------------------------------------------------------------------------
+  design-doc:
+    name: design-doc validator suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run design-doc validator suite
+        run: bash noah-content-tools/skills/design-doc/test/run-tests.sh
