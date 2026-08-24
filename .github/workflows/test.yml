@@ -9,6 +9,9 @@ on:
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
       - "**/test/**"
+      - "build-plugins.sh"
+      - ".claude-plugin/**"
+      - "**/.claude-plugin/**"
       - ".github/workflows/test.yml"
   pull_request:
     paths:
@@ -18,6 +21,9 @@ on:
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
       - "**/test/**"
+      - "build-plugins.sh"
+      - ".claude-plugin/**"
+      - "**/.claude-plugin/**"
       - ".github/workflows/test.yml"
 
 concurrency:
@@ -88,3 +94,26 @@ jobs:
 
       - name: Run design-doc validator suite
         run: bash noah-content-tools/skills/design-doc/test/run-tests.sh
+
+  # ---------------------------------------------------------------------------
+  # Job 4: marketplace <-> plugin manifest guard
+  # A plugin listed in marketplace.json with no .claude-plugin/plugin.json is
+  # advertised but uninstallable; build-plugins.sh used to skip it silently.
+  # The guard runs as part of the build, so this job packages everything too.
+  # ---------------------------------------------------------------------------
+  marketplace:
+    name: marketplace manifest guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (jq, shellcheck, zip)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends jq shellcheck zip
+
+      - name: shellcheck — build-plugins.sh
+        run: shellcheck --severity=warning build-plugins.sh
+
+      - name: Marketplace guard + package all plugins
+        run: bash build-plugins.sh

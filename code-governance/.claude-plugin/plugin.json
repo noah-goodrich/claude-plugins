@@ -1,0 +1,9 @@
+{
+  "name": "code-governance",
+  "version": "0.1.0",
+  "description": "Code governance for a project's domain layer: index every exported pure function (signature, intent, invariants, caller surfaces, and forked write-path alerts), then reconcile a new requirement against that index to recommend reuse, extend, refactor, or net-new before any code gets written.",
+  "author": {
+    "name": "Noah Goodrich"
+  },
+  "keywords": ["capability-index", "governance", "domain", "reuse", "duplication", "reconcile", "requirements", "audit", "typescript"]
+}
