@@ -15,7 +15,8 @@ That rule is currently enforced only by Noah remembering to state it. Every proj
 harness by hand. reveal has grown eleven experiment scripts (`scripts/experiment.py`,
 `run_experiment.py`, `grade_experiment.py`, `compare_experiments.py`, `experiment_routing_ab.py`,
 …) and an `experiments/` tree; the same framework shipped once already under the project's earlier
-name (commit `a77873a`, "Experiment Framework — Completed"). No skill exists. No directive was ever
+name (reveal commit `a77873a` "Add experiment framework and rubric scoring experiment", on reveal's
+`main`; note this hash resolves in the reveal repo, not in claude-plugins). No skill exists. No directive was ever
 filed. The methodology for *designing* an experiment exists as reveal knowledge patterns
 (`blind-reviewed-research-arc`, `research-arc-plan-only-with-blind-review`) but nothing enforces
 running one.
