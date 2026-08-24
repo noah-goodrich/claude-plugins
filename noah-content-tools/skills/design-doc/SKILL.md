@@ -11,6 +11,11 @@ thing, so the skill is named `design-doc` and answers to both.
 
 The reader gives this document about two minutes. Everything below serves that fact.
 
+Not every planning document is a design doc. `PROJECT_PLAN.md` follows the `borg-plan` template — Objective, Scope
+Boundaries, Ship Definition, Timeline, Risks — and archived copies under `docs/plans/assimilated/` keep that shape.
+Do not run the validator against those and do not reshape them to pass it; they are a different artifact answering
+a different question.
+
 ## Voice: load `brevity`, never `noah-voice`
 
 Before writing a word, load the `brevity` skill and read its `references/portable-voice.md`. That file is the
