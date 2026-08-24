@@ -2,7 +2,11 @@
 
 **Created:** 2026-05-27
 **Scope:** `noah-writing-voice` plugin (`noah-voice` + `ai-scoring` skills)
-**Status:** Operational rule, locked as of `9c3c320`
+**Status:** ⚠️ NOT IN EFFECT — proposed only, never adopted. The implementation was drafted on branch
+`feat/voice-ai-scoring-recalibration-2026-05-23` (tip `9c3c320`) and opened as
+[#2](https://github.com/noah-goodrich/claude-plugins/pull/2), which is still OPEN and has never merged.
+`9c3c320` is not an ancestor of `main`. Do not treat the rules below as binding: the `ai-scoring` and
+`noah-voice` skills actually on `main` cannot produce the two scores this directive asks for.
 
 ## Why
 
@@ -28,12 +32,17 @@ skill scores its own axis and reports separately. The combined verdict is a
 - `ai-scoring` measures humanness on a 0-100 scale, flagging AI tells with
   line-level citations.
 - `noah-voice` measures voice fidelity by checking adherence to Noah's
-  signature structural moves (codified in `d7fbb4f`) against the Medium
-  corpus.
+  signature structural moves (drafted in `d7fbb4f`, unmerged — see Status) against
+  the Medium corpus.
 
 Both skills run on every written deliverable. The user sees both scores.
 
 ## How to apply
+
+> **Not active.** Steps 1-6 describe the unmerged
+> [#2](https://github.com/noah-goodrich/claude-plugins/pull/2) design. On `main`, `ai-scoring` emits a
+> single 0-100 humanness score and `noah-voice` emits no score at all, so steps 3 and 5 cannot be
+> executed as written.
 
 When writing or editing any prose deliverable (articles, LinkedIn posts,
 README files, prose docs):
@@ -50,8 +59,15 @@ treat a high score on one as compensating for a low score on the other.
 
 ## References
 
-- `noah-writing-voice/skills/ai-scoring/SKILL.md` (post-`9c3c320`)
-- `noah-writing-voice/skills/noah-voice/SKILL.md` (post-`d7fbb4f`, `97e84f3`,
-  `a7fe56e`)
-- `noah-writing-voice/validation/2026-05-23-corpus/` (seed validation corpus)
-- Commit `e231f40 validation: noah-voice + ai-scoring vs Medium corpus`
+Audited 2026-08-21: every commit below except `b701ceb` lives only on an unmerged branch and is NOT an
+ancestor of `main`. Hashes are preserved so the trail survives.
+
+- `noah-writing-voice/skills/ai-scoring/SKILL.md` as redesigned in `9c3c320` — on
+  [#2](https://github.com/noah-goodrich/claude-plugins/pull/2), still OPEN. `main` carries the older
+  single-axis file (last touched by `37c17e2`).
+- `noah-writing-voice/skills/noah-voice/SKILL.md` as revised in `d7fbb4f`, `97e84f3`, `a7fe56e` — all on
+  [#2](https://github.com/noah-goodrich/claude-plugins/pull/2), still OPEN.
+- `noah-writing-voice/validation/2026-05-23-corpus/` (seed validation corpus) — this one IS on `main`,
+  landed independently via `b701ceb`.
+- Commit `e231f40 validation: noah-voice + ai-scoring vs Medium corpus` — on
+  [#3](https://github.com/noah-goodrich/claude-plugins/pull/3), CLOSED without merging.
