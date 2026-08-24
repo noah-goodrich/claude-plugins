@@ -40,10 +40,8 @@ The capability index is produced by the `capability-index` skill. Load it in thi
 1. **Local JSON first** (zero cost, machine-readable):
    `<project-root>/docs/capability-index/capability-index.json`
 2. **Local markdown** (human-readable fallback): `<project-root>/docs/capability-index/capability-index.md`
-3. **cairn** (cross-project store — see the design note below): if no local index exists, or the requirement spans
-   projects, request the index from cairn rather than re-scanning.
 
-If no index exists anywhere, run the `capability-index` skill first, then return here. Never classify against memory —
+If neither exists, run the `capability-index` skill first, then return here. Never classify against memory —
 classify only against a parsed index (name, signature, intent, invariants, caller surfaces). Guessing from function
 names alone is banned (same rule as the generator).
 
@@ -133,22 +131,18 @@ Present the result in Noah's decision-doc format. One block per finding, then on
 
 The rubric gives the *default*; the human makes the call. Always name the trade-off of the non-recommended option.
 
-## Cairn interface (design note — do NOT build here)
+## Scope: local index only
 
-cairn is the cross-project store. This skill READS from and (on decision) WRITES to it. Wiring is out of scope for this
-skill — specify the interface only; another effort implements it.
+This skill reconciles against one project's own capability index and its own copy of the standards. There is no
+cross-project store and none is planned: cairn was decommissioned (borg-collective repo,
+`docs/plans/directives/2026-08-08-cairn-decommission-and-unconditional-block.md`) and nothing replaced it. A
+requirement that genuinely spans projects therefore cannot be fully reconciled here — the reach is a real limit, not
+missing wiring.
 
-- **Standards** — ratified `DATA_CONSISTENCY.md` / `TESTING.md` and the RECON-C principles live in cairn so every
-  project shares one copy. Read: `cairn get standard <name>`.
-- **Capability indices** — the JSON from the `capability-index` skill is published per project to cairn so a
-  requirement can be reconciled against *other* projects' capabilities, not just the local one. Read:
-  `cairn get capability-index <project>`.
-- **Past reconciliation decisions** — every emitted REUSE MAP + its confirmed disposition is a durable decision
-  record. Read (prior calls on similar requirements): `cairn search reconciliation "<requirement keywords>"`. Write (on
-  human confirmation): `cairn put reconciliation <project> <requirement-id>`.
-
-Until the wiring exists, operate purely on the local index and local standards, and note in the REUSE MAP that the
-cross-project lookup was skipped (cairn not wired).
+- Standards and capability indices are per-project copies. Reconciling against another project's capabilities means
+  opening that project and running this skill there.
+- When a requirement spans projects, name the unchecked projects in the REUSE MAP so the gap is explicit. A local-only
+  pass must never read as cross-project coverage.
 
 ## Hard Rules
 
