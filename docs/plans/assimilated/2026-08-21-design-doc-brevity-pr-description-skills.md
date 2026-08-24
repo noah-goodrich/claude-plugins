@@ -1,4 +1,9 @@
 # Project Plan: Design-Doc, Brevity, and PR-Description Skills
+
+**Status:** ✅ ASSIMILATED — shipped 2026-08-21 to main via
+[#39](https://github.com/noah-goodrich/claude-plugins/pull/39); all six criteria met. AC6 required
+[#40](https://github.com/noah-goodrich/claude-plugins/pull/40) first, which removed an obsolete cairn test that had
+been failing on main independently of this work.
 *Established: 2026-08-20*
 
 ## Objective
@@ -38,14 +43,14 @@ published articles. Build over it against main; leave it open, re-scoped.
 
 ## Acceptance Criteria
 
-- [ ] **AC1 — `design-doc` skill and a validator that enforces D1's template.** Validator exits non-zero when a
+- [x] **AC1 — `design-doc` skill and a validator that enforces D1's template.** Validator exits non-zero when a
       required section is missing or the tl;dr is not first; exits zero with a printed advisory when any content
       follows `Decisions requested`, since that pushes the actionable block out of the terminal's landing region.
   - Verify: `bash noah-content-tools/skills/design-doc/test/run-tests.sh` passes, covering four defect fixtures
     (missing tl;dr, missing a required section, no outcome section, both outcome sections) and snapshots of all
     three real 2026-08-20 directives, which must exit zero.
 
-- [ ] **AC2 — `brevity` skill carrying the portable voice spine.** `noah-writing-voice/skills/brevity/SKILL.md`
+- [x] **AC2 — `brevity` skill carrying the portable voice spine.** `noah-writing-voice/skills/brevity/SKILL.md`
       plus `references/portable-voice.md`, holding the eighteen portable rules and explicitly excluding the seven
       article-only ones (em-dash ban, no-bullets, central metaphor, set-the-scene, personal stakes, ELI5-by-analogy,
       identity byline). The spine must include the four rules an adversarial pass found missing from the first cut:
@@ -55,7 +60,7 @@ published articles. Build over it against main; leave it open, re-scoped.
   - Verify: `grep` confirms all four restored rules present and all seven article-only rules absent; a one-line
     pointer exists in `noah-voice/SKILL.md` and the article path is otherwise byte-unchanged.
 
-- [ ] **AC3 — the quality gate is measured, not asserted.** `ai-scoring` gains an additive scanning-document mode
+- [x] **AC3 — the quality gate is measured, not asserted.** `ai-scoring` gains an additive scanning-document mode
       that scores categories 3, 4, 6 and the category-8 word list only. Categories 1, 2 and 5 and the em-dash clause
       are disabled in that mode because they fire on mandatory directive format: under the full rubric Noah's own
       directives score 75, 77, 85, 85 and 90, losing points for status lines and `Non-Goals` bullets.
@@ -63,20 +68,20 @@ published articles. Build over it against main; leave it open, re-scoped.
     articles before the change; after the change, directives score at or above baseline in the new mode and the ten
     articles are unchanged under the existing article mode.
 
-- [ ] **AC4 — `pr-description` produces all four blocks on a real PR.** tl;dr, chain position, review map, test
+- [x] **AC4 — `pr-description` produces all four blocks on a real PR.** tl;dr, chain position, review map, test
       evidence. Chain position names the directive and the acceptance criteria the PR satisfies, and degrades to an
       explicit "no manifest declared" line. Its `description:` frontmatter must state that it emits text only and
       name `/pr` as the different, auto-posting alternative.
   - Verify: run against [#38](https://github.com/noah-goodrich/claude-plugins/pull/38); confirm four blocks and the
     no-manifest line, since no `.borg/programs` directory exists anywhere on this machine.
 
-- [ ] **AC5 — CI actually exercises the new work.** Today `.github/workflows/test.yml` triggers only on
+- [x] **AC5 — CI actually exercises the new work.** Today `.github/workflows/test.yml` triggers only on
       `research-tools/**`, `borg-collective/hooks/**`, `token-cost/hooks/**` and `**/test/**`, and every job step
       names an exact file with no discovery glob — so a new test would trigger the workflow and still never run.
   - Verify: both target plugin paths appear in the push and pull_request filters, an explicit step runs AC1's test
     suite, and the PR's checks page shows that step executed.
 
-- [ ] **AC6 — nothing breaks, and the ship mechanics are done.** Existing suites stay green; both plugins are
+- [x] **AC6 — nothing breaks, and the ship mechanics are done.** Existing suites stay green; both plugins are
       version-bumped from `0.1.31`, which neither has ever been bumped past in 84 commits; `marketplace.json`
       descriptions are updated to mention the new skills.
   - Verify: `bash research-tools/hooks/test/run-tests.sh` and the three bats suites pass; `bash build-plugins.sh`
@@ -140,3 +145,33 @@ run.
   the same three files. It merges clean today; that is not guaranteed after AC2 edits `noah-voice/SKILL.md`.
 - **Shipped is not live.** There is no auto-reload, so a merged, rebuilt plugin does nothing until someone
   reinstalls it through the UI. AC6 is a one-time manual check, not a standing guarantee.
+
+## Additional Work Shipped
+
+Beyond the six criteria:
+
+- **[#40](https://github.com/noah-goodrich/claude-plugins/pull/40)** removed two obsolete cairn tests from
+  `borg-link-down.bats`. Test 17 asserted the hook invokes `cairn`, which it has not done since the decommission,
+  and had been failing on main for every PR touching `borg-collective/hooks/**`. Test 16 was the more interesting
+  one: it passed *vacuously*, asserting that a flag suppresses a call nothing can make. AC6 was unreachable without
+  this.
+- **PRs [#3](https://github.com/noah-goodrich/claude-plugins/pull/3) and
+  [#5](https://github.com/noah-goodrich/claude-plugins/pull/5) closed** per decision D3. #3 was a confirmed zombie
+  (tree hash `7b492c2` identical on both sides); #5 was stacked on closed PR #1 and failed a test-merge.
+- **Three defects found by independent verification and fixed before merge**: the validator accepted a buried
+  tl;dr; the measurement baseline was anchored to untracked files in a sibling repo that were still being edited
+  (one grew from 1,070 to 1,352 words mid-session); and `ai-scoring` and `portable-voice.md` described different
+  scoring rubrics in the same PR.
+- **Three validator fixtures beyond those the plan named**: `tldr-as-heading`, `fenced-heading`, `tldr-buried`.
+  The fenced-heading case matters because a design doc about design docs quotes the template, and a quoted
+  `## Non-Goals` inside a code fence must earn no credit.
+
+## What the Plan Got Wrong
+
+AC1 listed "both outcome sections present" as a defect fixture. It shipped as an **advisory** instead. A document
+carrying both `Goals` and `Acceptance criteria` is not broken, and rejecting it would be the exact false positive
+the advisory/error split exists to prevent. Zero outcome sections remains a hard error.
+
+The plan also asserted AC6 as achievable ("existing suites stay green") without first checking that the existing
+suites were green. They were not. The lesson is cheap and general: a regression criterion should be baselined
+before it is written, not after.
