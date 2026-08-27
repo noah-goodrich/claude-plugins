@@ -37,21 +37,28 @@ the following:"); his are the thing itself.
 
 ## Solution
 
-- **S1 — Generate negatives with known provenance.** Several current models write articles on Noah's topics, at
+- **S1 — Stop the auto-revise loop. Do this first, ahead of any measurement.**
+  `snowflake-article/SKILL.md:15` calls 75 "a hard threshold, not a suggestion" and its Quality Gate says to
+  rewrite flagged passages and re-score until passing, before Noah sees the draft. `linkedin-post` repeats the
+  pattern. Change both to present the draft with its flags attached and never revise to clear a threshold. This is
+  a question of who decides, so no corpus can validate or invalidate it, and every article written before it lands
+  is silently sanded toward a rubric that is known to be wrong.
+- **S2 — Generate negatives with known provenance.** Several current models write articles on Noah's topics, at
   his lengths, under normal prompting. No "write like AI" instruction and no banned-word seeding. This fixes both
   contaminations at once, because provenance is known and length is controlled.
-- **S2 — Extract Noah's voice from session transcripts.** 1,437 transcripts across 24 projects, 571 MB. His
-  messages only. This material predates the gate, so it is uncontaminated by the style collapse above, and it is
-  unedited. Treat it as evidence of what is invariant across genres, not as a substitute for more article samples.
-- **S3 — Replace the standalone-paragraph count with a content test.** A standalone line counts as a tell only
+- **S3 — Extract Noah's voice from session transcripts, numbers in the repo and text on disk.** 1,437 transcripts
+  across 24 projects, 571 MB. His messages only, extracted locally. Derived measurements are committed; the raw
+  extracted text stays gitignored and never leaves the machine. This material predates the gate, so it is
+  uncontaminated by the style collapse above, and it is unedited. Treat it as evidence of what is invariant across
+  genres, not as a substitute for more article samples.
+- **S4 — Replace the standalone-paragraph count with a content test.** A standalone line counts as a tell only
   when it is content-free. `portable-voice.md` rule 5 already states this and the 2026-05-23 validation report
   already recommended it; nobody implemented it. Separate it from the banned-transition category, which currently
   absorbs part of the same signal.
-- **S4 — Recalibrate against the rebuilt set and report per category.** One number hides which lever to pull; for
-  four of the five false positives, four different categories each independently clear the gate.
-- **S5 — Revisit the auto-revise loop.** `snowflake-article/SKILL.md:15` calls 75 "a hard threshold, not a
-  suggestion" and its Quality Gate says to rewrite flagged passages and re-score until passing, before Noah sees
-  the draft. Decide that after S4, when the grader is worth acting on.
+- **S5 — Recalibrate against the rebuilt set, reporting per category alongside the existing number.** One number
+  hides which lever to pull; for four of the five false positives, four different categories each independently
+  clear the gate. The single score is retained as a summary so the eight consumers that read it keep working, but
+  it stops being the verdict.
 
 ## Acceptance criteria
 
@@ -61,16 +68,22 @@ the following:"); his are the thing itself.
 - [ ] AC2 The rubric's banned-word lists do not appear at fixture density in the negatives.
   - Verify: rubric-term hits per 100 words in the new negatives fall inside the range measured for real writing
     (0.00-0.55), not the fixture range (7.14-8.33).
-- [ ] AC3 A voice corpus extracted from session transcripts exists, containing Noah's messages only, with no
-      credentials, private paths, or third-party content.
-  - Verify: an extraction script plus a reviewed sample; `PRIVACY-AUDIT-2026-05-23.md` boundaries applied.
+- [ ] AC3 A voice corpus is extracted from session transcripts under the two-tier rule: only derived measurements
+      are committed, and the raw extracted text is gitignored and stays on the machine.
+  - Verify: the repo contains distributions and rates but no transcript prose; `git check-ignore` covers the raw
+    directory; the extraction script makes no network call; `PRIVACY-AUDIT-2026-05-23.md` boundaries applied.
+- [ ] AC7 The auto-revise loop is gone. `snowflake-article` and `linkedin-post` present drafts with flags rather
+      than revising to clear a threshold.
+  - Verify: neither file instructs re-scoring until passing; `grep` for "hard threshold" and "until passing"
+    returns nothing in either skill.
 - [ ] AC4 The standalone-paragraph rule tests content, not count, and is measured independently of the
       banned-transition category.
   - Verify: on the current corpus it fires on 0 of 10 human articles and a majority of negatives; the payload
     measurement (59% versus 0%) is reproduced by the shipped implementation.
-- [ ] AC5 Recalibration is reported per category with its uncertainty, and no single threshold is asserted without
-      a confidence interval.
-  - Verify: a baseline file records per-category rates for both classes; every headline rate carries an interval.
+- [ ] AC5 Recalibration is reported per category with its uncertainty, the single score is retained as a summary
+      rather than a verdict, and no threshold is asserted without a confidence interval.
+  - Verify: a baseline file records per-category rates for both classes; every headline rate carries an interval;
+    the eight consumers that read the single number still resolve without edits.
 - [ ] AC6 `ai_score.py` and the rubric prose are linked by a test, so the scorer cannot silently drift from the
       skill it claims to implement.
   - Verify: a test asserts the category set and threshold in code match the prose; it runs in CI.
@@ -80,10 +93,13 @@ the following:"); his are the thing itself.
 - **Not scraping Medium or LinkedIn for suspected-AI articles.** Provenance is unknowable by reading, which is the
   central research finding; a set built from "looks AI to me" bakes in the prior this directive exists to remove.
 - **Not reviving the dual-axis redesign.** Closed 2026-08-26 as superseded by measurement.
-- **Not committing raw session transcripts.** Only extracted, filtered text lands in the repo.
+- **Not committing transcript prose in any form.** Derived measurements only. The raw extraction is gitignored,
+  stays local, and no part of it is sent anywhere.
 - **Not changing the 75 constant** until the evaluation set exists. It is duplicated across ~15 lines in 8 files
-  and every current justification for moving it is fitted to the contaminated corpus.
-- **Not changing the auto-revise loop in this directive.** S5 names it; the decision follows S4.
+  and every current justification for moving it is fitted to the contaminated corpus. S1 removes the constant's
+  power without moving it, which is why S1 does not have to wait.
+- **Not retiring the single score.** S5 demotes it to a summary and keeps it, because eight consumers read it.
+  Retiring it entirely is a separate decision, deferred below.
 
 ## Alternatives Considered
 
@@ -95,19 +111,29 @@ the following:"); his are the thing itself.
 - **Author-anchored percentile gate.** Rejected: a percentile is a quota that flags a fixed fraction forever, and
   the within-human ordering is driven by the inverted category, so it would flag his most characteristic writing.
 - **Public benchmarks only (M4, RAID).** Partial credit, not sufficient: known provenance but stale model prose
-  and the wrong genre. Usable for breadth alongside S1, not instead of it.
+  and the wrong genre. Usable for breadth alongside S2, not instead of it.
 - **Retire the score for severity tiers, as every comparable linter does.** Probably the right end state, and
-  deferred rather than rejected: the party reading the tiers today is the agent that wrote the prose, which makes
-  it self-certification. Revisit after S5.
+  deferred rather than rejected. The objection was that the party reading the tiers is the agent that wrote the
+  prose, which makes it self-certification — but S1 removes that objection by putting a human back at the point of
+  decision. Revisit once S5 has real per-category numbers to tier on.
 - **Do nothing.** Rejected: the style collapse above is measured, and the gate is currently unwinnable by
   arithmetic.
 
-## Decisions requested
+## Decisions made
 
-- [ ] **Privacy boundary for S2.** How much filtering before extracted transcript text may be committed, and does
-      any of it leave this machine?
-- [ ] **One score or per-category output.** S4 assumes per-category reporting, which changes what eight consumers
-      read. Confirm, or keep the single number and accept that it cannot say what to fix.
-- [ ] **Whether S5 waits.** The auto-revise loop can be changed today at no measurement cost, since it is a
-      question of who decides rather than of accuracy. Sequencing it after S4 is a judgement call, not a
-      constraint.
+All three resolved by Noah on 2026-08-27. Recorded here rather than deleted, so the reasoning survives the choice.
+
+- [x] **Privacy boundary — numbers in the repo, text on disk.** Only derived measurements are committed:
+      distributions, rates, frequencies. The raw extracted messages are gitignored, stay on the machine, and are
+      not sent anywhere. Chosen because the calibration value is in the statistics, not in the prose, so the
+      exposure is avoidable rather than a trade-off. Folded into S3 and AC3.
+- [x] **Per-category output, keeping the single score as a summary.** The failure being fixed is that a 74 cannot
+      say which of eight things to change — on one article four different fixes each cleared the bar. Retaining
+      the number means the eight consumers that read it keep working, so the change is additive rather than a
+      migration. Folded into S5 and AC5.
+- [x] **The auto-revise loop does not wait; it goes first.** It was originally sequenced last. That was wrong:
+      fixing it needs no measurement, and until it lands every draft is revised toward a rubric known to be
+      miscalibrated, before Noah sees it. Promoted to S1 with its own criterion, AC7.
+
+The directive's own framing changed with that last one. It was written as a measurement project with a policy
+change attached at the end. It is now a policy change that unblocks a measurement project.
