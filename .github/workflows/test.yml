@@ -8,6 +8,7 @@ on:
       - "noah-writing-voice/**"
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
+      - "evals/**"
       - "**/test/**"
       - "build-plugins.sh"
       - ".claude-plugin/**"
@@ -20,6 +21,7 @@ on:
       - "noah-writing-voice/**"
       - "borg-collective/hooks/**"
       - "token-cost/hooks/**"
+      - "evals/**"
       - "**/test/**"
       - "build-plugins.sh"
       - ".claude-plugin/**"
@@ -117,3 +119,19 @@ jobs:
 
       - name: Marketplace guard + package all plugins
         run: bash build-plugins.sh
+
+  # ---------------------------------------------------------------------------
+  # Job 5: ai-scoring evaluation harness suite
+  # evals/harness/ is standard-library Python 3 and makes no network calls, so
+  # this job installs nothing beyond the runner's preinstalled python3.
+  # evals/generate/ is NOT run here and must never be added: it calls provider
+  # APIs, which costs real money and requires secrets CI does not hold.
+  # ---------------------------------------------------------------------------
+  evals-harness:
+    name: evals harness suite (harness only, never the generator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run evals harness suite — harness tests only, no generation
+        run: bash evals/test/run-tests.sh
