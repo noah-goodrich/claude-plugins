@@ -308,6 +308,34 @@ if [[ "$REAL_ANY" -eq 1 ]]; then
     else
         bad "shipped corpus FAILS the harness contamination gate (rc=$RC) :: $(printf '%s' "$OUT" | grep -m1 '^RESULT:')"
     fi
+else
+    # Without this branch the assertion is invisible rather than pending: it appears from
+    # nowhere the moment a document lands, and it is the one most likely to fail.
+    pend "shipped corpus contamination gate — $EVAL_CORPUS_REL holds no documents yet"
+fi
+
+# A partially generated corpus must not read as a finished one. Every (class, provider)
+# stratum is generated from the same topics file, so a stratum that exists at all must hold
+# one document per topic. This is what catches two-of-twenty; the class-level check below
+# only fires when an entire class is empty.
+if [[ "$REAL_ANY" -eq 1 ]]; then
+    topic_n="$(grep -c '"source_article"' "$EVALS/spec/topics.json" 2>/dev/null || echo 0)"
+    short=""
+    for cls_dir in "$REAL_GEN" "$REAL_VOI"; do
+        [[ -d "$cls_dir" ]] || continue
+        for prov in anthropic google cortex; do
+            n="$(find "$cls_dir" -name "$prov-*.md" -type f 2>/dev/null | wc -l | tr -d ' ')"
+            [[ "$n" -eq 0 ]] && continue
+            [[ "$n" -ne "$topic_n" ]] && short="$short ${cls_dir##*/}/$prov=$n"
+        done
+    done
+    if [[ -z "$short" ]]; then
+        ok "every generated stratum is complete at $topic_n documents, one per topic"
+    else
+        bad "partial corpus — stratum(s) short of $topic_n documents:$short"
+    fi
+else
+    pend "generated-stratum completeness — $EVAL_CORPUS_REL holds no documents yet"
 fi
 
 if compgen -G "$REAL_GEN/*.md" > /dev/null && compgen -G "$REAL_VOI/*.md" > /dev/null; then
