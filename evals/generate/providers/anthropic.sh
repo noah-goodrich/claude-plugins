@@ -42,7 +42,7 @@ cmd_preflight() {
 }
 
 cmd_generate() {
-    local prompt_file="${1:-}" payload cfg resp code rc stop text
+    local prompt_file="${1:-}" payload cfg resp code rc stop text events err
     [ -n "$prompt_file" ] || { warn "anthropic: generate needs a prompt file"; return 2; }
     [ -f "$prompt_file" ] || { warn "anthropic: no such prompt file: $prompt_file"; return 2; }
     cmd_preflight >/dev/null || return 2
@@ -55,11 +55,18 @@ cmd_generate() {
 
     # The thinking parameter is deliberately unset. Whatever the model does by default is what the
     # deployed path does by default, and that is the population this corpus has to represent.
+    #
+    # stream is set for transport reasons only and does not change what the model produces.
+    # Opus 5 runs adaptive thinking by default, so a non-streaming call leaves the socket
+    # silent for minutes and the connection gets dropped in transit — measured 2026-08-28 at
+    # 9 of 20 documents lost. Deltas keep bytes moving. Anthropic's guidance is to stream any
+    # request with long input, long output, or a high max_tokens; this is all three.
     jq -n \
         --arg model "$MODEL" \
         --argjson max_tokens "$MAX_TOKENS" \
         --rawfile prompt "$prompt_file" \
-        '{model: $model, max_tokens: $max_tokens, messages: [{role: "user", content: $prompt}]}' \
+        '{model: $model, max_tokens: $max_tokens, stream: true,
+          messages: [{role: "user", content: $prompt}]}' \
         > "$payload"
     rc=$?
     if [ "$rc" -ne 0 ]; then
@@ -79,7 +86,13 @@ cmd_generate() {
     # window instead. Setting it to one attempt's budget is deliberate: a fast failure
     # (429, 5xx) still retries inside the window, while a timeout does not — a timed-out
     # request was already generated and billed server-side, so retrying it pays twice.
-    code="$(curl -sS --config "$cfg" \
+    # --http1.1 and --no-buffer both serve the streaming path. On HTTP/2 this request died
+    # with `curl: (16) Error in the HTTP2 framing layer`; forcing HTTP/1.1 removed that and
+    # left `curl: (52) Empty reply from server`, which streaming is what actually fixes.
+    # Neither exit code is in curl's transient set (timeout, 408, 429, 5xx), so --retry
+    # never fired for either. HTTP/1.1 costs nothing here: the run is sequential and never
+    # multiplexes.
+    code="$(curl -sS --config "$cfg" --http1.1 --no-buffer \
         --max-time "$HTTP_TIMEOUT" --retry 2 --retry-delay 5 --retry-max-time "$HTTP_TIMEOUT" \
         --data-binary "@$payload" -o "$resp" -w '%{http_code}')"
     rc=$?
@@ -94,11 +107,30 @@ cmd_generate() {
         return 1
     fi
 
-    stop="$(jq -r '.stop_reason // ""' "$resp")"
+    # SSE carries one JSON object per `data: ` line. Decode once into JSONL, then read the
+    # three things that matter: an in-band error event, the terminal stop_reason (which
+    # arrives on message_delta, not on the message itself), and the text deltas.
+    events="$TMPD/events.jsonl"
+    sed -n 's/^data: //p' "$resp" > "$events"
+    if [ ! -s "$events" ]; then
+        warn "anthropic: the response carried no stream events"
+        return 1
+    fi
+
+    # A stream that opens 200 and fails midway reports it in band, so this is a real
+    # failure path and not a redundant check on the HTTP status above.
+    err="$(jq -r 'select(.type == "error") | .error.message // empty' "$events" 2>/dev/null | head -1)"
+    if [ -n "$err" ]; then
+        warn "anthropic: the stream carried an error event: $err"
+        return 1
+    fi
+
+    stop="$(jq -r 'select(.type == "message_delta") | .delta.stop_reason // empty' "$events" 2>/dev/null | tail -1)"
     case "$stop" in
         refusal)
             warn "anthropic: the model declined this request (stop_reason: refusal)"
-            jq -r '.stop_details.category? // empty' "$resp" | sed 's/^/  category: /' >&2
+            jq -r 'select(.type == "message_delta") | .delta.stop_details.category? // empty' "$events" \
+                | sed 's/^/  category: /' >&2
             return 1 ;;
         max_tokens)
             warn "anthropic: hit max_tokens ($MAX_TOKENS) — a truncated article is not usable evidence"
@@ -106,9 +138,10 @@ cmd_generate() {
             return 1 ;;
     esac
 
-    text="$(jq -r '[.content[]? | select(.type == "text") | .text] | join("")' "$resp")"
+    text="$(jq -rj 'select(.type == "content_block_delta")
+                    | select(.delta.type == "text_delta") | .delta.text' "$events" 2>/dev/null)"
     if [ -z "$text" ]; then
-        warn "anthropic: the response carried no text block (stop_reason: ${stop:-none})"
+        warn "anthropic: the stream carried no text deltas (stop_reason: ${stop:-none})"
         return 1
     fi
 
