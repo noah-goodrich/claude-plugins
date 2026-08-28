@@ -1,0 +1,58 @@
+[
+  {
+    "id": "warehouse-sizing",
+    "source_article": "fixture-human-01-warehouse-sizing.md",
+    "title": "Warehouse sizing is a scheduling problem",
+    "topic": "How a team decides what size compute warehouse a nightly batch load should run on.",
+    "target_words": 230
+  },
+  {
+    "id": "late-arriving-data",
+    "source_article": "fixture-human-02-late-arriving-data.md",
+    "title": "Late data is not an exception",
+    "topic": "How a pipeline should handle records that arrive after their processing window closed.",
+    "target_words": 185
+  },
+  {
+    "id": "oncall-rotation",
+    "source_article": "fixture-human-03-oncall-rotation.md",
+    "title": "The on-call rotation was the design review",
+    "topic": "What an on-call alert history reveals about the design of a data platform.",
+    "target_words": 275
+  },
+  {
+    "id": "schema-drift",
+    "source_article": "fixture-human-04-schema-drift.md",
+    "title": "Schema drift is a contract failure",
+    "topic": "An upstream schema change breaking downstream models, and what to do about it.",
+    "target_words": 200
+  },
+  {
+    "id": "cost-review",
+    "source_article": "fixture-human-05-cost-review.md",
+    "title": "The cost review nobody wanted to run",
+    "topic": "Diagnosing an unexpected increase in a consumption-based platform bill.",
+    "target_words": 240
+  },
+  {
+    "id": "test-flakiness",
+    "source_article": "fixture-human-06-test-flakiness.md",
+    "title": "A flaky test is a design smell",
+    "topic": "Flaky tests, retry decorators, and what a retry hides.",
+    "target_words": 175
+  },
+  {
+    "id": "runbook-rot",
+    "source_article": "fixture-human-07-runbook-rot.md",
+    "title": "Runbooks rot faster than code",
+    "topic": "Operational runbooks going stale and how a team keeps them useful.",
+    "target_words": 290
+  },
+  {
+    "id": "metric-naming",
+    "source_article": "fixture-human-08-metric-naming.md",
+    "title": "Two people, one metric, four numbers",
+    "topic": "Four teams reporting four different revenue figures from the same source data.",
+    "target_words": 210
+  }
+]
