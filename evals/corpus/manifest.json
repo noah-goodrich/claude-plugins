@@ -1,0 +1,52 @@
+{
+  "seed": 20260827,
+  "calibration": [
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-ai-coding-agent-architect.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-ai-efficiency-trap.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-being-told-i-could-be-fired.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-snowflake-aws-iac-part1.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-snowflake-aws-iac-part2.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-ai-coding-agent-architect.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-ai-efficiency-trap.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-being-told-i-could-be-fired.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-snowflake-vs-databricks-revisited.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-snowflake-vs-databricks.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-ai-efficiency-trap.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-being-told-i-could-be-fired.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-snowflake-vs-databricks.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-the-long-game-part2-wisdom-gap.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-the-long-game.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/ai-coding-agent-architect.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/snowflake-aws-iac-part1.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/snowflake-vs-databricks-revisited.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/snowflake-vs-databricks.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/the-long-game-part2-wisdom-gap.md"
+  ],
+  "held_out": [
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-snowflake-vs-databricks-revisited.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-snowflake-vs-databricks.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-the-long-game-part2-wisdom-gap.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-the-long-game-part3-architects-anchor.md",
+    "evals/corpus/negative-generic/anthropic-claude-opus-5-the-long-game.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-snowflake-aws-iac-part1.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-snowflake-aws-iac-part2.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-the-long-game-part2-wisdom-gap.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-the-long-game-part3-architects-anchor.md",
+    "evals/corpus/negative-generic/google-gemini-3-7-flash-the-long-game.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-ai-coding-agent-architect.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-snowflake-aws-iac-part1.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-snowflake-aws-iac-part2.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-snowflake-vs-databricks-revisited.md",
+    "evals/corpus/negative-voiced/anthropic-claude-opus-5-the-long-game-part3-architects-anchor.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/ai-efficiency-trap.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/being-told-i-could-be-fired.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/snowflake-aws-iac-part2.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/the-long-game-part3-architects-anchor.md",
+    "noah-writing-voice/validation/2026-05-23-corpus/articles/the-long-game.md"
+  ],
+  "seal": {
+    "sha256": "15482052f35a8147410d463f3b6d981024550e1f0fa9e1c0e2d54c78b3b1a029",
+    "uses": 0,
+    "sealed": "2026-08-28"
+  }
+}
