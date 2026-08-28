@@ -41,7 +41,7 @@ cmd_preflight() {
 }
 
 cmd_generate() {
-    local prompt_file="${1:-}" url payload cfg resp code rc finish blocked text
+    local prompt_file="${1:-}" url payload cfg resp code rc finish blocked text events
     [ -n "$prompt_file" ] || { warn "gemini: generate needs a prompt file"; return 2; }
     [ -f "$prompt_file" ] || { warn "gemini: no such prompt file: $prompt_file"; return 2; }
     cmd_preflight >/dev/null || return 2
@@ -51,7 +51,7 @@ cmd_generate() {
     payload="$TMPD/payload.json"
     cfg="$TMPD/curl.cfg"
     resp="$TMPD/resp.json"
-    url="$API_BASE/models/$MODEL:generateContent"
+    url="$API_BASE/models/$MODEL:streamGenerateContent?alt=sse"
 
     # No thinking or safety overrides: the defaults are what an ordinary caller gets, and an
     # ordinary caller is what this class is meant to represent.
@@ -78,7 +78,12 @@ cmd_generate() {
     # window instead. Setting it to one attempt's budget is deliberate: a fast failure
     # (429, 5xx) still retries inside the window, while a timeout does not — a timed-out
     # request was already generated and billed server-side, so retrying it pays twice.
-    code="$(curl -sS --config "$cfg" \
+    # Streaming and --http1.1 for the same reason as anthropic.sh, and this was measured
+    # here too rather than assumed: Flash is faster than Opus 5 but not immune. A live
+    # non-streaming run lost 2 of 10 documents to `curl: (52) Empty reply from server`,
+    # which is not in curl's transient set, so --retry never fired. Being a thinking model
+    # is what matters, not how fast the model is.
+    code="$(curl -sS --config "$cfg" --http1.1 --no-buffer \
         --max-time "$HTTP_TIMEOUT" --retry 2 --retry-delay 5 --retry-max-time "$HTTP_TIMEOUT" \
         --data-binary "@$payload" -o "$resp" -w '%{http_code}')"
     rc=$?
@@ -93,13 +98,23 @@ cmd_generate() {
         return 1
     fi
 
-    blocked="$(jq -r '.promptFeedback.blockReason? // ""' "$resp")"
+    # alt=sse carries one JSON chunk per `data: ` line. Decode once into JSONL; every field
+    # below is then read across chunks rather than out of a single response object.
+    events="$TMPD/events.jsonl"
+    sed -n 's/^data: //p' "$resp" > "$events"
+    if [ ! -s "$events" ]; then
+        warn "gemini: the response carried no stream events"
+        return 1
+    fi
+
+    blocked="$(jq -r '.promptFeedback.blockReason? // empty' "$events" 2>/dev/null | head -1)"
     if [ -n "$blocked" ]; then
         warn "gemini: the prompt was blocked (blockReason: $blocked)"
         return 1
     fi
 
-    finish="$(jq -r '.candidates[0].finishReason? // ""' "$resp")"
+    # finishReason lands on the last chunk, so take the last non-empty rather than the first.
+    finish="$(jq -r '.candidates[0].finishReason? // empty' "$events" 2>/dev/null | tail -1)"
     case "$finish" in
         ""|STOP) ;;
         MAX_TOKENS)
@@ -112,7 +127,8 @@ cmd_generate() {
     esac
 
     # Gemini 3 returns reasoning as parts flagged thought:true. Those are not article text.
-    text="$(jq -r '[.candidates[0].content.parts[]? | select(.thought != true) | .text? // empty] | join("")' "$resp")"
+    text="$(jq -rj '.candidates[0].content.parts[]? | select(.thought != true) | .text? // empty' \
+        "$events" 2>/dev/null)"
     if [ -z "$text" ]; then
         warn "gemini: the response carried no text part (finishReason: ${finish:-none})"
         return 1
