@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ai-coding-agent-architect",
+    "source_article": "ai-coding-agent-architect.md",
+    "title": "Why Your AI Coding Agent Needs a Professional Architect",
+    "topic": "Using Clean Architecture layers and a pylint plugin to constrain the code structure that AI coding assistants produce in Python projects.",
+    "target_words": 1275
+  },
+  {
+    "id": "ai-efficiency-trap",
+    "source_article": "ai-efficiency-trap.md",
+    "title": "The AI Efficiency Trap: Why I Built a Tool to Tell Cursor What to Test",
+    "topic": "Scoring Python code by risk and complexity so an AI assistant writes tests for high-impact logic instead of chasing coverage percentage.",
+    "target_words": 1080
+  },
+  {
+    "id": "being-told-i-could-be-fired",
+    "source_article": "being-told-i-could-be-fired.md",
+    "title": "Being Told I Could Be Fired Was the Best Thing for My Career",
+    "topic": "What a manager's warning that an engineer could be fired changed about that engineer's teamwork, and what it implies about delivering hard feedback.",
+    "target_words": 998
+  },
+  {
+    "id": "snowflake-aws-iac-part1",
+    "source_article": "snowflake-aws-iac-part1.md",
+    "title": "Snowflake & AWS Infrastructure as Code (Part 1)",
+    "topic": "Setting up a local development environment with LocalStack and VS Code devcontainers to emulate AWS and Snowflake services for infrastructure-as-code work.",
+    "target_words": 853
+  },
+  {
+    "id": "snowflake-aws-iac-part2",
+    "source_article": "snowflake-aws-iac-part2.md",
+    "title": "Snowflake & AWS Infrastructure as Code (Part 2)",
+    "topic": "Moving off AWS CDK to a configuration-driven approach for provisioning Snowflake databases, roles, pipelines, and S3 storage integrations alongside AWS resources.",
+    "target_words": 1163
+  },
+  {
+    "id": "snowflake-vs-databricks",
+    "source_article": "snowflake-vs-databricks.md",
+    "title": "Snowflake vs Databricks",
+    "topic": "How the choice between Snowflake and Databricks depends on team size, Spark expertise, and tolerance for ongoing platform maintenance.",
+    "target_words": 1033
+  },
+  {
+    "id": "snowflake-vs-databricks-revisited",
+    "source_article": "snowflake-vs-databricks-revisited.md",
+    "title": "Snowflake vs Databricks: Revisited",
+    "topic": "A revised comparison of Snowflake and Databricks treating the data platform as a commodity where maintenance burden and opportunity cost decide the outcome.",
+    "target_words": 1404
+  },
+  {
+    "id": "the-long-game",
+    "source_article": "the-long-game.md",
+    "title": "The Long Game",
+    "topic": "Leadership as stewardship, evaluated by the health and resilience of a system years after the leader has moved on rather than by near-term performance.",
+    "target_words": 1133
+  },
+  {
+    "id": "the-long-game-part2-wisdom-gap",
+    "source_article": "the-long-game-part2-wisdom-gap.md",
+    "title": "The Long Game, Part 2: The Wisdom Gap",
+    "topic": "The gap between an AI model's recall of technical information and the judgment required to apply it correctly on a complex data platform project.",
+    "target_words": 2535
+  },
+  {
+    "id": "the-long-game-part3-architects-anchor",
+    "source_article": "the-long-game-part3-architects-anchor.md",
+    "title": "The Long Game, Part 3: The Architect's Anchor",
+    "topic": "Encoding architectural context and decision rationale into systems so knowledge transfers across a team instead of remaining trapped in specific individuals.",
+    "target_words": 2086
+  }
+]
