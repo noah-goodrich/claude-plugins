@@ -1,6 +1,6 @@
 # Directive: Rebuild the ai-scoring Evaluation Set
 
-*Filed: 2026-08-26 · Status: Proposed · Parent: none*
+*Filed: 2026-08-26 · Status: Proposed · Parent: none · Supersedes: `2026-05-27-voice-ai-scoring-dual-axis.md`*
 
 **tl;dr** — `ai-scoring` cannot measure whether it detects machine-written prose, because the negative half of its
 corpus was written out of its own banned-word lists. Build an evaluation set with known provenance — model-written
