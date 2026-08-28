@@ -78,7 +78,12 @@ cmd_generate() {
     # window instead. Setting it to one attempt's budget is deliberate: a fast failure
     # (429, 5xx) still retries inside the window, while a timeout does not — a timed-out
     # request was already generated and billed server-side, so retrying it pays twice.
-    code="$(curl -sS --config "$cfg" \
+    # --http1.1 for the same reason as anthropic.sh: a long non-streaming request over
+    # HTTP/2 dies with `curl: (16) Error in the HTTP2 framing layer`, and exit 16 is not
+    # a transient code so --retry never fires. Gemini 3.7 Flash is also a thinking model,
+    # so it has the same silent-connection profile even though it was not the provider
+    # the failure was measured on.
+    code="$(curl -sS --config "$cfg" --http1.1 \
         --max-time "$HTTP_TIMEOUT" --retry 2 --retry-delay 5 --retry-max-time "$HTTP_TIMEOUT" \
         --data-binary "@$payload" -o "$resp" -w '%{http_code}')"
     rc=$?
