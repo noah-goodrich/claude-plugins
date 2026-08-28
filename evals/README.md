@@ -109,8 +109,9 @@ What this corpus can and cannot support. Read this before quoting any number out
   threshold from that. This is why every rate in the report carries its interval, and why the report states how
   many documents the interval a reader wants would actually require.
 - **It cannot tell you whether the rubric detects machine prose in general.** `voiced` is one vendor by design.
-  `generic` spans three providers but a handful of documents each. Treat both as evidence about this gate on this
-  workload, not as an AI-detection benchmark.
+  `generic` spans whichever providers authenticated — three when Cortex is available, two when it is not, per the
+  note above — at a handful of documents each. Treat both as evidence about this gate on this workload, not as an
+  AI-detection benchmark.
 - **It cannot use `voiced` to validate the rubric.** The `voiced` prompt injects `noah-voice/SKILL.md` and
   `references/voice-rules.md` verbatim, and those files tell the model much of what the rubric is about to score
   it on. Lexically the overlap is exact: 9 distinct rubric terms appear in `SKILL.md`, 8 in `voice-rules.md`, 9
