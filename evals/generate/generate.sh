@@ -451,8 +451,16 @@ while IFS="$TAB" read -r provider cls model id source_article words out action p
         continue
     fi
 
-    mkdir -p "$(dirname "$out")"
-    {
+    # The completion is already paid for by this point, so a write that fails has to be
+    # reported as a failure. Under `set -uo pipefail` without -e an unchecked mkdir or
+    # redirect falls through to the success path, and the run claims a document it does
+    # not have — the one lie a corpus that exists to carry provenance cannot afford.
+    if ! mkdir -p "${out%/*}"; then
+        printf 'FAILED (cannot create %s)\n' "${out%/*}"
+        failed=$((failed + 1))
+        continue
+    fi
+    if ! {
         printf -- '---\n'
         printf 'class: %s\n' "$cls"
         printf 'provider: %s\n' "$provider"
@@ -465,7 +473,23 @@ while IFS="$TAB" read -r provider cls model id source_article words out action p
         printf -- '---\n\n'
         cat "$body"
         if [ "$(tail -c 1 "$body" | od -An -tx1 | tr -d ' \n')" != "0a" ]; then printf '\n'; fi
-    } > "$out"
+    } > "$out"; then
+        rm -f "$out"
+        printf 'FAILED (write error)\n'
+        failed=$((failed + 1))
+        continue
+    fi
+    # This check, not the one above, is what actually catches a permission failure:
+    # bash reports the redirect error on stderr but the group still exits 0, so the
+    # guard above never fires. Verified against a mode-555 corpus directory. Keep both
+    # — the group check covers a failing command inside the block, this one covers the
+    # redirect itself and any write that truncates.
+    if [ ! -s "$out" ]; then
+        rm -f "$out"
+        printf 'FAILED (document missing or empty after write)\n'
+        failed=$((failed + 1))
+        continue
+    fi
 
     printf 'ok (%s words)\n' "$(wc -w < "$body" | tr -d ' ')"
     written=$((written + 1))

@@ -73,8 +73,13 @@ cmd_generate() {
         printf 'header = "content-type: application/json"\n'
     } > "$cfg"
 
+    # --max-time is per attempt and curl resets it on every retry, so --retry 2 alone
+    # allows 3 x HTTP_TIMEOUT of wall clock per document. --retry-max-time caps the whole
+    # window instead. Setting it to one attempt's budget is deliberate: a fast failure
+    # (429, 5xx) still retries inside the window, while a timeout does not — a timed-out
+    # request was already generated and billed server-side, so retrying it pays twice.
     code="$(curl -sS --config "$cfg" \
-        --max-time "$HTTP_TIMEOUT" --retry 2 --retry-delay 5 \
+        --max-time "$HTTP_TIMEOUT" --retry 2 --retry-delay 5 --retry-max-time "$HTTP_TIMEOUT" \
         --data-binary "@$payload" -o "$resp" -w '%{http_code}')"
     rc=$?
     if [ "$rc" -ne 0 ]; then
