@@ -21,8 +21,9 @@
 #   5  fixture builder  a manifest fixture carries .borg/programs and leaves HEAD off main with a
 #                       non-empty main..HEAD; a manifest-less fixture carries no .borg at all
 #   6  model floor      ...and HOLDS when a stub `claude` lets one case execute, so the floor is
-#                       proved CONDITIONAL and not merely present. Also the only case that drives
-#                       the model path behaviourally, so the empty-array expansion is executed.
+#                       proved CONDITIONAL and not merely present. Drives the model path
+#                       behaviourally, so the empty-array expansion is actually executed -- as does
+#                       case 7, which was inserted after this note first called case 6 the ONLY one.
 #   7  claude rc        a non-zero `claude` SKIPs both cases NAMING the rc and FAILs neither, so a
 #                       broken CLI is never reported as a broken skill
 #   8  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
@@ -83,7 +84,9 @@ if [ "$rc" -eq 2 ] && printf '%s' "$out" | grep -q "does not look like the claud
    && [ -f "$foreign/evals/pr-description/out/canary" ]; then
     ok "a foreign REPO is refused by name and the canary survives"
 else
-    bad "checkout guard (rc=$rc, canary present: $([ -f "$foreign/evals/pr-description/out/canary" ] && echo yes || echo NO)) $out"
+    canary_state=NO
+    [ -f "$foreign/evals/pr-description/out/canary" ] && canary_state=yes
+    bad "checkout guard (rc=$rc, canary present: $canary_state) $out"
 fi
 # The holding direction: a REPO that DOES carry the marker gets past the guard, and the same
 # canary is then deleted. Without this half the guard would be credited for refusing everything.
@@ -142,9 +145,12 @@ echo "== 6: the model floor HOLDS when a model case can execute =="
 # nothing about manifests, which is why the assertion is on the FLOOR's absence and on rc, not on a
 # clean run.
 #
-# It also drives the model path BEHAVIOURALLY, which case 7 cannot: case 7 is a static grep, so the
-# `${TIMEOUT[@]+"${TIMEOUT[@]}"}` empty-array expansion -- the thing that crashed on bash 3.2 -- is
-# executed by this case and by nothing else here.
+# It also drives the model path BEHAVIOURALLY, which the guarded-array case (now 8) cannot: that one
+# is a static grep, so the `${TIMEOUT[@]+"${TIMEOUT[@]}"}` empty-array expansion -- the thing that
+# crashed on bash 3.2 -- has to be reached by a case that actually invokes the model path. This case
+# and case 7 both do. THE NUMBER 8 IS WHY THIS SENTENCE NAMES THE CASE AND NOT ONLY ITS INDEX: when
+# case 7 was inserted the guarded-array case shifted from 7 to 8 and this comment still said 7,
+# which is the renumber drift this file's borg counterpart was corrected for twice.
 STUB="$TMP/stub/bin"
 mkdir -p "$STUB"
 for b in bash dirname git grep mkdir rm cp printf cat sed head tr mktemp; do
