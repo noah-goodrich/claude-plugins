@@ -10,7 +10,7 @@
 # with every gate staying green. So the floor lands with its pair or it lands unobserved, and the
 # pair has to be runnable where the floor is not.
 #
-# SEVEN CASES, each in the firing direction AND the direction that proves it discriminates. A guard
+# EIGHT CASES, each in the firing direction AND the direction that proves it discriminates. A guard
 # asserted only firing is satisfied just as well by an artifact that always fails:
 #   1  --skip-model     requests nothing, runs nothing, exits 0 and SAYS SO
 #   2  model floor      FIRES at rc 1 when the sweep is requested and `claude` is hidden...
@@ -23,7 +23,9 @@
 #   6  model floor      ...and HOLDS when a stub `claude` lets one case execute, so the floor is
 #                       proved CONDITIONAL and not merely present. Also the only case that drives
 #                       the model path behaviourally, so the empty-array expansion is executed.
-#   7  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
+#   7  claude rc        a non-zero `claude` SKIPs both cases NAMING the rc and FAILs neither, so a
+#                       broken CLI is never reported as a broken skill
+#   8  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
 #                       whose subject moved here with the cases that expand an optional prefix
 
 set -uo pipefail
@@ -156,13 +158,47 @@ echo "No manifest declared."
 STUBEOF
 chmod +x "$STUB/claude"
 out="$(env PATH="$STUB" bash "$RUN" 2>&1)"; rc=$?
-if ! printf '%s' "$out" | grep -q "the model sweep was requested but no model case executed"    && printf '%s' "$out" | grep -q "E5 fallback line present"; then
-    ok "the floor stays silent when a model case executed (rc=$rc)"
+# THE rc IS ASSERTED, NOT MERELY INTERPOLATED. The first draft of this case printed `(rc=$rc)` into
+# its own success message and asserted nothing about it, which left the harness OUTERMOST gate --
+# the closing `[ "$FAIL" -eq 0 ]` -- observed by nothing: delete that line and this file stayed at
+# 9 ok / 0 fail while a genuine E4 regression exited 0 to `make eval`, to a human, and to any
+# wrapper reading the status. E4 legitimately FAILs against a stub that knows nothing about
+# manifests, so rc 1 is the expected value here and is what proves the gate is wired. borg
+# tests/eval_floor.bats asserted the same thing on a bad-only run before these cases moved.
+if ! printf '%s' "$out" | grep -q "the model sweep was requested but no model case executed" \
+   && printf '%s' "$out" | grep -q "E5 fallback line present" \
+   && [ "$rc" -eq 1 ]; then
+    ok "the floor stays silent when a case executed, and a FAIL still sets rc (rc=$rc)"
 else
-    bad "the model floor fired despite a case executing (rc=$rc): $out"
+    bad "the floor fired despite a case executing, or rc was not 1 (rc=$rc): $out"
 fi
 
-echo "== 7: the optional prefix array is never expanded bare =="
+echo "== 7: a non-zero claude is an absent input, not a case failure =="
+# THE rc ARM HAD NO ORACLE. Reverting `[ "$claude_rc" -ne 0 ]` to the pre-fix straight-to-grep
+# behaviour left this file at 9 ok / 0 fail: cases 2 and 3 hide `claude` entirely, so
+# `command -v claude` returns first and the arm is never reached, and case 6 stub exits 0. Nothing
+# drove a non-zero-rc `claude` at all -- so the fix for "a broken CLI is reported as a broken
+# skill" was itself unobserved, which is the defect class this whole file exists to close.
+FAILSTUB="$TMP/failstub/bin"
+mkdir -p "$FAILSTUB"
+for b in bash dirname git grep mkdir rm cp printf cat sed head tr mktemp; do
+    src="$(command -v "$b" 2>/dev/null)" && ln -sf "$src" "$FAILSTUB/$b"
+done
+printf '#!/bin/sh\necho "Invalid API key -- not logged in" >&2\nexit 42\n' > "$FAILSTUB/claude"
+chmod +x "$FAILSTUB/claude"
+out="$(env PATH="$FAILSTUB" bash "$RUN" 2>&1)"; rc=$?
+# Three clauses: both cases SKIP, neither FAILs, and the rc is NAMED so the author is told which
+# failure they actually have. The floor still firing is correct and deliberate -- the sweep was
+# requested and no case executed -- so rc is not asserted as 0 here.
+if printf '%s' "$out" | grep -q "SKIP  E4 chain position: claude exited 42" \
+   && printf '%s' "$out" | grep -q "SKIP  E5 fallback: claude exited 42" \
+   && ! printf '%s' "$out" | grep -q "FAIL  E"; then
+    ok "a non-zero claude SKIPs both cases by rc and FAILs neither (rc=$rc)"
+else
+    bad "a broken CLI was reported as a case failure (rc=$rc): $out"
+fi
+
+echo "== 8: the optional prefix array is never expanded bare =="
 # INHERITED FROM borg-collective's tests/eval_floor.bats 2026-09-03, where it was case 13 and where
 # its subject no longer exists: `${TIMEOUT[@]}` left that tree with E4/E5, and this is the harness
 # that still expands an optional prefix. On bash < 4.4 -- macOS ships 3.2 -- expanding an EMPTY
