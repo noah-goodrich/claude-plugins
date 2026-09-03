@@ -35,7 +35,9 @@
 #       the rate is forbidden). NO git/mtime provenance is read — the check is the
 #       absence-of-retroactive-note plus the enum-missing-equals-failed rule.
 #   A9  a card whose Verified Quote attribution names a domain OTHER than the card's
-#       own URL host is automatic `failed`, regardless of access status.
+#       own URL host is automatic `failed`, regardless of access status. Inline-code
+#       spans and <...> placeholders on the attribution line are NOT attributions and
+#       are stripped before host extraction.
 #   A10 inaccessible exclusions are capped at ~30% of the sample. Above the cap, the
 #       deliverable must be stamped `low-confidence` (not `passed`).
 #   A11 every source card's `Perspective category:` value, WHEN PRESENT, is exactly
@@ -373,7 +375,19 @@ else
             # `label(.label)*.tld` with any 2+-char alpha TLD — NOT a closed TLD allowlist,
             # so a `.xyz` / `.de` / `.tv` misattribution cannot escape. reveal-s11 shape:
             #   — Lavivienpost.net / Stable Diffusion Art ecosystem documentation
+            # Strip inline-code spans and <...> placeholders FIRST. An attribution is
+            # prose; a backticked identifier or an angle-bracketed placeholder is not. A
+            # dotted SQL placeholder such as `<db.schema.agent_name>` otherwise matches the
+            # structural host pattern (`db.schema.agent`, TLD `agent`) and fails a card whose
+            # quote is correctly attributed — which pushes the author toward editing a
+            # verbatim quote to appease the linter, destroying the very property A9 protects.
+            # Narrowing, not accretion: no new gate, strictly fewer false positives.
+            # Accepted residual hole: a real misattribution hidden inside backticks or angle
+            # brackets on a dash-led line now escapes A9. Judged strictly better than a gate
+            # that cannot be satisfied without corrupting evidence.
             attr_domain=$(grep -E '^[[:space:]]*([-–—]|\*\*?(source|attribut|credit))' "$card" \
+                | sed -E 's/`[^`]*`//g' \
+                | sed -E 's/<[^>]*>//g' \
                 | grep -Eio '[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}' \
                 | sed -E 's#^www\.##I' \
                 | tr 'A-Z' 'a-z' \
