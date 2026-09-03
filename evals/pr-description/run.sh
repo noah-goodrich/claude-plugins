@@ -141,17 +141,30 @@ else
     make_fixture_repo "$E4_DIR" "$SCRIPT_DIR/fixtures/programs/ingle-t1-cutover.json"
     (cd "$E4_DIR" && ${TIMEOUT[@]+"${TIMEOUT[@]}"} claude -p "/pr-description" \
         > "$OUT/e4-body.md" 2>"$OUT/e4-stderr.txt")
-    # Three clauses, and the third is the one that makes this a test rather than a smoke check:
-    # the program name must appear AND the fallback line must be absent. A skill that emitted
-    # both would satisfy a name-only assertion while having failed to discriminate.
-    if grep -q "ingle-t1-cutover" "$OUT/e4-body.md" && \
-       grep -qi "cutover" "$OUT/e4-body.md" && \
-       ! grep -q "No manifest declared" "$OUT/e4-body.md"; then
-        ok "E4 chain position rendered from the manifest"
+    claude_rc=$?
+    if [ "$claude_rc" -ne 0 ]; then
+        # A BROKEN CLI IS NOT A BROKEN SKILL, and this arm is the whole difference. `command -v
+        # claude` proves the binary is on PATH, not that it can run: not logged in, usage limit
+        # reached, network down and model unavailable all exit non-zero, leave a 0-byte body, and
+        # would fail every grep below -- so the harness reported `FAIL E4 chain position` and rc 1
+        # when the truth was "your CLI is not authenticated", with the reason sitting unread in
+        # e4-stderr.txt. That is the exact conflation borg's E2 refuses for the 401 analog. SKIP,
+        # not FAIL, and MODEL_RAN is deliberately NOT incremented: the case did not execute, so the
+        # model floor below still fires and says the sweep was asked for and did not happen.
+        skip "E4 chain position: claude exited $claude_rc -- $(head -c 200 "$OUT/e4-stderr.txt" | tr '\n' ' ')"
     else
-        bad "E4 chain position (see $OUT/e4-body.md)"
+        # Three clauses, and the third is the one that makes this a test rather than a smoke check:
+        # the program name must appear AND the fallback line must be absent. A skill that emitted
+        # both would satisfy a name-only assertion while having failed to discriminate.
+        if grep -q "ingle-t1-cutover" "$OUT/e4-body.md" && \
+           grep -qi "cutover" "$OUT/e4-body.md" && \
+           ! grep -q "No manifest declared" "$OUT/e4-body.md"; then
+            ok "E4 chain position rendered from the manifest"
+        else
+            bad "E4 chain position (see $OUT/e4-body.md)"
+        fi
+        MODEL_RAN=$((MODEL_RAN+1))
     fi
-    MODEL_RAN=$((MODEL_RAN+1))
 fi
 
 echo "== E5: fallback path in a manifest-less repository =="
@@ -162,12 +175,17 @@ else
     make_fixture_repo "$E5_DIR"
     (cd "$E5_DIR" && ${TIMEOUT[@]+"${TIMEOUT[@]}"} claude -p "/pr-description" \
         > "$OUT/e5-body.md" 2>"$OUT/e5-stderr.txt")
-    if grep -q "No manifest declared" "$OUT/e5-body.md"; then
-        ok "E5 fallback line present"
+    claude_rc=$?
+    if [ "$claude_rc" -ne 0 ]; then
+        skip "E5 fallback: claude exited $claude_rc -- $(head -c 200 "$OUT/e5-stderr.txt" | tr '\n' ' ')"
     else
-        bad "E5 fallback (see $OUT/e5-body.md)"
+        if grep -q "No manifest declared" "$OUT/e5-body.md"; then
+            ok "E5 fallback line present"
+        else
+            bad "E5 fallback (see $OUT/e5-body.md)"
+        fi
+        MODEL_RAN=$((MODEL_RAN+1))
     fi
-    MODEL_RAN=$((MODEL_RAN+1))
 fi
 
 echo "RESULT: $PASS pass, $FAIL fail, $SKIPPED skip"

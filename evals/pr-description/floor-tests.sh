@@ -10,7 +10,7 @@
 # with every gate staying green. So the floor lands with its pair or it lands unobserved, and the
 # pair has to be runnable where the floor is not.
 #
-# SIX CASES, each in the firing direction AND the direction that proves it discriminates. A guard
+# SEVEN CASES, each in the firing direction AND the direction that proves it discriminates. A guard
 # asserted only firing is satisfied just as well by an artifact that always fails:
 #   1  --skip-model     requests nothing, runs nothing, exits 0 and SAYS SO
 #   2  model floor      FIRES at rc 1 when the sweep is requested and `claude` is hidden...
@@ -20,7 +20,10 @@
 #                       where $OUT would be SURVIVES; a REPO that does carry the marker gets past
 #   5  fixture builder  a manifest fixture carries .borg/programs and leaves HEAD off main with a
 #                       non-empty main..HEAD; a manifest-less fixture carries no .borg at all
-#   6  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
+#   6  model floor      ...and HOLDS when a stub `claude` lets one case execute, so the floor is
+#                       proved CONDITIONAL and not merely present. Also the only case that drives
+#                       the model path behaviourally, so the empty-array expansion is executed.
+#   7  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
 #                       whose subject moved here with the cases that expand an optional prefix
 
 set -uo pipefail
@@ -117,7 +120,49 @@ else
     bad "manifest-less fixture has a .borg directory it should not"
 fi
 
-echo "== 6: the optional prefix array is never expanded bare =="
+echo "== 6: the model floor HOLDS when a model case can execute =="
+# THE DISCRIMINATING HALF, AND IT WAS MISSING. Case 2 proves the floor FIRES; nothing proved it is
+# CONDITIONAL. Mutate run.sh's `[ "$MODEL_RAN" -eq 0 ]` to `-ge 0` (or drop the two
+# `MODEL_RAN=$((MODEL_RAN+1))` lines, the realistic refactor regression) and cases 1-5 all stayed
+# green: case 1 exits above the floor under --skip-model, cases 2 and 3 read the same already-firing
+# run, cases 4 and 5 never reach it. The harness would then exit 1 on EVERY invocation -- including
+# one where E4 and E5 both PASS -- which is the "floor nothing can satisfy is a permanent red, not a
+# gate" state borg's AC6 decision (3) forbids, and its stated reason would contradict its own
+# printed evidence.
+#
+# borg-collective's tests/eval_floor.bats HAD this case ("the model-mode floor holds when a model
+# case can execute") and it was deleted when E4/E5 relocated here, without being carried over --
+# the same omission the guarded-array case (7 below) was spared. This is the inheritance.
+#
+# A STUB `claude`, NOT THE REAL ONE: the point is to drive the floor's holding branch, not to spend
+# money or require credentials, so CI can run it. The stub prints what E5 asserts, so E5 passes,
+# MODEL_RAN reaches 1, and the floor must NOT fire. E4 legitimately fails against a stub that knows
+# nothing about manifests, which is why the assertion is on the FLOOR's absence and on rc, not on a
+# clean run.
+#
+# It also drives the model path BEHAVIOURALLY, which case 7 cannot: case 7 is a static grep, so the
+# `${TIMEOUT[@]+"${TIMEOUT[@]}"}` empty-array expansion -- the thing that crashed on bash 3.2 -- is
+# executed by this case and by nothing else here.
+STUB="$TMP/stub/bin"
+mkdir -p "$STUB"
+for b in bash dirname git grep mkdir rm cp printf cat sed head tr mktemp; do
+    src="$(command -v "$b" 2>/dev/null)" && ln -sf "$src" "$STUB/$b"
+done
+cat > "$STUB/claude" <<'STUBEOF'
+#!/bin/sh
+echo "## Chain position"
+echo
+echo "No manifest declared."
+STUBEOF
+chmod +x "$STUB/claude"
+out="$(env PATH="$STUB" bash "$RUN" 2>&1)"; rc=$?
+if ! printf '%s' "$out" | grep -q "the model sweep was requested but no model case executed"    && printf '%s' "$out" | grep -q "E5 fallback line present"; then
+    ok "the floor stays silent when a model case executed (rc=$rc)"
+else
+    bad "the model floor fired despite a case executing (rc=$rc): $out"
+fi
+
+echo "== 7: the optional prefix array is never expanded bare =="
 # INHERITED FROM borg-collective's tests/eval_floor.bats 2026-09-03, where it was case 13 and where
 # its subject no longer exists: `${TIMEOUT[@]}` left that tree with E4/E5, and this is the harness
 # that still expands an optional prefix. On bash < 4.4 -- macOS ships 3.2 -- expanding an EMPTY
