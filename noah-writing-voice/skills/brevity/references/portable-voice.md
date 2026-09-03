@@ -150,6 +150,62 @@ overlapping ban for technical prose independently: "**Hedge and throat-clearing.
 'deliberately', 'importantly', 'as a rule of thumb' — delete; state the rule flatly"
 (docs/SKILL-DISTILLATION-RUBRIC.md:22-23).
 
+## Sentence-shape bans
+
+**15b. Never define a thing by negating a decoy first. Grep for it; it survives every other check.** Flagged by
+Noah 2026-09-01 as the construction that "just screams 'I was written by AI'". Four shapes, all the same move:
+
+- `The X is not A; it is B.` / `The X is not A, it is B.`
+- `X, not Y.` as a trailing corrective — "The second gap is capacity, not accuracy."
+- `... because of P, not because of Q.`
+- `I want to X rather than Y.` / `... rather than soften it` / `... rather than letting it stand`
+
+The failure is structural: the sentence spends its first half on something nobody claimed, so the reader pays for a
+contrast that carries no information. State the thing. If the decoy is a real position someone holds, it earns its
+own sentence and a verdict under rule 3.
+
+It is pervasive rather than occasional. One 317-word draft written *under this spine* on 2026-09-01 contained five:
+"is not invented facts; it is confident numbers", "capacity, not accuracy", "rather than letting it stand", "not
+because there was nothing to find", "rather than output volume". Passing rules 1-15 does not catch it.
+
+```bash
+grep -nEi "is not .{1,40}; it is|is not .{1,40}, it is|, not [a-z]+[.,]|rather than|because of .{1,30}, not" "$FILE"
+```
+
+Every `rather than` hit needs a human read. Some are legitimate comparatives; the banned form is the one where the
+rejected half was never on the table. Corroborating evidence outside this corpus: Jess Grider flagged AI jargon in
+the ARBAC TRD review comments (Notion, 2026-08), on a reply that opened "Yes, and I want to answer this one
+head-on rather than soften it".
+
+**15c. Never narrate the utterance. Say the thing.** Flagged by Noah 2026-09-02 on "one question, and it decides
+whether anything is left to fix here" — a drumroll that announces a question's significance instead of asking it.
+This is the same root defect as 15b and as rule 15's announced transitions: **the sentence is about the sentence.**
+
+Three shapes, with counts measured over 97 of Noah's own transcripts on 2026-09-03:
+
+- **Stakes preamble** — announcing the count or weight of what follows. "One question, and it decides whether…",
+  "Two things, and one of them matters." Just ask, or just say it.
+- **Rating your own honesty or plainness** — "the honest answer is…" (**20 hits**), "let me be clear", "to be clear".
+  If the answer is honest, saying so adds nothing; if it needs saying, the surrounding text has already failed.
+- **Announcing the shape** — "here's the thing" (**6**), "worth saying / worth noting / worth flagging" (**71**).
+
+**The 71 is the finding.** "Worth noting" is already banned by rule 15 and appears 71 times anyway. Capture is not
+enforcement — see [[feedback_written_rules_go_unapplied]]. Run the grep; do not trust recall.
+
+```bash
+grep -nEi "worth (saying|noting|flagging)|the honest (answer|thing|truth|version|position)|here'?s the (thing|answer|catch|rub)|(one|two|three) (question|thing)s?[^.]{0,40}(and )?(it|that|which) (decides|determines|changes|matters)|let me be clear|to be clear" "$FILE"
+```
+
+**Two carve-outs, because a rule that flags good writing gets ignored.** Both measured as false positives in the same
+scan:
+
+1. **Describing an action is not narrating the utterance.** "Checking the actual data shape before I write the CASE"
+   is real sequencing and stays. Only "before I answer, let me…" is the tic.
+2. **A labelled plain-language restatement stays.** "Plain version:" / "In plain terms:" scored 37 hits and is rule 1
+   and the ELI10 preference doing their job — it is a formatting device that serves the reader, not self-commentary.
+
+The test: delete the phrase. If the sentence still carries the same information, the phrase was narration.
+
 ## Process
 
 **16. Calibrate on a real directive, not on the example articles.** Read at least one before drafting:
