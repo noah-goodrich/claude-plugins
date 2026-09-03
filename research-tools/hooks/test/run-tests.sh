@@ -136,6 +136,14 @@ edit "$TMP/c/sources/t1-example-alpha.md" 's#\*\*URL:\*\* https://example.org/al
 printf '\n— attacker-cdn.com / mirror\n' >> "$TMP/c/sources/t1-example-alpha.md"
 run "$TMP/c"; want_grep 'A9 FAIL' "A9 extracts host from scheme-less URL and flags mismatch"
 
+# A9 must not read code spans / placeholders as attributions (regression: a Snowflake SQL
+# placeholder `<db.schema.agent_name>` on a Key-Findings bullet failed a correctly-attributed card).
+mk; printf '\n- The registration command is `ALTER SNOWFLAKE INTELLIGENCE ... ADD AGENT <db.schema.agent_name>;`.\n' >> "$TMP/c/sources/t1-example-alpha.md"
+run "$TMP/c"; want_rc 0 "A9 ignores a dotted SQL placeholder inside backticks and angle brackets"
+
+mk; printf '\n- see `notes.attacker-cdn.com` for the mirror\n' >> "$TMP/c/sources/t1-example-alpha.md"
+run "$TMP/c"; want_rc 0 "A9 ignores a host inside an inline-code span (accepted residual hole)"
+
 # --- fail-CLOSED closures: an honest deliverable must NOT be rejected ---
 mk; printf '\n— blog.example.org / same site\n' >> "$TMP/c/sources/t1-example-alpha.md"
 run "$TMP/c"; want_rc 0 "A9 accepts same-origin subdomain blog.example.org"
