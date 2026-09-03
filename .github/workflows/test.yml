@@ -135,3 +135,12 @@ jobs:
 
       - name: Run evals harness suite — harness tests only, no generation
         run: bash evals/test/run-tests.sh
+
+      # evals/pr-description/run.sh is MODEL-ONLY and must never be added here: every case in it
+      # calls `claude`, which costs money and needs credentials CI does not hold — the same rule
+      # the generator above is excluded by. What DOES run here is its oracle, which needs no
+      # model: the guards (model floor, checkout guard, fixture builder) are checked in both
+      # directions so that deleting one turns this job red. Without this step the harness would
+      # be a gate nothing ever invokes, which is the defect it was relocated here to stop being.
+      - name: Run pr-description eval floors — guards only, never the model cases
+        run: bash evals/pr-description/floor-tests.sh

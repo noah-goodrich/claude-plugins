@@ -1,0 +1,32 @@
+{
+  "apex": {
+    "ref": "acme/ingle#800",
+    "title": "ingle T1 cutover"
+  },
+  "desc": "E4 fixture: a manifest the /pr-description skill must read chain position out of.",
+  "note": "HAND-AUTHORED FIXTURE, NEVER REGENERATED. Named ingle-t1-cutover because that is the program name E4's assertion greps for; the refs are synthetic (acme/*) so nothing here depends on a live repository or a resolvable issue number. This file exists so the case needs no external checkout -- see run.sh's header for why the previous named-repository form could not run on two of three machines.",
+  "program": "ingle-t1-cutover",
+  "rows": [
+    {
+      "lane": "cutover",
+      "order": "1",
+      "ref": "acme/ingle#801",
+      "status": "merged",
+      "why": "freeze T1 writes ahead of the cutover"
+    },
+    {
+      "lane": "cutover",
+      "order": "2",
+      "ref": "acme/ingle#802",
+      "status": "open",
+      "why": "dual-write T1 into the new store"
+    },
+    {
+      "lane": "cutover",
+      "order": "3",
+      "ref": "acme/ingle#803",
+      "status": "open",
+      "why": "cut T1 reads over and retire the shim"
+    }
+  ]
+}
