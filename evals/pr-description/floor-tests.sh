@@ -10,7 +10,7 @@
 # with every gate staying green. So the floor lands with its pair or it lands unobserved, and the
 # pair has to be runnable where the floor is not.
 #
-# FIVE CASES, each in the firing direction AND the direction that proves it discriminates. A guard
+# SIX CASES, each in the firing direction AND the direction that proves it discriminates. A guard
 # asserted only firing is satisfied just as well by an artifact that always fails:
 #   1  --skip-model     requests nothing, runs nothing, exits 0 and SAYS SO
 #   2  model floor      FIRES at rc 1 when the sweep is requested and `claude` is hidden...
@@ -20,6 +20,8 @@
 #                       where $OUT would be SURVIVES; a REPO that does carry the marker gets past
 #   5  fixture builder  a manifest fixture carries .borg/programs and leaves HEAD off main with a
 #                       non-empty main..HEAD; a manifest-less fixture carries no .borg at all
+#   6  guarded array    every ${TIMEOUT[@]} expansion is guarded -- inherited from borg's case 13,
+#                       whose subject moved here with the cases that expand an optional prefix
 
 set -uo pipefail
 
@@ -113,6 +115,30 @@ if [ ! -d "$without/.borg" ] && [ "$(git -C "$without" rev-list --count main..HE
     ok "the manifest-less fixture carries no .borg at all"
 else
     bad "manifest-less fixture has a .borg directory it should not"
+fi
+
+echo "== 6: the optional prefix array is never expanded bare =="
+# INHERITED FROM borg-collective's tests/eval_floor.bats 2026-09-03, where it was case 13 and where
+# its subject no longer exists: `${TIMEOUT[@]}` left that tree with E4/E5, and this is the harness
+# that still expands an optional prefix. On bash < 4.4 -- macOS ships 3.2 -- expanding an EMPTY
+# array under `set -u` is an unbound-variable error, so the bare form kills the script BEFORE its
+# `>` redirect opens, the following grep reads a file that was never written, and the case reports
+# FAIL for a crash rather than for what it asserts. That exact bug shipped once.
+#
+# ARITHMETIC, NOT PATTERN SURGERY. The guarded form contains the bare form as its own default
+# value, and the comment above it quotes both spellings in prose, so a naive grep for the bare
+# shape matches the guard and its own documentation. Instead: every legitimate mention in CODE is
+# either the guard's test (`[@]+`) or the inner expansion that immediately follows it, so a correct
+# file has exactly TWICE as many `TIMEOUT[@]` occurrences as `TIMEOUT[@]+` ones. A bare expansion
+# adds one to the left side only. Counted over CODE lines, comments stripped, so the prose above
+# cannot move either number.
+code="$(grep -v '^[[:space:]]*#' "$RUN")"
+total="$(printf '%s' "$code" | grep -o 'TIMEOUT\[@\]' | wc -l | tr -d ' ')"
+guarded="$(printf '%s' "$code" | grep -o 'TIMEOUT\[@\]+' | wc -l | tr -d ' ')"
+if [ "$guarded" -ge 1 ] && [ "$total" -eq $((guarded * 2)) ]; then
+    ok "every TIMEOUT expansion is guarded (${total} mentions, ${guarded} guards)"
+else
+    bad "an unguarded TIMEOUT expansion (${total} mentions, ${guarded} guards; want total == 2*guards)"
 fi
 
 echo "RESULT: $PASS ok, $FAIL fail"
