@@ -19,15 +19,16 @@
 #     rapid-tier run that produces no verification report. NEVER auto-discovers the
 #     newest docs/research/ dir and hard-blocks on it.
 #
-# Session scoping — WHY we use the .gate-armed marker (not just the transcript):
+# Session scoping — the transcript arms, the marker targets:
 #   The transcript grep fires on ANY deep-research Skill invocation, including the
 #   workflow/harness modality that returns a JSON report and writes NO docs/research/
 #   card deliverable. Without an explicit registered path the stop hook would fall back
 #   to auto-discover — latching the newest pre-existing deliverable and hard-blocking on
 #   it even though the current session never touched it. The .gate-armed marker is
 #   written only by the methodology skill, only when it creates an on-disk deliverable,
-#   and contains the exact path the verifier should target. That makes the gate both
-#   session-scoped (no stale zombie blocks) and modality-specific (no workflow blocks).
+#   and contains the exact path the verifier should target. That makes the gate
+#   modality-specific (no workflow blocks). Session scoping comes from TRANSCRIPT_ARMED,
+#   NOT from the marker — see the scope guard below for why.
 #
 # This hook is the enforcement arm. The verifier is no-model and deterministic; this
 # hook only composes its machine-readable status lines into a user-facing verdict.
@@ -46,11 +47,23 @@ VERIFY="${CLAUDE_PLUGIN_ROOT:-$HOOK_DIR/..}/hooks/deep-research-verify.sh"
 INPUT="$(cat /dev/stdin 2>/dev/null || true)"
 CWD=""
 TRANSCRIPT=""
+STOP_HOOK_ACTIVE=""
 if command -v jq >/dev/null 2>&1; then
     CWD="$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)"
     TRANSCRIPT="$(printf '%s' "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null || true)"
+    STOP_HOOK_ACTIVE="$(printf '%s' "$INPUT" | jq -r 'if .stop_hook_active == true then "1" else "" end' 2>/dev/null || true)"
 fi
 [[ -n "$CWD" ]] || CWD="$PWD"
+
+# LOOP GUARD. `stop_hook_active` is true when this Stop hook is firing *because* a previous
+# Stop hook blocked. Blocking again cannot add information — the model already received the
+# reason — so re-blocking only spins until the harness trips its consecutive-block cap and
+# overrides us, which is a worse outcome than one clean block: the operator sees a harness
+# error instead of the gate verdict. Block once, then stand down.
+if [[ -n "$STOP_HOOK_ACTIVE" ]]; then
+    printf 'deep-research ground gate: already reported this turn (stop_hook_active) — standing down\n' >&2
+    exit 0
+fi
 
 # Did THIS session actually run the evidence-mode research skill? The reliable, automatic,
 # and specific signal is a `Skill` tool_use entry in the Stop hook's own transcript whose
@@ -75,14 +88,21 @@ TARGET="${DEEP_RESEARCH_DIR:-}"
 # must NOT block an arbitrary project just because it happens to carry a docs/research/
 # tree (ingle, reveal, troth, borg-collective all do). Engagement requires:
 #   1. an explicit DEEP_RESEARCH_DIR (tests / manual runs), OR
-#   2. the gate being armed this session, signalled by ANY of:
+#   2. the gate being armed BY THIS SESSION, signalled by EITHER of:
 #       a. TRANSCRIPT_ARMED (the transcript proves THIS session ran the deep-research skill)
 #       b. DEEP_RESEARCH_GATE_ARM env var is set (test/CI override)
-#       c. a .gate-armed marker file exists at docs/research/.gate-armed
-# When none of the above hold the hook exits dormant. An unreadable/absent transcript
-# counts as NOT armed — fail-safe dormancy is correct when we cannot confirm arming.
+# When neither holds the hook exits dormant. An unreadable/absent transcript counts as NOT
+# armed — fail-safe dormancy is correct when we cannot confirm arming.
+#
+# The .gate-armed marker is deliberately NOT an arming signal. It is a plain file in a
+# shared repo carrying no session identity, so treating its mere existence as arming let ANY
+# session inherit the gate — including one that only `cd`-ed into the repo and never ran the
+# skill. That is the cross-session false block the scoping was meant to prevent. Observed
+# 2026-09-03: a session reviewing a PR in ~/dev/dbt was blocked nine consecutive times by a
+# concurrent research session's marker. The marker answers WHERE to look; the transcript
+# answers WHETHER this session is in scope.
 if [[ -z "$TARGET" ]]; then
-    if [[ -z "$TRANSCRIPT_ARMED" && -z "${DEEP_RESEARCH_GATE_ARM:-}" && ! -f "$CWD/docs/research/.gate-armed" ]]; then
+    if [[ -z "$TRANSCRIPT_ARMED" && -z "${DEEP_RESEARCH_GATE_ARM:-}" ]]; then
         exit 0
     fi
     # The gate is armed this session. Resolve the registered deliverable path from the
