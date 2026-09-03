@@ -273,6 +273,49 @@ OUT="$(printf '{"cwd":"%s","transcript_path":"%s"}' "$TMP/dd" "$TMP/tr.jsonl" | 
 printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "prose mention: spurious block decision" || ok "prose mention: no block decision"
 
 # ---------------------------------------------------------------------------
+echo "== 6. CROSS-SESSION FALSE BLOCK + LOOP GUARD (2026-09-03 regressions) =="
+
+# Both of these are regressions for one live incident: a session reviewing a PR in
+# ~/dev/dbt was blocked NINE consecutive times by a concurrent research session's gate,
+# until the harness tripped its consecutive-block cap and overrode the hook.
+
+# (e) A marker exists in the repo but THIS session never ran the skill -> dormant.
+# The failing deliverable is real and the marker points straight at it; the only thing
+# absent is any evidence that this session did the research. Before the fix, the mere
+# existence of .gate-armed armed the gate and this hard-blocked an unrelated session.
+rm -rf "$TMP/other-session"
+mkdir -p "$TMP/other-session/docs/research/2026-09-03-someone-elses-run/sources"
+cp "$PASS/sources/"*.md "$TMP/other-session/docs/research/2026-09-03-someone-elses-run/sources/"
+cp "$PASS/deliverable.md" "$TMP/other-session/docs/research/2026-09-03-someone-elses-run/"
+# No verification-report.md, so the deliverable genuinely fails A1 if it is ever checked.
+printf '%s/docs/research/2026-09-03-someone-elses-run\n' "$TMP/other-session" \
+    > "$TMP/other-session/docs/research/.gate-armed"
+# A transcript with NO research Skill invocation — this session reviewed a PR instead.
+printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"data-engineer:pr-review"}}]}}\n' > "$TMP/tr-pr.jsonl"
+OUT="$(printf '{"cwd":"%s","transcript_path":"%s"}' "$TMP/other-session" "$TMP/tr-pr.jsonl" | bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "(e) marker from another session, this session never ran the skill: dormant (rc=0)" \
+    || bad "(e) cross-session false block: hook blocked an unrelated session (rc=$RC) :: $OUT"
+printf '%s' "$OUT" | grep -q '"decision": *"block"' \
+    && bad "(e) cross-session false block: emitted a block decision" \
+    || ok "(e) cross-session: no block decision"
+
+# (f) LOOP GUARD: stop_hook_active means we already blocked this turn. Stand down.
+# Armed for real, deliverable genuinely failing — the one case that legitimately blocks.
+# It must block EXACTLY once; the second firing must not block, or the harness cap trips.
+OUT="$(printf '{"cwd":"%s"}' "$TMP/fresh-fail" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -ne 0 ]] && ok "(f) first firing on a failing deliverable still blocks (rc=$RC)" \
+    || bad "(f) loop guard went too far: the gate no longer blocks at all (rc=0)"
+OUT="$(printf '{"cwd":"%s","stop_hook_active":true}' "$TMP/fresh-fail" | DEEP_RESEARCH_GATE_ARM=1 bash "$STOP" 2>&1)"; RC=$?
+[[ "$RC" -eq 0 ]] && ok "(f) second firing with stop_hook_active=true: stands down (rc=0)" \
+    || bad "(f) loop: hook re-blocked while stop_hook_active was true (rc=$RC) :: $OUT"
+printf '%s' "$OUT" | grep -q '"decision": *"block"' \
+    && bad "(f) loop: emitted a block decision while stop_hook_active was true" \
+    || ok "(f) loop: no block decision on the repeat firing"
+printf '%s' "$OUT" | grep -qE 'already reported this turn|standing down' \
+    && ok "(f) loop: stand-down advisory names the reason" \
+    || bad "(f) loop: no stand-down advisory; got: $OUT"
+
+# ---------------------------------------------------------------------------
 echo
 if [[ "$fails" -eq 0 ]]; then
     printf '\033[32mALL TESTS PASSED\033[0m\n'
