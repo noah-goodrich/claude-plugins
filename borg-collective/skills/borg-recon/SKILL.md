@@ -5,7 +5,7 @@ description: >
   adapters since a mark, reconciles what changed against each project's local .borg checkpoints,
   and synthesizes a prioritized, by-project briefing with two action lists (Yours vs Mine) and a
   recommended parallel kickoff batch. Source-agnostic: adapters are injected, never hardcoded — it
-  works on any machine, with or without an Ontra layer. Use when the user says "morning link-up",
+  works on any machine, with or without an employer layer. Use when the user says "morning link-up",
   "what changed", "catch me up", "recon", or starts a session and wants the lay of the land.
 user-invocable: true
 ---
@@ -29,9 +29,17 @@ can do vs. what an agent can be sent to do right now.
 borg recon --json
 ```
 
-Flags you may pass through when the user asks: `--since <ISO>` (default = newest checkpoint mtime),
-`--projects a,b` (subset), `--sources github,...` (subset). Run `borg recon --adapters` first if you
-need to see which sources exist on this machine — do NOT assume any specific source is present.
+**`--json` is REQUIRED, on every invocation.** `recon` retired as a human-facing verb on 2026-08-26
+(`borg link` sweeps every source itself now); only the MACHINE surface survives, and that is exactly
+`borg recon --json` and `borg recon --adapters`. Anything else — including a bare `borg recon` or a
+modifier on its own — exits 1 and points at `borg link`.
+
+So flags you may pass through when the user asks ALWAYS attach to `borg recon --json`:
+`--since <ISO>` (default = newest checkpoint mtime), `--projects a,b` (subset),
+`--sources github,...` (subset). "Catch me up since August 1" is
+`borg recon --json --since 2026-08-01T00:00:00Z`, never `borg recon --since 2026-08-01T00:00:00Z`.
+Run `borg recon --adapters` first if you need to see which sources exist on this machine — do NOT
+assume any specific source is present.
 
 The JSON you get back:
 
@@ -109,7 +117,7 @@ Keep the batch bounded (≤ 5). State the ceiling; never open-ended.
 
 ## Guardrails
 
-- Source-agnostic: never hardcode a source. Ontra sources (Slack/Jira/Notion) are a separate layer —
+- Source-agnostic: never hardcode a source. employer sources (Slack/Jira/Notion) are a separate layer —
   if their adapters are not on this machine, they simply do not appear. That is correct, not a bug.
 - No raw dumps. Every line is a synthesized, plain-language takeaway, not a paste of API output.
 - Read-only by default. The kickoff batch prepares; it never merges, deploys, or writes to a source.
