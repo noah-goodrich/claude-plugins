@@ -43,10 +43,12 @@ Before finalizing ANY reading deliverable, run BOTH, in this order, on the FINAL
    words ("genuinely", "straightforward", "leverage", "navigate", "landscape", "delve", etc.), no AI
    transitions, specific details over vague claims. Apply its rules during writing, then self-check.
 2. **`ai-scoring`** (noah-writing-voice plugin) — scores the prose 0–100 for how human vs. AI it
-   reads and flags specific AI tells with line-level citations. **A reading deliverable must score ≥
-   75 before it is presented.** If it scores below 75, revise against the flagged passages and
-   re-score. Record the final score in the document (a one-line footer is fine:
-   `AI-scoring: 84/100`).
+   reads and flags specific AI tells with line-level citations. **A reading deliverable is presented
+   with its score and its flags, not gated on them.** Record the score in the document (a one-line
+   footer is fine: `AI-scoring: 84/100`) and name the flagged passages in the delivery message. Act
+   on a flag when the flag is right; never re-score in a loop to clear the number. The rubric
+   currently flags 5 of Noah's 10 published articles as machine-written, so a low score is a prompt
+   to look, not a verdict — see `docs/plans/directives/2026-08-26-ai-scoring-evaluation-set.md`.
 
 These two passes are the same gate Noah's global rules already require before presenting ANY written
 content. The research/brainstorm pipelines now invoke them explicitly so the requirement is not

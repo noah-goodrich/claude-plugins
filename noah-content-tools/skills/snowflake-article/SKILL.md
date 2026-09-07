@@ -12,7 +12,7 @@ This skill enforces article-specific conventions for Noah's Medium and Snowflake
 Both of these skills must be loaded and applied:
 
 - **noah-voice**: Read `references/voice-rules.md` and at least one example article before writing. All voice rules apply.
-- **ai-scoring**: Every article must score **75 or higher** before being presented to Noah. This is a hard threshold, not a suggestion. If the article scores below 75, revise and re-score before showing it.
+- **ai-scoring**: Run the scoring pass and present the draft with its score and flags attached, whatever the score is. Do not revise to clear the threshold before showing it — see Quality Report below.
 
 ## Before Writing
 
@@ -56,17 +56,24 @@ When writing for either series, maintain awareness of how they connect:
 
 When referencing the other series, do it naturally: "As I explored in The Long Game, the real test of architecture isn't how it performs under your watch..." Don't force cross-references. Let them emerge from the content.
 
-## Quality Gate
+## Quality Report
 
 Before presenting any article draft:
 
 1. Run the `ai-scoring` skill
-2. Confirm score is **75 or higher**
-3. If below 75, identify the top 3 flagged passages and rewrite them
-4. Re-score until passing
-5. Present the article with the score noted
+2. Present the draft with its score and the specific flagged passages, whatever the score is
+3. If you acted on a flag because the flag was right, say which one and what you changed
+4. Never re-score in a loop to clear the threshold
 
-If the article is close (70-74), note the specific flags and let Noah decide whether to revise or accept.
+**The score is evidence for Noah's decision, not a bar to clear on his behalf.** A draft that arrives at 68 with
+its three flags named is more useful than the same draft quietly rewritten to 76, because the rewrite is where his
+voice goes.
+
+This is deliberate and reverses the previous instruction. The rubric flags 5 of Noah's 10 published articles as
+machine-written, and its threshold sits at his corpus median, so roughly half fails as arithmetic rather than as a
+judgement about the writing. Revising to clear it means editing his voice out to satisfy a number that is known to
+be wrong. See `docs/plans/directives/2026-08-26-ai-scoring-evaluation-set.md` for the measurements and for the
+work that will make the score trustworthy.
 
 ## Structural Redundancy Analysis
 
