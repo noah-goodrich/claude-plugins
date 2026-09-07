@@ -36,7 +36,8 @@ bash -c 'set -o pipefail; borg link --json | jq ".directives |=
 Deep dive:
 
 ```bash
-bash -c 'set -o pipefail; borg link --json <project> | jq "{version, generated_at, capacity, total_projects, scope, grid, focus}"'
+bash -c 'set -o pipefail; borg link --json <project> | jq "{version, generated_at, capacity,
+  total_projects, scope, grid, focus}"'
 ```
 
 One call serves both — `borg link --json <project>` returns the full overview document PLUS
@@ -52,8 +53,61 @@ network round trip and then rendering the same deep dive as before it existed. R
 - `.grid.sources[].status` is `ok`, `degraded` or `failed`. `degraded` means a source was never
   actually reached (missing/unauthenticated `gh`, offline, rate-limited) or had its items rejected —
   treat the states below it as declared, not observed.
-- `.grid.unresolved` out of `.grid.declared` is how many refs the sweep had no answer for. A high
-  ratio is not an error; those states came from the manifest.
+- `.grid.unresolved` out of `.grid.declared` is how many refs NOBODY answered for — neither the
+  sweep nor the targeted fetch. A high ratio is not an error; those states came from the manifest.
+- `.grid.fetch` covers AC3's targeted fetch: `.attempted` (bool, whether a fetch was even tried),
+  `.status` (`ok`, `degraded`, `failed`, or `skipped`), `.requested` (refs asked about) and
+  `.resolved` (refs that came back with a usable answer). As with `.grid.sources[].status`,
+  `failed` and `degraded` mean the states below them are DECLARED rather than OBSERVED — treat
+  them the same way.
+- `.grid.picture_width` is the widest `▸ CHAINS` picture row this document would draw, in VISIBLE
+  columns (SGR and OSC-8 bytes excluded). Compare it to `PICTURE_BUDGET` (68). Over budget means the
+  topology will wrap in a narrow pane and should be reported as a manifest problem — a ref is long
+  or a level is too wide — not as a rendering bug. The human page says the same thing in
+  `▸ SIGNALS`; this is the machine-readable half, so you never have to measure ANSI output.
+- `.grid.manifests` is an **array** of manifest blocks, each carrying `id` (the manifest's slug),
+  `path`, `desc`, `repos`, `levels`, `nodes` and `gates`. AC2 added `desc`, `repos`, and three
+  topology keys per node:
+  - `desc` is the manifest author's own one-line statement of what the whole project is for. Prefer
+    it over inventing a summary out of row titles — it is their sentence, not yours.
+  - `repos` is the sorted, deduplicated `owner/repo` list the manifest's **rows** name — the work,
+    not everything it merely references (an apex or an `after:` pointer contributes nothing). Two or
+    more entries means the project spans repositories, which is usually the single most useful fact
+    about it and belongs in the one-line summary.
+  - `.nodes` is an **object keyed by ref**, not an array. Alongside `state`/`state_source`/`lane`/
+    `next`/`gate` each node now carries `level` (topological rank), `seq` (declaration order — the
+    row's index as the author wrote it; a declared ref that is not a row sorts past every real one),
+    and `parents`/`children` (ordering edges only, both endpoints inside the declared set, sorted by
+    `(seq, ref)`).
+  - **Use the topology for judgment, not for drawing, and never for readiness.** `parents`/
+    `children` tell you the shape — what a row waits on, what waits on it, whether the project is
+    one chain or a fork. They do NOT tell you what is ready to start: `state_source` is `declared`
+    (a hand-typed `"status"` field nobody verified) at least as often as it is swept or fetched, so
+    "every parent merged" can rest entirely on prose. Report what the manifest declares and name the
+    provenance. **Never derive readiness yourself from `parents`/`children`** — read `.ready`, two
+    bullets down, which AC4 put on the wire for exactly this reason and which already applies the
+    provenance gate. (This used to read "`ready` is deliberately absent from the wire … do not
+    reconstruct it". That was true until AC4 shipped `ready`, and because it is phrased as a
+    PROHIBITION an agent reading top-down suppressed the entire `.ready` answer before reaching the
+    bullet that documents it.)
+  - Still never render a picture. `borg link` draws it, and the `n1`-style handles it prints are
+    generated at render time — they are not on the wire, so there is nothing to echo.
+- **`.ready` is AC4's answer to "what can I pick up right now", and it is THREE-STATE.** Each manifest
+  block carries `{state: "known"|"unlooked", refs: [...]}`, and each node carries a matching `ready`
+  boolean plus a `draft` boolean.
+  - `state: "unlooked"` means **nothing on the page was resolved** — not that nothing is ready. It is
+    what every `--local` render returns. Say "nobody looked", never "nothing is ready"; the two are
+    different facts and `.grid.unresolved` will agree with you.
+  - `state: "known"` with an empty `refs` genuinely means nothing is startable right now.
+  - A ref in `refs` is open, every parent has merged, **and every one of those states was swept or
+    fetched** — a declared state can never put a ref here, which is the whole reason AC4 shipped a
+    provenance gate first. `draft` rows are excluded: a draft PR is `open` but not startable.
+- **Routing, when the user asks what's theirs.** Read `gates[].kind` off the same manifest block:
+  `decision` → **theirs** (a person must decide), `verification` → **the agent's** (anyone can run
+  it), **ungated → the agent's** (nothing is blocking it). Any other kind is deliberately *neither* —
+  report it as unrouted rather than guessing, and name the kind. Do not invent a fourth rule, and do
+  not treat `rows[].next` as membership: it is the author's emphasis for ordering among rows that are
+  already ready, never a reason to include one that isn't.
 
 **Why the jq.** The two pipes work differently. The overview pipe (`.directives |= (...)`) does not
 enumerate a field — it transforms one key in place, so anything the document gains later passes
@@ -86,9 +140,12 @@ Bash: dir="$PWD"; while [[ "$dir" != "/" ]]; do
   (`total_projects` is missing, so the empty-registry vs all-archived branch cannot be rendered
   correctly). Do NOT fall back on a version mismatch.
 
-**Flags that are NOT in the JSON path.** `--brief` (LLM narrative) and `--refresh` (regenerate
-summaries) are still zsh and host-only. If the user asks for either, tell them to run
-`borg link --brief` / `borg link --refresh` from the host — do not attempt them yourself.
+**Flags that are still host-only.** `--refresh` (regenerate summaries) is zsh. `--brief` is now a
+presentation mode of THIS SAME DOCUMENT — it makes the same `--json` call, hands the result to
+`claude -p` for a narrative, and re-renders the document when that fails — but the `claude -p` half
+keeps it host-only. If the user asks for either, tell them to run `borg link --brief` /
+`borg link --refresh` from the host. You already have the document; you never need `--brief` to
+narrate it.
 
 **`--all`.** `borg link --json --all` includes archived projects. Needed only when the user asks
 *which* projects are archived; the count alone is `total_projects - (.order | length)`.
@@ -113,10 +170,17 @@ one level deeper:
   the board has no summaries, say so once and suggest `borg link --refresh` on the host.
 - **Collapse, don't transcribe.** 121 directives across 9 projects is a number plus the top few
   titles, not a list.
-- **`scope` is context, not content.** `{kind: repository|orchestrator, repository, local}` records
-  which repository the invocation resolved to (from cwd, or from an explicit project name, which
-  wins). Today it does not narrow `order`/`projects` — it is informational, so never present it as
-  a filter that was applied. Worth one clause only when it contradicts what the user asked for.
+- **`scope` still does not narrow the aggregates — but AS OF AC2, `focus` FOLLOWS IT.**
+  `{kind: repository|orchestrator, repository, local}` records which repository the invocation
+  resolved to (from cwd, or from an explicit project name, which wins). `order` and `projects` are
+  still the whole board on every `--json` call, so never present scope as a filter that was applied
+  to them. What changed: a **bare** `borg link --json` run inside a repository now returns a `focus`
+  block for that repository, where before only an explicit project name produced one. Two
+  consequences — read `focus` on every call rather than only the ones you passed a name to, and when
+  `scope.kind` is `repository`, lead with that project before the board, because the invocation was
+  about it (this is what the human renderer does, and disagreeing with it is a contradiction the
+  user can see). `scope.repository` is the engine's own answer to the question the MARKER-WALK block
+  asks; agreement is the normal case, and a disagreement is worth one clause.
 
 ## Step 3 — Synthesize
 
