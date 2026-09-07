@@ -1,6 +1,7 @@
 # Directive: Token-Cost Optimization
 
-*Standalone plan (split from 2026-05-27-plugin-marketplace-consolidation on 2026-07-01) — promote to PROJECT_PLAN.md after the marketplace-consolidation plan assimilates.*
+*Standalone plan (split from 2026-05-27-plugin-marketplace-consolidation on 2026-07-01). Parked 2026-08-28: this
+directive no longer claims the PROJECT_PLAN.md slot. It stays open on its own terms — see the status line below.*
 *Filed: 2026-06-29*
 
 **Status (reconciled 2026-08-27): PARTIALLY SHIPPED — 3 of 7 criteria met (C1, C3, C4). Keep open for C6.**
@@ -10,8 +11,15 @@ merged 2026-06-30), [#23](https://github.com/noah-goodrich/claude-plugins/pull/2
 halted the 2026-06-29 session cleared long ago; the work resumed and shipped. The truncation hook went from built to
 **live on 2026-08-26**. What remains genuinely unbuilt: the **context-growth reporter** (C2 second half) and the
 **CLAUDE.md compact/`/clear` guidance** (C5 third clause). C6's measurement window could not have run before
-2026-08-26 and has produced no verdict. The marketplace-consolidation plan has assimilated, so the promote-to-
-PROJECT_PLAN.md precondition in the header is satisfied — the promotion was simply never done.
+2026-08-26 and has produced no verdict.
+
+**On the PROJECT_PLAN.md promotion (resolved 2026-08-28): parked, not deferred again.** The header claimed this
+directive should become `PROJECT_PLAN.md` once marketplace-consolidation assimilated. That precondition was met on
+2026-08-21 and the promotion was never made, so the claim sat unactioned for a week and then collided with the
+ai-scoring evaluation-set plan, which took the slot on 2026-08-28 in
+[#51](https://github.com/noah-goodrich/claude-plugins/pull/51). Rather than resolve the collision, the claim is
+withdrawn. This directive remains open and worth doing; it simply does not queue for a slot it was not going to be
+promoted into. Re-file it as a plan when someone intends to work it, not before.
 
 ## Objective
 
