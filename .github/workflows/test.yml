@@ -6,11 +6,15 @@ on:
       - "research-tools/**"
       - "noah-content-tools/**"
       - "noah-writing-voice/**"
-      - "borg-collective/hooks/**"
-      - "token-cost/hooks/**"
       - "evals/**"
       - "**/test/**"
       - "build-plugins.sh"
+      - "check-version-bumps.sh"
+      - "code-governance/**"
+      - "dev-tools/**"
+      - "noah-strategy/**"
+      - "token-cost/**"
+      - "borg-collective/**"
       - ".claude-plugin/**"
       - "**/.claude-plugin/**"
       - ".github/workflows/test.yml"
@@ -19,11 +23,15 @@ on:
       - "research-tools/**"
       - "noah-content-tools/**"
       - "noah-writing-voice/**"
-      - "borg-collective/hooks/**"
-      - "token-cost/hooks/**"
       - "evals/**"
       - "**/test/**"
       - "build-plugins.sh"
+      - "check-version-bumps.sh"
+      - "code-governance/**"
+      - "dev-tools/**"
+      - "noah-strategy/**"
+      - "token-cost/**"
+      - "borg-collective/**"
       - ".claude-plugin/**"
       - "**/.claude-plugin/**"
       - ".github/workflows/test.yml"
@@ -144,3 +152,31 @@ jobs:
       # be a gate nothing ever invokes, which is the defect it was relocated here to stop being.
       - name: Run pr-description eval floors — guards only, never the model cases
         run: bash evals/pr-description/floor-tests.sh
+
+  # ---------------------------------------------------------------------------
+  # Job 6: version-bump guard
+  # `claude plugin update` compares version STRINGS, never content. A plugin whose files change
+  # under a frozen version number is served stale from the install cache indefinitely, while the
+  # updater reports "already at the latest version". On 2026-09-07 borg-collective, token-cost and
+  # code-governance were all in that state simultaneously. Versions are hand-bumped and nothing
+  # derived them, so nothing caught it. This job is what catches it now.
+  #
+  # fetch-depth: 0 is REQUIRED — the guard diffs against the merge base, which a shallow clone
+  # does not contain. Without it the script exits 2 rather than passing vacuously.
+  # ---------------------------------------------------------------------------
+  version-bumps:
+    name: plugin version-bump guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies (jq, shellcheck)
+        run: sudo apt-get install -y --no-install-recommends jq shellcheck
+
+      - name: shellcheck — check-version-bumps.sh
+        run: shellcheck --severity=warning check-version-bumps.sh
+
+      - name: Every changed plugin must bump its version
+        run: bash check-version-bumps.sh "origin/${{ github.event.pull_request.base.ref || 'main' }}"
