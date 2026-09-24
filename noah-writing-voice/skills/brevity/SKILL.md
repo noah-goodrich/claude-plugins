@@ -60,13 +60,24 @@ Full rule and the corpus detail behind it: `references/portable-voice.md` rule 1
 is red." The reader who does not meet the condition stops at word three instead of executing the instruction and
 then discovering it did not apply.
 
+**When an edit changes a claim, replace the claim. Never append the update.** A document states what is true
+now; how it got there belongs in git, Slack, or a decision log. Appending is how a paragraph ends up holding a
+claim and its own replacement — "two switches decide this" three sentences before "exactly one switch decides
+this" — and leaving the reader to work out which wins. This fires hardest on documents updated from a chat thread,
+where appending the newest message with its attribution is the path of least resistance. Delete the superseded
+state; do not caveat it.
+
+**Attribute contested claims, not settled background.** A decision, a disputed number, or a call someone can
+reverse carries a name and a date. A fact nobody is arguing about does not. More than two attributions in one
+paragraph means it is a transcript of how the team arrived somewhere, not a statement of where they are.
+
 **Never flatten a real trade-off into a bullet.** This is the documented failure mode of every brevity method. A
 genuine two-sided decision gets prose, both sides, and the verdict. Compression is for facts. It is not for
 disagreements, and a bullet that hides a contested call costs more than the lines it saved.
 
 ## Self-audit checklist
 
-Run all fourteen before delivering, and report what fired: the quoted passage, why it fired, and a concrete
+Run all seventeen before delivering, and report what fired: the quoted passage, why it fired, and a concrete
 suggested rewrite.
 
 1. **tl;dr placement matches the mode.** Document at the top, chat at the bottom.
@@ -84,21 +95,29 @@ suggested rewrite.
 11. **Banned-word grep is clean.** Command below.
 12. **Announced-transition grep is clean.** Command below.
 13. **No line exceeds 120 characters** except a URL or an unbreakable code span.
-14. **Score with the reduced rubric.** Run `ai-scoring` in **scanning mode**. That skill owns the mode: which
+14. **No paragraph contains both a claim and its replacement.** Changelog-marker grep is clean; where an edit
+    superseded something, the old state is deleted rather than caveated. Command below.
+15. **No paragraph carries more than two attributions**, and no settled background fact carries one.
+16. **No item in a numbered or bulleted list runs more than twice the length of its siblings.** An outlier is a
+    section that was never promoted, or several items that were never split.
+17. **Score with the reduced rubric.** Run `ai-scoring` in **scanning mode**. That skill owns the mode: which
     categories are scored, which are off and why, and how to read the number. Do not restate its thresholds here.
     Treat any nonzero penalty as a review trigger, never a refusal.
 
-Steps 11, 12, 13 and the length cap are mechanical. Run them:
+Steps 11, 12, 13, 14 and the length cap are mechanical. Run them:
 
 ```bash
 FILE=path/to/doc.md && \
 grep -nEi "genuinely|straightforward|honestly|to be honest|navigate|landscape|leverage|delve|game-changer|cutting-edge|revolutionary|fast-paced world|important to note|synergy|paradigm shift" "$FILE" ; \
 grep -nEi "here's the thing|let's dive in|that said|here's the kicker|let me explain|what does this mean|the truth is|worth noting|at the end of the day|the bottom line|but wait, there's more|moreover|furthermore|in conclusion" "$FILE" ; \
+grep -nEi "sharpened|superseded|no longer applies|previously stated|update:|as of [0-9]{4}-[0-9]{2}-[0-9]{2}" "$FILE" ; \
 awk 'length > 120 {print FILENAME":"FNR" is "length" chars"}' "$FILE" ; \
 wc -w "$FILE"
 ```
 
-Any hit from the first two greps is a defect: delete or replace it. Any hit from `awk` is a wrap violation unless
+Any hit from the first two greps is a defect: delete or replace it. A hit from the third is a changelog
+marker left inside a body paragraph: the edit was appended instead of made. Rewrite the claim and delete
+the marker. Any hit from `awk` is a wrap violation unless
 the line is a URL or an unbreakable code span. `wc -w` over roughly 1,500 words means the document is past the
 length cap in `references/portable-voice.md` rule 12 and depth needs to move behind a link.
 
