@@ -126,11 +126,12 @@ a linked "go deeper," never into the body. Cut any sentence that does not change
 Noah's five design-doc directives average 719 words, and the program's success metric is "Any proposal is triaged
 in under 2 minutes from its tl;dr + Goals alone." (communication-program.md:40).
 
-**13. Hard-wrap generated markdown at 120 characters.** From `~/.claude/CLAUDE.md`: "Wrap all generated markdown at
-120 characters. No line should exceed 120 characters unless it's a URL or code block that can't be broken."
-Confirmed by practice: the longest line is 111 characters in communication-program.md, 109 in
-comms-delivery-surfaces.md, 99 in experiment-skill.md. This is genre-independent and applies to every file this
-spine touches.
+**13. Hard-wrap only where a line-oriented tool reads the text; never where a renderer or terminal reflows it.**
+Never hard-wrap PR descriptions, PR/issue/review comments, `gh` bodies, release notes, chat replies, Slack or
+LinkedIn posts, or anything bound for pandoc or epub: one line per paragraph or bullet. New markdown prose is not
+hard-wrapped either; when editing an existing wrapped paragraph, match it and do not reflow its neighbors. Code
+follows the project's configured limit (120 where none is set), commit messages wrap at 72, and tables, fenced code
+and URLs are never wrapped. This is genre-independent.
 
 ## Word-level bans
 
