@@ -86,6 +86,10 @@ suggested rewrite.
 13. **Hard-wrap only where a line-oriented tool reads the text.** Never in a PR description, PR/issue/review
     comment, `gh` body, release note, chat reply or Slack/LinkedIn post, and not in new markdown prose. Code follows
     the project's configured limit, commit messages wrap at 72, and tables, fenced code and URLs are never wrapped.
+    Markdown files read in a terminal or editor keep every table row and every fenced-block line (mocks, code,
+    diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the table, and a table
+    that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because GitHub wraps
+    table cells.
 14. **Score with the reduced rubric.** Run `ai-scoring` in **scanning mode**. That skill owns the mode: which
     categories are scored, which are off and why, and how to read the number. Do not restate its thresholds here.
     Treat any nonzero penalty as a review trigger, never a refusal.
