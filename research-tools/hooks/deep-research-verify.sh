@@ -369,6 +369,11 @@ else
             | sed -E 's#[/?#].*$##' \
             | tr 'A-Z' 'a-z' \
             || true)
+        # Attribution is scanned ONLY inside the `## Verified Quote(s)` section (heading to the
+        # next `## ` heading). A dash-led bullet elsewhere (Key Findings: `Visual Basic.NET`,
+        # `todo.txt`, a cross-reference to another card's host) is prose, not a credit, and used
+        # to fail correctly-attributed cards. A foreign domain credited INSIDE the section still fails.
+        vq_section=$(awk '/^##[[:space:]]+Verified[[:space:]]+Quote/ {f=1; next} /^##[[:space:]]/ {f=0} f' "$card" || true)
         if [[ -n "$url_host" ]]; then
             # Pull a candidate attribution host from a dash-led attribution/credit line
             # (NOT the blockquote, which starts with `>`). The host pattern is STRUCTURAL —
@@ -385,7 +390,7 @@ else
             # Accepted residual hole: a real misattribution hidden inside backticks or angle
             # brackets on a dash-led line now escapes A9. Judged strictly better than a gate
             # that cannot be satisfied without corrupting evidence.
-            attr_domain=$(grep -E '^[[:space:]]*([-–—]|\*\*?(source|attribut|credit))' "$card" \
+            attr_domain=$(grep -E '^[[:space:]]*([-–—]|\*\*?(source|attribut|credit))' <<<"$vq_section" \
                 | sed -E 's/`[^`]*`//g' \
                 | sed -E 's/<[^>]*>//g' \
                 | grep -Eio '[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}' \
