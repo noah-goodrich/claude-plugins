@@ -29,6 +29,10 @@ want_rc()   { [[ "$RC" -eq "$1" ]] && ok "$2" || bad "$2 — want rc=$1 got rc=$
 want_grep() { printf '%s' "$OUT" | grep -qE "$1" && ok "$2" || bad "$2 — missing /$1/"; }
 mk()   { rm -rf "$TMP/c"; cp -R "$PASS" "$TMP/c"; }
 edit() { sed -E "$2" "$1" > "$1.t" && mv "$1.t" "$1"; }
+# in_vq FILE LINE — insert LINE inside the card's ## Verified Quote(s) section (right after the quote)
+in_vq() { awk -v l="$2" '{print} /^> "/ && !d {print ""; print l; d=1}' "$1" > "$1.t" && mv "$1.t" "$1"; }
+# in_kf FILE LINE — insert LINE inside the card's ## Key Findings section
+in_kf() { awk -v l="$2" '{print} /^## Key Findings/ && !d {print ""; print l; d=1}' "$1" > "$1.t" && mv "$1.t" "$1"; }
 
 # ---------------------------------------------------------------------------
 echo "== 1. FIXTURE SUITE — each scenario's expected verdict =="
@@ -125,15 +129,15 @@ Excluded: 0 of 12 candidates failed the bar; every source cleared.
 EOF
 run "$TMP/c"; want_grep 'A12 FAIL' "A12 rejects 'Excluded: 0 of 12' (reads 0, not 12)"
 
-mk; printf '\n— notes.example.org.attacker-cdn.com / mirror\n' >> "$TMP/c/sources/t1-example-alpha.md"
+mk; in_vq "$TMP/c/sources/t1-example-alpha.md" "— notes.example.org.attacker-cdn.com / mirror"
 run "$TMP/c"; want_grep 'A9 FAIL' "A9 rejects lookalike suffix notes.example.org.attacker-cdn.com"
 
-mk; printf '\n— evil-spoof.xyz / unrelated docs\n' >> "$TMP/c/sources/t1-example-alpha.md"
+mk; in_vq "$TMP/c/sources/t1-example-alpha.md" "— evil-spoof.xyz / unrelated docs"
 run "$TMP/c"; want_grep 'A9 FAIL' "A9 rejects non-allowlist TLD .xyz"
 
 mk
 edit "$TMP/c/sources/t1-example-alpha.md" 's#\*\*URL:\*\* https://example.org/alpha#**URL:** example.org/alpha#'
-printf '\n— attacker-cdn.com / mirror\n' >> "$TMP/c/sources/t1-example-alpha.md"
+in_vq "$TMP/c/sources/t1-example-alpha.md" "— attacker-cdn.com / mirror"
 run "$TMP/c"; want_grep 'A9 FAIL' "A9 extracts host from scheme-less URL and flags mismatch"
 
 # A9 must not read code spans / placeholders as attributions (regression: a Snowflake SQL
@@ -144,8 +148,16 @@ run "$TMP/c"; want_rc 0 "A9 ignores a dotted SQL placeholder inside backticks an
 mk; printf '\n- see `notes.attacker-cdn.com` for the mirror\n' >> "$TMP/c/sources/t1-example-alpha.md"
 run "$TMP/c"; want_rc 0 "A9 ignores a host inside an inline-code span (accepted residual hole)"
 
+# A9 scope: host-like tokens in Key Findings (not the Verified Quote(s) section) are prose, not credits.
+mk; in_kf "$TMP/c/sources/t1-example-alpha.md" "- Compare Visual Basic.NET, todo.txt, fnune.com (another card) and odd.fyi."
+run "$TMP/c"; want_rc 0 "A9 ignores host-like tokens in Key Findings bullets"
+
+# A9 teeth: a foreign domain credited on a source/credit line inside Verified Quote(s) still fails.
+mk; in_vq "$TMP/c/sources/t1-example-alpha.md" "— fnune.com / another site"
+run "$TMP/c"; want_grep 'A9 FAIL' "A9 rejects a foreign credit line inside Verified Quote(s)"
+
 # --- fail-CLOSED closures: an honest deliverable must NOT be rejected ---
-mk; printf '\n— blog.example.org / same site\n' >> "$TMP/c/sources/t1-example-alpha.md"
+mk; in_vq "$TMP/c/sources/t1-example-alpha.md" "— blog.example.org / same site"
 run "$TMP/c"; want_rc 0 "A9 accepts same-origin subdomain blog.example.org"
 
 mk
@@ -250,6 +262,18 @@ printf '%s' "$OUT" | grep -q '"decision": *"block"' && bad "(d) no deliverable: 
 OUT="$(bash "$SCHOLARLY" search "q" --limit 2>&1)"; RC=$?
 [[ "$RC" -eq 2 ]] && ok "scholarly: value-less flag exits 2 (usage)" || bad "scholarly: wrong rc=$RC"
 printf '%s' "$OUT" | grep -q 'unbound variable' && bad "scholarly: raw unbound-variable crash leaked" || ok "scholarly: no unbound-variable crash"
+
+# Scholarly adapter: --out is REQUIRED. Without it: rc 2, usage message naming the flag, nothing written.
+mkdir -p "$TMP/noout"
+OUT="$(cd "$TMP/noout" && bash "$SCHOLARLY" search "q" 2>&1)"; RC=$?
+[[ "$RC" -eq 2 ]] && ok "scholarly: missing --out exits 2" || bad "scholarly: missing --out rc=$RC"
+printf '%s' "$OUT" | grep -q -- '--out' && ok "scholarly: missing --out message names the flag" || bad "scholarly: usage message lacks --out :: $OUT"
+[[ -z "$(ls -A "$TMP/noout")" ]] && ok "scholarly: missing --out writes nothing to cwd" || bad "scholarly: cwd not empty"
+OUT="$(cd "$TMP/noout" && bash "$SCHOLARLY" search "q" --topic x 2>&1)"; RC=$?
+[[ "$RC" -eq 2 && -z "$(ls -A "$TMP/noout")" ]] && ok "scholarly: --out missing with other flags still writes nothing" || bad "scholarly: rc=$RC or cwd dirty"
+# --out inside the plugin tree is refused, and nothing is created there.
+OUT="$(bash "$SCHOLARLY" search "q" --out "$HOOKS/docs/research" 2>&1)"; RC=$?
+[[ "$RC" -eq 2 && ! -e "$HOOKS/docs" ]] && ok "scholarly: --out inside the plugin tree refused, nothing created" || bad "scholarly: plugin-tree --out rc=$RC"
 
 # ---------------------------------------------------------------------------
 echo "== 5. RESEARCH FRONT-DOOR RENAME + DECISION-DESIGN NON-BLOCK =="

@@ -53,14 +53,14 @@
 #
 # USAGE
 #   scholarly-adapter.sh search   "<query>" [--backend openalex|semanticscholar]
-#                                 [--limit N] [--topic <area>] [--out <dir>]
+#                                 [--limit N] [--topic <area>] --out <dir>
 #                                 [--perspective <enum>] [--mailto <email>]
 #   scholarly-adapter.sh verify   <out-dir>        # local, no-model quote-vs-snapshot check
 #   scholarly-adapter.sh selftest                  # offline jq-only abstract round-trip
 #
 #   search  — query the backend, write one card per result to <out>/sources/ and one
-#             abstract snapshot per result to <out>/snapshots/. Default <out> is
-#             docs/research/sources' parent, i.e. ./docs/research . Default backend
+#             abstract snapshot per result to <out>/snapshots/. --out is REQUIRED (no default: a
+#             cwd-relative default once wrote cards into the plugin tree). Default backend
 #             openalex, default limit 5, min results to be useful is 3.
 #   verify  — for each adapter-emitted card under <out>/sources/, confirm its Verified
 #             Quote blockquote appears verbatim in the matching <out>/snapshots/ file.
@@ -294,7 +294,11 @@ cmd_search() {
             *) die "unknown search flag: $1" ;;
         esac
     done
-    [[ -n "$out" ]] || out="$PWD/docs/research"
+    [[ -n "$out" ]] || die "search requires --out <dir> (the run directory that holds sources/ and snapshots/, e.g. docs/research/<date>-<slug>)"
+    local plugin_root out_abs="$out"
+    plugin_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+    [[ "$out_abs" = /* ]] || out_abs="$(pwd -P)/$out_abs"
+    case "$out_abs/" in "$plugin_root"/*) die "--out must not be inside the plugin tree ($plugin_root)" ;; esac
     case "$backend" in
         openalex|semanticscholar) : ;;
         *) die "unknown backend '$backend' (use openalex or semanticscholar)" ;;
