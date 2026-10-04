@@ -174,6 +174,6 @@ Run this before delivering any strategic brief:
 - [ ] Risk register has likelihood + impact + mitigation
 - [ ] Sources section has 20+ references
 - [ ] Executive summary works standalone
-- [ ] All lines <= 120 characters
+- [ ] No paragraph or bullet is hard-wrapped
 - [ ] No advocacy language ("our amazing tool," "industry-leading")
 - [ ] Honest about limitations and unknowns

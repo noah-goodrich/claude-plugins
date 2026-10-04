@@ -83,23 +83,23 @@ suggested rewrite.
     the defect; a labelled observation is not.
 11. **Banned-word grep is clean.** Command below.
 12. **Announced-transition grep is clean.** Command below.
-13. **No line exceeds 120 characters** except a URL or an unbreakable code span.
+13. **Hard-wrap only where a line-oriented tool reads the text.** Never in a PR description, PR/issue/review
+    comment, `gh` body, release note, chat reply or Slack/LinkedIn post, and not in new markdown prose. Code follows
+    the project's configured limit, commit messages wrap at 72, and tables, fenced code and URLs are never wrapped.
 14. **Score with the reduced rubric.** Run `ai-scoring` in **scanning mode**. That skill owns the mode: which
     categories are scored, which are off and why, and how to read the number. Do not restate its thresholds here.
     Treat any nonzero penalty as a review trigger, never a refusal.
 
-Steps 11, 12, 13 and the length cap are mechanical. Run them:
+Steps 11 and 12 and the length cap are mechanical. Run them:
 
 ```bash
 FILE=path/to/doc.md && \
 grep -nEi "genuinely|straightforward|honestly|to be honest|navigate|landscape|leverage|delve|game-changer|cutting-edge|revolutionary|fast-paced world|important to note|synergy|paradigm shift" "$FILE" ; \
 grep -nEi "here's the thing|let's dive in|that said|here's the kicker|let me explain|what does this mean|the truth is|worth noting|at the end of the day|the bottom line|but wait, there's more|moreover|furthermore|in conclusion" "$FILE" ; \
-awk 'length > 120 {print FILENAME":"FNR" is "length" chars"}' "$FILE" ; \
 wc -w "$FILE"
 ```
 
-Any hit from the first two greps is a defect: delete or replace it. Any hit from `awk` is a wrap violation unless
-the line is a URL or an unbreakable code span. `wc -w` over roughly 1,500 words means the document is past the
+Any hit from the first two greps is a defect: delete or replace it. `wc -w` over roughly 1,500 words means the document is past the
 length cap in `references/portable-voice.md` rule 12 and depth needs to move behind a link.
 
 ## Sources
