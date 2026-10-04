@@ -131,7 +131,10 @@ Never hard-wrap PR descriptions, PR/issue/review comments, `gh` bodies, release 
 LinkedIn posts, or anything bound for pandoc or epub: one line per paragraph or bullet. New markdown prose is not
 hard-wrapped either; when editing an existing wrapped paragraph, match it and do not reflow its neighbors. Code
 follows the project's configured limit (120 where none is set), commit messages wrap at 72, and tables, fenced code
-and URLs are never wrapped. This is genre-independent.
+and URLs are never wrapped. Markdown files read in a terminal or editor keep every table row and every fenced-block
+line (mocks, code, diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the
+table, and a table that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because
+GitHub wraps table cells. This is genre-independent.
 
 ## Word-level bans
 

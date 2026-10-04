@@ -186,6 +186,8 @@ Excluded sources go in a separate subsection with exclusion reason.]
 
 Apply these rules throughout the document:
 
+0. **Tables: rows ≤72 columns; cells a few words; long text goes in bullets under the table.** Tables and fenced blocks cannot soft-wrap, so a 400-column row breaks in a narrow editor pane. A table that needs more width becomes a list. Applies to every table and fenced block in the file (search log, distributions, matrices, mocks).
+
 1. **ELI10** — Explain Like I'm 10. Not condescending, just clear. Replace jargon with plain
    words. If you must use a technical term, define it inline on first use.
 
