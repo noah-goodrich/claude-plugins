@@ -348,6 +348,18 @@ printf '%s' "$OUT" | grep -qE 'already reported this turn|standing down' \
     || bad "(f) loop: no stand-down advisory; got: $OUT"
 
 # ---------------------------------------------------------------------------
+echo "== 7. PROSE CONTRACT — the research template caps table rows at 72 columns =="
+# No model. Research files are read in a narrow editor pane and tables cannot soft-wrap, so the
+# template must tell the writer the width rule. Deleting the sentence must turn this red.
+TEMPLATE="$HOOKS/../skills/research/references/research-document-template.md"
+grep -qF 'Tables: rows ≤72 columns; cells a few words; long text goes in bullets under the table' "$TEMPLATE" \
+    && ok "(g) research template states the 72-column table rule" \
+    || bad "(g) research template lost its 72-column table rule"
+grep -qF 'tables: rows ≤72 columns' "$HOOKS/../skills/research/SKILL.md" \
+    && ok "(g) SKILL.md Phase 6 language rules carry the table rule" \
+    || bad "(g) SKILL.md Phase 6 language rules lost the table rule"
+
+# ---------------------------------------------------------------------------
 echo
 if [[ "$fails" -eq 0 ]]; then
     printf '\033[32mALL TESTS PASSED\033[0m\n'

@@ -397,7 +397,7 @@ Produce the final deliverable at `[project]/docs/research/<YYYY-MM-DD>-<slug>/an
 
 **Language rules** (enforced by `ai-scoring` ≥ 75 gate): ELI10 throughout · define every term/acronym
 inline on first use · top-of-document Glossary (≤~12 terms) · concrete examples over abstractions ·
-show the tension · no orphaned claims.
+show the tension · no orphaned claims · tables: rows ≤72 columns, cells a few words, long text in bullets under the table (tables cannot soft-wrap).
 
 **Bias-guard summary required.** §6 MUST contain a Bias-Guard Summary table: agree-with count,
 disagree-with count, neutral count.
