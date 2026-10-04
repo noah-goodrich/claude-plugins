@@ -10,7 +10,7 @@
 # with every gate staying green. So the floor lands with its pair or it lands unobserved, and the
 # pair has to be runnable where the floor is not.
 #
-# EIGHT CASES, each in the firing direction AND the direction that proves it discriminates. A guard
+# NINE CASES, each in the firing direction AND the direction that proves it discriminates. A guard
 # asserted only firing is satisfied just as well by an artifact that always fails:
 #   1  --skip-model     requests nothing, runs nothing, exits 0 and SAYS SO
 #   2  model floor      FIRES at rc 1 when the sweep is requested and `claude` is hidden...
@@ -226,6 +226,19 @@ if [ "$guarded" -ge 1 ] && [ "$total" -eq $((guarded * 2)) ]; then
     ok "every TIMEOUT expansion is guarded (${total} mentions, ${guarded} guards)"
 else
     bad "an unguarded TIMEOUT expansion (${total} mentions, ${guarded} guards; want total == 2*guards)"
+fi
+
+echo "== 9: the pr-description skill forbids hard-wrapping the body =="
+# PROSE CONTRACT, no model. The skill once said "Hard-wrap the body at 120 characters", and models
+# obeyed it: GitHub reflows a PR body, so every hard newline rendered as a broken line. Two clauses,
+# because a file that merely lacks the old line proves nothing: the old instruction is absent AND
+# the prohibition is present. MUTATION: restoring the old line fails the first clause; deleting the
+# new one fails the second.
+SKILL="$SCRIPT_DIR/../../noah-content-tools/skills/pr-description/SKILL.md"
+if ! grep -qi 'hard-wrap the body at' "$SKILL" && grep -q 'Never hard-wrap the body' "$SKILL"; then
+    ok "pr-description forbids hard-wrapping the body and no longer asks for 120"
+else
+    bad "pr-description lost its no-hard-wrap instruction or regained a wrap width"
 fi
 
 echo "RESULT: $PASS ok, $FAIL fail"
