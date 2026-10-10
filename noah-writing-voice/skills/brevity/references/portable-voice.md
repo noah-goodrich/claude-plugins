@@ -126,15 +126,11 @@ a linked "go deeper," never into the body. Cut any sentence that does not change
 Noah's five design-doc directives average 719 words, and the program's success metric is "Any proposal is triaged
 in under 2 minutes from its tl;dr + Goals alone." (communication-program.md:40).
 
-**13. Hard-wrap only where a line-oriented tool reads the text; never where a renderer or terminal reflows it.**
-Never hard-wrap PR descriptions, PR/issue/review comments, `gh` bodies, release notes, chat replies, Slack or
-LinkedIn posts, or anything bound for pandoc or epub: one line per paragraph or bullet. New markdown prose is not
-hard-wrapped either; when editing an existing wrapped paragraph, match it and do not reflow its neighbors. Code
-follows the project's configured limit (120 where none is set), commit messages wrap at 72, and tables, fenced code
-and URLs are never wrapped. Markdown files read in a terminal or editor keep every table row and every fenced-block
+**13. Width limits apply only to text that cannot reflow.** Source code follows the project's configured limit,
+commit messages wrap at 72, and markdown files read in a terminal or editor keep every table row and every fenced-block
 line (mocks, code, diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the
-table, and a table that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because
-GitHub wraps table cells. This is genre-independent.
+table, and a table that needs more width becomes a list. Prose has no line-length cap: one line per paragraph or
+bullet, because editors, terminals, GitHub and Notion all reflow it. This is genre-independent.
 
 ## Word-level bans
 

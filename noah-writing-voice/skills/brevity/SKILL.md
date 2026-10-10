@@ -94,13 +94,10 @@ suggested rewrite.
     the defect; a labelled observation is not.
 11. **Banned-word grep is clean.** Command below.
 12. **Announced-transition grep is clean.** Command below.
-13. **Hard-wrap only where a line-oriented tool reads the text.** Never in a PR description, PR/issue/review
-    comment, `gh` body, release note, chat reply or Slack/LinkedIn post, and not in new markdown prose. Code follows
-    the project's configured limit, commit messages wrap at 72, and tables, fenced code and URLs are never wrapped.
-    Markdown files read in a terminal or editor keep every table row and every fenced-block line (mocks, code,
-    diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the table, and a table
-    that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because GitHub wraps
-    table cells.
+13. **Width limits apply only to text that cannot reflow.** Source code follows the project's configured limit, commit
+    messages wrap at 72, and markdown files read in a terminal or editor keep every table row and fenced-block line
+    within 72 columns (table cells a few words; longer text goes in bullets below the table). Prose has no line-length
+    cap: one line per paragraph or bullet.
 14. **No paragraph contains both a claim and its replacement.** Changelog-marker grep is clean; where an edit
     superseded something, the old state is deleted rather than caveated. Command below.
 15. **No paragraph carries more than two attributions**, and no settled background fact carries one.
