@@ -126,15 +126,11 @@ a linked "go deeper," never into the body. Cut any sentence that does not change
 Noah's five design-doc directives average 719 words, and the program's success metric is "Any proposal is triaged
 in under 2 minutes from its tl;dr + Goals alone." (communication-program.md:40).
 
-**13. Hard-wrap only where a line-oriented tool reads the text; never where a renderer or terminal reflows it.**
-Never hard-wrap PR descriptions, PR/issue/review comments, `gh` bodies, release notes, chat replies, Slack or
-LinkedIn posts, or anything bound for pandoc or epub: one line per paragraph or bullet. New markdown prose is not
-hard-wrapped either; when editing an existing wrapped paragraph, match it and do not reflow its neighbors. Code
-follows the project's configured limit (120 where none is set), commit messages wrap at 72, and tables, fenced code
-and URLs are never wrapped. Markdown files read in a terminal or editor keep every table row and every fenced-block
+**13. Width limits apply only to text that cannot reflow.** Source code follows the project's configured limit,
+commit messages wrap at 72, and markdown files read in a terminal or editor keep every table row and every fenced-block
 line (mocks, code, diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the
-table, and a table that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because
-GitHub wraps table cells. This is genre-independent.
+table, and a table that needs more width becomes a list. Prose has no line-length cap: one line per paragraph or
+bullet, because editors, terminals, GitHub and Notion all reflow it. This is genre-independent.
 
 ## Word-level bans
 
@@ -153,6 +149,62 @@ conclusion." Delete first, then re-read; add a bridge back only if the text actu
 overlapping ban for technical prose independently: "**Hedge and throat-clearing.** 'It is worth noting that',
 'deliberately', 'importantly', 'as a rule of thumb' — delete; state the rule flatly"
 (docs/SKILL-DISTILLATION-RUBRIC.md:22-23).
+
+## Sentence-shape bans
+
+**15b. Never define a thing by negating a decoy first. Grep for it; it survives every other check.** Flagged by
+Noah 2026-09-01 as the construction that "just screams 'I was written by AI'". Four shapes, all the same move:
+
+- `The X is not A; it is B.` / `The X is not A, it is B.`
+- `X, not Y.` as a trailing corrective — "The second gap is capacity, not accuracy."
+- `... because of P, not because of Q.`
+- `I want to X rather than Y.` / `... rather than soften it` / `... rather than letting it stand`
+
+The failure is structural: the sentence spends its first half on something nobody claimed, so the reader pays for a
+contrast that carries no information. State the thing. If the decoy is a real position someone holds, it earns its
+own sentence and a verdict under rule 3.
+
+It is pervasive rather than occasional. One 317-word draft written *under this spine* on 2026-09-01 contained five:
+"is not invented facts; it is confident numbers", "capacity, not accuracy", "rather than letting it stand", "not
+because there was nothing to find", "rather than output volume". Passing rules 1-15 does not catch it.
+
+```bash
+grep -nEi "is not .{1,40}; it is|is not .{1,40}, it is|, not [a-z]+[.,]|rather than|because of .{1,30}, not" "$FILE"
+```
+
+Every `rather than` hit needs a human read. Some are legitimate comparatives; the banned form is the one where the
+rejected half was never on the table. Corroborating evidence outside this corpus: Jess Grider flagged AI jargon in
+the ARBAC TRD review comments (Notion, 2026-08), on a reply that opened "Yes, and I want to answer this one
+head-on rather than soften it".
+
+**15c. Never narrate the utterance. Say the thing.** Flagged by Noah 2026-09-02 on "one question, and it decides
+whether anything is left to fix here" — a drumroll that announces a question's significance instead of asking it.
+This is the same root defect as 15b and as rule 15's announced transitions: **the sentence is about the sentence.**
+
+Three shapes, with counts measured over 97 of Noah's own transcripts on 2026-09-03:
+
+- **Stakes preamble** — announcing the count or weight of what follows. "One question, and it decides whether…",
+  "Two things, and one of them matters." Just ask, or just say it.
+- **Rating your own honesty or plainness** — "the honest answer is…" (**20 hits**), "let me be clear", "to be clear".
+  If the answer is honest, saying so adds nothing; if it needs saying, the surrounding text has already failed.
+- **Announcing the shape** — "here's the thing" (**6**), "worth saying / worth noting / worth flagging" (**71**).
+
+**The 71 is the finding.** "Worth noting" is already banned by rule 15 and appears 71 times anyway. Capture is not
+enforcement — see [[feedback_written_rules_go_unapplied]]. Run the grep; do not trust recall.
+
+```bash
+grep -nEi "worth (saying|noting|flagging)|the honest (answer|thing|truth|version|position)|here'?s the (thing|answer|catch|rub)|(one|two|three) (question|thing)s?[^.]{0,40}(and )?(it|that|which) (decides|determines|changes|matters)|let me be clear|to be clear" "$FILE"
+```
+
+**Two carve-outs, because a rule that flags good writing gets ignored.** Both measured as false positives in the same
+scan:
+
+1. **Describing an action is not narrating the utterance.** "Checking the actual data shape before I write the CASE"
+   is real sequencing and stays. Only "before I answer, let me…" is the tic.
+2. **A labelled plain-language restatement stays.** "Plain version:" / "In plain terms:" scored 37 hits and is rule 1
+   and the ELI10 preference doing their job — it is a formatting device that serves the reader, not self-commentary.
+
+The test: delete the phrase. If the sentence still carries the same information, the phrase was narration.
 
 ## Process
 
