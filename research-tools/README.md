@@ -148,6 +148,7 @@ into the SAME inspectable source-card pipeline.
   the Sorbonne deregistration of Dec 2023.)
 - **Semantic Scholar is the documented fallback** — 200M+ papers, keyless but globally
   throttled, so it cannot be the default; use `--backend semanticscholar` for AI/ML/CS queries.
+- **`--out <dir>` is required** — no default output location; it refuses to write inside the plugin tree.
 - **Phase 2 routing:** academic/clinical → OpenAlex; AI/ML/CS → Semantic Scholar; general web →
   WebSearch.
 - **Backend-agnostic cards.** Pulled results use the standard source-card template with NO

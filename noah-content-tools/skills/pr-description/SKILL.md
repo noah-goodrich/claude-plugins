@@ -170,7 +170,8 @@ Not run: the three bats suites. This branch touches no file they cover.
   body to a local file is fine when asked for it.
 - If a title is requested too, keep it under 70 characters and use the repo's existing commit-prefix convention.
 - Render every PR and issue number as a markdown link, `[#38](https://github.com/<org>/<repo>/pull/38)`.
-- Hard-wrap the body at 120 characters.
+- Never hard-wrap the body. Write one line per paragraph or bullet; GitHub reflows the text, and a hard newline
+  mid-paragraph renders as a visible break.
 
 ## Self-audit before emitting
 

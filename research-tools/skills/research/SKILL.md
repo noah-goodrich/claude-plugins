@@ -158,8 +158,10 @@ searches return already-seen sources AND all 5 categories have representation pe
 
 **Scholarly adapter (optional).** For academic/clinical questions, `hooks/scholarly-adapter.sh` pulls
 peer-reviewed abstracts + DOIs into the standard source-card pipeline (both backends are keyless):
-- Academic / clinical → OpenAlex (default). `hooks/scholarly-adapter.sh search "<query>" --topic <area>`.
-- AI / ML / CS → Semantic Scholar (fallback; globally throttled). Add `--backend semanticscholar`.
+- Academic / clinical → OpenAlex (default). `hooks/scholarly-adapter.sh search "<query>" --topic <area> --out <run-dir>`
+  (`--out` is required: the run directory holding `sources/` and `snapshots/`; the adapter refuses to run without it).
+- AI / ML / CS → Semantic Scholar (fallback; globally throttled). Add `--backend semanticscholar`
+  (still with `--out <run-dir>`).
 - General web → WebSearch / WebFetch (always available; adapter is additive, not required).
 
 Adapter-pulled cards use the STANDARD template; `## Verified Quote(s)` is a verbatim span of the
@@ -395,7 +397,7 @@ Produce the final deliverable at `[project]/docs/research/<YYYY-MM-DD>-<slug>/an
 
 **Language rules** (enforced by `ai-scoring` ≥ 75 gate): ELI10 throughout · define every term/acronym
 inline on first use · top-of-document Glossary (≤~12 terms) · concrete examples over abstractions ·
-show the tension · no orphaned claims.
+show the tension · no orphaned claims · tables: rows ≤72 columns, cells a few words, long text in bullets under the table (tables cannot soft-wrap).
 
 **Bias-guard summary required.** §6 MUST contain a Bias-Guard Summary table: agree-with count,
 disagree-with count, neutral count.
