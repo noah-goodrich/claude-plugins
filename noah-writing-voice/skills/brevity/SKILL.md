@@ -94,7 +94,13 @@ suggested rewrite.
     the defect; a labelled observation is not.
 11. **Banned-word grep is clean.** Command below.
 12. **Announced-transition grep is clean.** Command below.
-13. **No line exceeds 120 characters** except a URL or an unbreakable code span.
+13. **Hard-wrap only where a line-oriented tool reads the text.** Never in a PR description, PR/issue/review
+    comment, `gh` body, release note, chat reply or Slack/LinkedIn post, and not in new markdown prose. Code follows
+    the project's configured limit, commit messages wrap at 72, and tables, fenced code and URLs are never wrapped.
+    Markdown files read in a terminal or editor keep every table row and every fenced-block line (mocks, code,
+    diagrams) within 72 columns: table cells are a few words, longer text goes in bullets below the table, and a table
+    that needs more width becomes a list. GitHub-rendered text (PR bodies, comments) is exempt because GitHub wraps
+    table cells.
 14. **No paragraph contains both a claim and its replacement.** Changelog-marker grep is clean; where an edit
     superseded something, the old state is deleted rather than caveated. Command below.
 15. **No paragraph carries more than two attributions**, and no settled background fact carries one.
@@ -104,21 +110,19 @@ suggested rewrite.
     categories are scored, which are off and why, and how to read the number. Do not restate its thresholds here.
     Treat any nonzero penalty as a review trigger, never a refusal.
 
-Steps 11, 12, 13, 14 and the length cap are mechanical. Run them:
+Steps 11, 12 and 14 are mechanical. Run them:
 
 ```bash
 FILE=path/to/doc.md && \
 grep -nEi "genuinely|straightforward|honestly|to be honest|navigate|landscape|leverage|delve|game-changer|cutting-edge|revolutionary|fast-paced world|important to note|synergy|paradigm shift" "$FILE" ; \
 grep -nEi "here's the thing|let's dive in|that said|here's the kicker|let me explain|what does this mean|the truth is|worth noting|at the end of the day|the bottom line|but wait, there's more|moreover|furthermore|in conclusion" "$FILE" ; \
 grep -nEi "sharpened|superseded|no longer applies|previously stated|update:|as of [0-9]{4}-[0-9]{2}-[0-9]{2}" "$FILE" ; \
-awk 'length > 120 {print FILENAME":"FNR" is "length" chars"}' "$FILE" ; \
 wc -w "$FILE"
 ```
 
 Any hit from the first two greps is a defect: delete or replace it. A hit from the third is a changelog
 marker left inside a body paragraph: the edit was appended instead of made. Rewrite the claim and delete
-the marker. Any hit from `awk` is a wrap violation unless
-the line is a URL or an unbreakable code span. `wc -w` over roughly 1,500 words means the document is past the
+the marker. `wc -w` over roughly 1,500 words means the document is past the
 length cap in `references/portable-voice.md` rule 12 and depth needs to move behind a link.
 
 ## Sources

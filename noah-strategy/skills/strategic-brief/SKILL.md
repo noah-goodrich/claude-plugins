@@ -40,7 +40,8 @@ is "proceed," "pivot," or "kill."
    re-evaluating as conditions change.
 6. **Sources or it didn't happen.** Every factual claim about a competitor, pricing model, or
    market trend needs a source. Group sources in an appendix. 20+ sources minimum.
-7. **120-character line wrap.** All generated markdown hard-wraps at 120 characters.
+7. **No hard-wrap.** One line per paragraph or bullet; the brief is rendered, so a renderer reflows it. Never wrap
+   tables, fenced code or URLs.
 
 ## Research Phase
 
@@ -110,6 +111,6 @@ Before delivering, verify:
 - [ ] Cost models use specific $/unit numbers, not relative comparisons
 - [ ] "What would change this" section exists with concrete conditions
 - [ ] Sources section has 20+ references
-- [ ] No lines exceed 120 characters
+- [ ] No paragraph or bullet is hard-wrapped
 - [ ] Executive summary works standalone (doesn't reference "see Section 5")
 - [ ] Recommendation is clear and actionable, not hedged into uselessness
