@@ -57,7 +57,7 @@ jobs:
         run: bash research-tools/hooks/test/run-tests.sh
 
   # ---------------------------------------------------------------------------
-  # Job 2: borg-collective + token-cost hook BATS suites + shellcheck
+  # Job 2: borg-collective + token-cost hook BATS suites + dev-tools show-file BATS + shellcheck
   # ---------------------------------------------------------------------------
   hook-bats:
     name: hook BATS suites + shellcheck
@@ -68,7 +68,7 @@ jobs:
       - name: Install dependencies (jq, shellcheck, bats)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends jq shellcheck bats
+          sudo apt-get install -y --no-install-recommends jq shellcheck bats tmux
 
       - name: Verify bats version
         run: bats --version
@@ -82,6 +82,9 @@ jobs:
       - name: shellcheck — token-spend-log.sh
         run: shellcheck --severity=warning token-cost/hooks/token-spend-log.sh
 
+      - name: shellcheck — show-file.sh
+        run: shellcheck --severity=warning dev-tools/skills/show-file/show-file.sh
+
       - name: BATS — borg-link-down
         run: bats borg-collective/hooks/test/borg-link-down.bats
 
@@ -90,6 +93,9 @@ jobs:
 
       - name: BATS — token-spend-log
         run: bats token-cost/hooks/test/token-spend-log.bats
+
+      - name: BATS — show-file (throwaway tmux server)
+        run: bats dev-tools/skills/show-file/test/show-file.bats
 
   # ---------------------------------------------------------------------------
   # Job 3: design-doc template validator
