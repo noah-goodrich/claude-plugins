@@ -30,6 +30,20 @@ _use_fakes() {
     export PATH="$BATS_TMPDIR/fakes/bin:$PATH"
 }
 
+
+# Path of the per-project state.json the hooks now write (AC5: <state root>/projects/<repo12|local>-<path12>/).
+# Mirrors lib/borg-hooks.sh::_borg_project_state_key in the borg-collective source.
+_sha12() { { shasum -a 256 2>/dev/null || sha256sum; } | cut -c1-12; }
+_state_file() {
+    local phys repo
+    phys="$(cd "$1" && pwd -P)"
+    repo="$(git -C "$phys" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || repo=""
+    if [ -n "$repo" ]; then
+        printf '%s/borg/projects/%s-%s/state.json\n' "$XDG_STATE_HOME" "$(printf '%s' "$repo" | _sha12)" "$(printf '%s' "$phys" | _sha12)"
+    else
+        printf '%s/borg/projects/local-%s/state.json\n' "$XDG_STATE_HOME" "$(printf '%s' "$phys" | _sha12)"
+    fi
+}
 setup() {
     export BATS_TMPDIR="${BATS_TMPDIR:-/tmp}"
     rm -rf "$BATS_TMPDIR/fakes"
@@ -45,6 +59,8 @@ setup() {
     export BORG_ORCHESTRATOR_ROOT="$BATS_TMPDIR/orchestrator-root"
     export BORG_DIR="$BATS_TMPDIR/borg"
     export HOME="$BATS_TMPDIR/home"
+    export XDG_STATE_HOME="$BATS_TMPDIR/state"
+    rm -rf "$XDG_STATE_HOME"
     mkdir -p "$HOME/.claude" "$HOME/.config/borg" "$BORG_DIR"
     export BORG_REGISTRY="$BORG_DIR/registry.json"
 }
@@ -146,8 +162,8 @@ setup() {
     printf '{"projects":{}}' > "$BORG_REGISTRY"
 
     bash "$HOOK" <<< "{\"session_id\":\"s42\",\"cwd\":\"$proj\"}" > /dev/null
-    [ -f "$proj/.borg/state.json" ]
-    status_val=$(jq -r '.status' "$proj/.borg/state.json")
+    [ -f "$(_state_file "$proj")" ]
+    status_val=$(jq -r '.status' "$(_state_file "$proj")")
     [ "$status_val" = "active" ]
 }
 
@@ -158,7 +174,7 @@ setup() {
     printf '{"projects":{}}' > "$BORG_REGISTRY"
 
     bash "$HOOK" <<< "{\"session_id\":\"s42\",\"cwd\":\"$proj\"}" > /dev/null
-    last=$(jq -r '.last_activity' "$proj/.borg/state.json")
+    last=$(jq -r '.last_activity' "$(_state_file "$proj")")
     [ -n "$last" ] && [ "$last" != "null" ]
 }
 
@@ -169,7 +185,7 @@ setup() {
     printf '{"projects":{}}' > "$BORG_REGISTRY"
 
     bash "$HOOK" <<< "{\"session_id\":\"sess-xyz\",\"cwd\":\"$proj\"}" > /dev/null
-    sid=$(jq -r '.claude_session_id' "$proj/.borg/state.json")
+    sid=$(jq -r '.claude_session_id' "$(_state_file "$proj")")
     [ "$sid" = "sess-xyz" ]
 }
 

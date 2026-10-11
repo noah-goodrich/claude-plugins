@@ -146,17 +146,123 @@ _borg_session_mode() {
 # discovery index — only stable identity fields (path, source, tmux_window,
 # summary, pinned, archived) remain there.
 
+# Machine-local operational state root: ${XDG_STATE_HOME:-$HOME/.local/state}/borg (blank == unset).
+# Siblings: lib/state-root.zsh and borg_core/paths.py::state_root -- keep all three identical.
+_borg_state_root() {
+    printf '%s/borg\n' "${XDG_STATE_HOME:-$HOME/.local/state}"
+}
+
+# First 12 hex of sha256 over stdin (shasum on macOS, sha256sum elsewhere).
+_borg_sha12() {
+    { shasum -a 256 2>/dev/null || sha256sum; } | cut -c1-12
+}
+
+# Key naming one project DIRECTORY's machine-local state: <repo12>-<path12>, or local-<path12> outside a git
+# repo. path12 = sha256 of the PHYSICAL directory path (pwd -P, no trailing slash); repo12 = sha256 of
+# `git rev-parse --path-format=absolute --git-common-dir`. Per directory (worktrees of one repo can be in
+# different statuses at once), namespaced by repo. Siblings, byte-identical: borg_core/paths.py::
+# project_state_key and the other shell copy. Rationale lives in the Python docstring.
+# Usage: _borg_project_state_key <dir> [repo]
+# The optional 2nd arg (even empty) is the registry entry's `repo` field: it replaces the git fork, and
+# empty means outside git (path-only key). Omit it to fork git. Python sibling: project_state_key(dir, repo).
+_borg_project_state_key() {
+    local _d="${1:?_borg_project_state_key: dir required}" _phys _repo _tail="" _base _anc
+    while [ "${#_d}" -gt 1 ] && [ "${_d%/}" != "$_d" ]; do _d="${_d%/}"; done
+    # A missing directory still resolves like Python's realpath: physicalise the deepest existing ancestor.
+    _anc="$_d"
+    while [ -n "$_anc" ] && [ ! -d "$_anc" ]; do
+        _base="${_anc##*/}"
+        _tail="/$_base$_tail"
+        case "$_anc" in
+            */*) _anc="${_anc%/*}" ;;
+            *) _anc="." ;;
+        esac
+    done
+    _phys="$(cd "${_anc:-/}" 2>/dev/null && pwd -P)" || _phys="$_d"
+    [ "$_phys" = "/" ] && _phys=""
+    _phys="$_phys$_tail"
+    [ -n "$_phys" ] || _phys="/"
+    if [ "${2+set}" = set ]; then
+        _repo="$2"
+    else
+        _repo="$(git -C "$_phys" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || _repo=""
+    fi
+    if [ -n "$_repo" ]; then
+        printf '%s-%s\n' "$(printf '%s' "$_repo" | _borg_sha12)" "$(printf '%s' "$_phys" | _borg_sha12)"
+    else
+        printf 'local-%s\n' "$(printf '%s' "$_phys" | _borg_sha12)"
+    fi
+}
+
+# <state root>/projects/<key>/state.json for a project directory. Creates nothing.
+# Usage: _borg_project_state_file <dir> [repo]    (repo: see _borg_project_state_key)
+_borg_project_state_file() {
+    printf '%s/projects/%s/state.json\n' "$(_borg_state_root)" "$(_borg_project_state_key "${1:?_borg_project_state_file: dir required}" ${2+"$2"})"
+}
+
+# Resolve an operational file for READING: the state root's copy if it exists, else the old
+# config-dir location ($BORG_DIR, else ${XDG_CONFIG_HOME:-$HOME/.config}/borg). Expand phase of the
+# config -> state-root move: readers accept both before any writer moves. Neither existing prints
+# the OLD path, so callers' absent handling is unchanged. Reader-only; writers must not call this.
+# Usage: _borg_operational_file <name>     (name may contain a subdir, e.g. recon/last-run)
+_borg_operational_file() {
+    local _new
+    _new="$(_borg_state_root)/${1:?_borg_operational_file: name required}"
+    if [ -e "$_new" ]; then
+        printf '%s\n' "$_new"
+    else
+        printf '%s/%s\n' "${BORG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/borg}" "$1"
+    fi
+}
+
+# Log retention: cap an append-only log at BORG_LOG_CAP_BYTES, keeping ONE previous generation.
+# Cap = 1 MiB: roughly 8,000 memory-hits rows or 2,000 agents.jsonl rows -- months of history at
+# today's write rates, so a history reader loses nothing it uses, while the worst case per log is
+# 2 MiB (file + .1). One generation, not N: the fewest moving parts that still bounds disk.
+# Siblings: borg_core/retention.py::rotate_log (Python). Same contract: size >= cap rotates.
+# Call it IMMEDIATELY BEFORE the append, so the live file exists again as soon as the write lands
+# (tail -n 1 readers such as usage-samples.jsonl never see a missing file after a write).
+# Usage: _borg_rotate_log <file> [cap_bytes]
+# Returns: 0 always; silent on every path (fail-open -- a hook's stdout is JSON).
+# Race: two concurrent writers may both rotate, costing at most the older generation.
+_borg_rotate_log() {
+    local _f="${1:-}" _cap="${2:-${BORG_LOG_CAP_BYTES:-1048576}}" _size
+    { [ -n "$_f" ] && [ -f "$_f" ] && [ ! -L "$_f" ]; } 2>/dev/null || return 0
+    case "$_cap" in ''|*[!0-9]*) _cap=1048576 ;; esac
+    _size="$(wc -c < "$_f" 2>/dev/null | tr -d ' ')" || return 0
+    case "$_size" in ''|*[!0-9]*) return 0 ;; esac
+    [ "$_size" -ge "$_cap" ] 2>/dev/null || return 0
+    { mv -f "$_f" "$_f.1"; } 2>/dev/null || true
+    return 0
+}
+
 # Canonical path to a project's state file.
 # Usage: _borg_state_file <project_dir>
 _borg_state_file() {
     printf '%s/.borg/state.json\n' "${1:?_borg_state_file: dir required}"
 }
 
-# Read state.json; emit '{}' when the file does not exist yet.
-# Usage: _borg_state_read <project_dir>
+# The state.json to READ for a project: the per-project state-root copy if it exists, else the legacy
+# <dir>/.borg/state.json (also the answer when neither exists, so absent-handling is unchanged). Expand phase of
+# AC5: readers accept both before any writer moves. READER-ONLY -- writers use
+# _borg_project_state_file. Optional 2nd arg is the registry entry's `repo` field (fast path, no git fork; see
+# _borg_project_state_key). Usage: _borg_state_read_path <project_dir> [repo]
+_borg_state_read_path() {
+    local _new
+    _new="$(_borg_project_state_file "$@")"
+    if [ -f "$_new" ]; then
+        printf '%s\n' "$_new"
+    else
+        _borg_state_file "$1"
+    fi
+}
+
+# Read state.json; emit '{}' when the file does not exist yet. Reads new-then-legacy; writes go to
+# the new path.
+# Usage: _borg_state_read <project_dir> [repo]
 _borg_state_read() {
     local sf
-    sf=$(_borg_state_file "$1")
+    sf=$(_borg_state_read_path "$@")
     if [[ -f "$sf" ]]; then
         cat "$sf"
     else
@@ -179,12 +285,31 @@ _borg_resolve_proj_dir() {
     printf '%s\n' "$cwd"
 }
 
-# Atomic write — strip control chars, reject empty result, tmp+mv.
-# Usage: _borg_state_write <project_dir> <json>
+# Set the global _REPO to the registry `repo` of <project> when its entry is registered AT <proj_dir>
+# (possibly empty: no repo recorded == the path-only key); leave _REPO UNSET otherwise. Callers expand
+# `${_REPO+"$_REPO"}` into the state helpers, so a registered project is keyed exactly as every registry-driven
+# reader keys it (borg-link-down's overlay, registry.zsh, borg_core.link) and an unregistered CWD forks git.
+# A writer keying differently from the readers would leave a stale shadow. Reads $BORG_REGISTRY.
+# Usage: _borg_proj_repo <project> <proj_dir>
+_borg_proj_repo() {
+    local _r
+    unset _REPO
+    [[ -f "${BORG_REGISTRY:-}" ]] || return 0
+    _r=$(jq -r --arg p "$1" --arg d "$2" \
+        '.projects[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
+        "$BORG_REGISTRY" 2>/dev/null) || return 0
+    [[ -n "$_r" ]] && _REPO="${_r#R}"
+    return 0
+}
+
+# Atomic write to the per-project state-root path (AC5 step c: the legacy <dir>/.borg/state.json is never
+# written) -- strip control chars, reject empty result, tmp+mv. Optional 3rd arg: registry `repo` (see
+# _borg_project_state_key); omit it to fork git.
+# Usage: _borg_state_write <project_dir> <json> [repo]
 _borg_state_write() {
     local dir="$1" json="$2"
     local sf
-    sf=$(_borg_state_file "$dir")
+    sf=$(_borg_project_state_file "$dir" ${3+"$3"})
     mkdir -p "${sf%/*}"
     local tmp="${sf}.tmp.$$"
     printf '%s' "$json" | tr -d '\000-\010\013\014\016-\037' > "$tmp"
@@ -251,20 +376,36 @@ _borg_should_reap() {
 # ── Nanoprobe worktree reaper ─────────────────────────────────────────────────
 #
 # Borg-managed worktrees live at:
-#   /Users/noah/.local/state/borg/worktrees/<repo-basename>/<slug>
+#   ${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees/<repo-basename>/<slug>
 #
 # A worktree is considered stale when its branch has been merged into the repo's
-# default branch OR when the worktree directory's mtime is older than
-# BORG_REAP_STALE_HOURS. Only worktrees under the borg state dir are ever
+# default branch OR when its last activity (tip commit / index mtime) is older than
+# BORG_REAP_STALE_HOURS and it has no unpushed commits. Only worktrees under the borg state dir are ever
 # touched — non-borg worktrees are completely ignored.
 
-BORG_WORKTREE_STATE_DIR="${BORG_WORKTREE_STATE_DIR:-/Users/noah/.local/state/borg/worktrees}"
+# DERIVED, NEVER HARDCODED. This default shipped as a literal `/Users/noah/...` on 2026-06-10
+# (6501294) and was wrong on the machine it shipped from -- $HOME is /Users/<user> -- so
+# `_borg_reap_worktrees` hit its `[ -d "$wt_base" ] || return 0` guard on every repo and the
+# hourly LaunchAgent was a no-op for ~3.5 months while 15 real worktrees accumulated under the
+# correct path. Nothing in borg.zsh, install.sh or any hook sets this variable: the only
+# assignments in the tree are in tests, which is precisely why the suite stayed green. Same class
+# as the BORG_REGISTRY and XDG_CONFIG_HOME entries under Learned in CLAUDE.md -- a test that
+# supplies the value the production path is supposed to derive proves nothing about production.
+#
+# The expression is byte-identical to the one install.sh uses for its usage-watch paths and to
+# cmd_doctor's `state_dir` in borg.zsh, so the reaper cannot read a directory `borg doctor` does not
+# report on. NAMED, NOT PINNED: `docs/plans/directives/2026-08-31-retire-the-line-pin.md` retires
+# `file:NNN` from prose repo-wide, and this comment earned the lesson the hard way -- the first
+# draft pinned two line numbers, and review found the same pin resolving to 2496 on this branch and
+# 2482 on another, both correct for where they were read. Grep the expression instead.
+BORG_WORKTREE_STATE_DIR="${BORG_WORKTREE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees}"
 
 # Predicate: is this worktree stale?
 # Args: <repo_path> <worktree_path>
 # Returns 0 (stale) when the branch has been merged into the default branch (i.e.
 # the branch has unique commits AND all of them are now reachable from the default
-# branch), OR when the worktree directory mtime is older than BORG_REAP_STALE_HOURS.
+# branch), OR when its last activity (the newer of the branch-tip commit time and the per-worktree
+# index mtime) is older than BORG_REAP_STALE_HOURS and the branch has no unpushed commits.
 # Returns 1 (keep) for fresh or unmerged worktrees.
 _borg_worktree_is_stale() {
     local repo="$1" wt="$2"
@@ -290,12 +431,33 @@ _borg_worktree_is_stale() {
         fi
     fi
 
+    # Never reap on age while the branch holds work that exists nowhere else: commits not on
+    # its upstream, or (no upstream) commits not on the default branch.
+    local ahead
+    if git -C "$wt" rev-parse --verify -q '@{u}' >/dev/null 2>&1; then
+        ahead=$(git -C "$wt" rev-list --count '@{u}..HEAD' 2>/dev/null) || ahead=1
+    else
+        ahead=$(git -C "$wt" rev-list --count "${default_branch}..HEAD" 2>/dev/null) || ahead=1
+    fi
+    case "$ahead" in ''|*[!0-9]*) return 1;; esac
+    [ "$ahead" -gt 0 ] && return 1
+
+    # Activity = newest of the branch tip's committer time and the per-worktree index mtime.
+    # The worktree directory's own mtime is NOT used: it changes only when direct entries are
+    # added or removed, so commits and subdirectory edits never touched it.
     local threshold="${BORG_REAP_STALE_HOURS:-12}"
-    local mtime now age_h
-    mtime=$(stat -c %Y "$wt" 2>/dev/null || stat -f %m "$wt" 2>/dev/null)
-    case "$mtime" in ''|*[!0-9]*) return 1;; esac
+    local ct idx imtime last now age_h
+    ct=$(git -C "$wt" log -1 --format=%ct 2>/dev/null)
+    case "$ct" in ''|*[!0-9]*) ct=0;; esac
+    idx=$(git -C "$wt" rev-parse --git-path index 2>/dev/null)
+    case "$idx" in ''|/*) ;; *) idx="$wt/$idx";; esac
+    imtime=$(stat -c %Y "$idx" 2>/dev/null || stat -f %m "$idx" 2>/dev/null)
+    case "$imtime" in ''|*[!0-9]*) imtime=0;; esac
+    last=$ct
+    [ "$imtime" -gt "$last" ] && last=$imtime
+    [ "$last" -gt 0 ] || return 1
     now=$(date +%s)
-    age_h=$(( (now - mtime) / 3600 ))
+    age_h=$(( (now - last) / 3600 ))
     [ "$age_h" -ge "$threshold" ]
 }
 
@@ -317,7 +479,9 @@ _borg_reap_worktrees() {
     for wt in "$wt_base"/*/; do
         [ -d "$wt" ] || continue
 
-        if git -C "$wt" status --porcelain 2>/dev/null | grep -q .; then
+        # --no-optional-locks: a plain status may rewrite the index, bumping the very mtime the
+        # staleness check reads, so the reaper own probe would count as activity.
+        if git -C "$wt" --no-optional-locks status --porcelain 2>/dev/null | grep -q .; then
             continue
         fi
 
@@ -367,12 +531,38 @@ if [[ "$(_borg_session_mode "$CWD")" == "orchestrator" ]]; then
     exit 0
 fi
 
+# A Stop hook that exits 0 has its stderr sent to the debug log only -- never the user, never
+# Claude (https://code.claude.com/docs/en/hooks, "Exit code 0"). The user-visible channel is ONE
+# JSON object on stdout carrying `systemMessage` (plain text, no ANSI), emitted at the end.
+# Warnings accumulate here; nothing else in this script may write to stdout.
+#
+# Stop fires after EVERY assistant turn, not once at session end, so each distinct warning is
+# shown AT MOST ONCE per session_id and again only when its content changes. Seen-keys live in
+# <state root>/stop-warnings/<session_id>, one sha12 of (message + fingerprint) per line. Every
+# failure path fails OPEN toward visibility: no session_id or an unwritable store -> warn anyway.
+WARNINGS=""
+_warn() {
+    local msg="$1" fp="${2:-}" key sid dir
+    if [[ -n "$SESSION_ID" ]]; then
+        sid="${SESSION_ID//[^A-Za-z0-9_-]/_}"
+        dir="$(_borg_state_root)/stop-warnings"
+        key=$(printf '%s\n%s' "$msg" "$fp" | _borg_sha12 2>/dev/null || true)
+        if [[ -n "$key" ]]; then
+            if grep -qxF "$key" "$dir/$sid" 2>/dev/null; then
+                return 0
+            fi
+            { mkdir -p "$dir" && printf '%s\n' "$key" >> "$dir/$sid"; } 2>/dev/null || true
+        fi
+    fi
+    WARNINGS+="${WARNINGS:+$'\n\n'}$msg"
+}
+
 PROJECT=$(_borg_find_project "$CWD")
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 PROJ_DIR=$(_borg_resolve_proj_dir "$PROJECT" "$CWD")
 
-# Check for uncommitted changes (warn in terminal; store flag in state.json)
+# Check for uncommitted changes (warn via systemMessage; store flag in state.json)
 UNCOMMITTED=""
 if command -v git >/dev/null 2>&1; then
     if git -C "$CWD" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -381,8 +571,8 @@ if command -v git >/dev/null 2>&1; then
 fi
 
 if [[ -n "$UNCOMMITTED" ]]; then
-    printf '\n\033[1;33m▸ WARNING: %s has uncommitted changes\033[0m\n' "$PROJECT" >&2
-    printf '\033[1;33m  Run /simplify then commit before your next session.\033[0m\n\n' >&2
+    _warn "▸ WARNING: ${PROJECT} has uncommitted changes
+  Run /simplify then commit before your next session." "$UNCOMMITTED"
     DIRTY_FLAG=true
 else
     DIRTY_FLAG=false
@@ -420,7 +610,8 @@ fi
 
 # Write status=idle + session fields + has_uncommitted_changes + clock_divergence to
 # state.json (same atomic tmp+mv write this hook already uses for every other field).
-_cur_state=$(_borg_state_read "$PROJ_DIR")
+_borg_proj_repo "$PROJECT" "$PROJ_DIR"
+_cur_state=$(_borg_state_read "$PROJ_DIR" ${_REPO+"$_REPO"})
 _new_state=$(printf '%s' "$_cur_state" | jq \
     --arg sid "$SESSION_ID" \
     --arg now "$NOW" \
@@ -431,7 +622,7 @@ _new_state=$(printf '%s' "$_cur_state" | jq \
      .has_uncommitted_changes = $dirty |
      .clock_divergence = {detected: $diverged, delta_seconds: $delta} |
      (if $sid != "" then .claude_session_id = $sid else . end)')
-_borg_state_write "$PROJ_DIR" "$_new_state" || true
+_borg_state_write "$PROJ_DIR" "$_new_state" ${_REPO+"$_REPO"} || true
 
 # Per-project skill overlay cleanup
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
@@ -454,8 +645,8 @@ CHECKPOINT_DIR="$CWD/.borg/checkpoints"
 if [[ -d "$CHECKPOINT_DIR" ]]; then
     _recent_cp=$(find "$CHECKPOINT_DIR" -maxdepth 1 -name "*.md" -mmin -60 2>/dev/null | head -1 || true)
     if [[ -z "$_recent_cp" ]]; then
-        printf '\n\033[1;33m▸ No checkpoint in the last hour for %s\033[0m\n' "$PROJECT" >&2
-        printf '\033[1;33m  Run /borg-link-up next session to save state for future resumption.\033[0m\n\n' >&2
+        _warn "▸ No checkpoint in the last hour for ${PROJECT}
+  Run /borg-link-up next session to save state for future resumption."
     fi
 fi
 
@@ -489,12 +680,16 @@ if [[ -d "$DIRECTIVES_DIR" ]] && command -v git >/dev/null 2>&1; then
                 done <<< "$_changed_files"
             done < <(find "$DIRECTIVES_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null | sort -z)
             if [[ -n "$_matched_directives" ]]; then
-                printf '\n\033[1;36m▸ Directive reconciliation? Committed files overlap with:\033[0m\n' >&2
-                printf '%s' "$_matched_directives" >&2
-                printf '\033[1;36m  Review open directives and update checkboxes if this work advances them.\033[0m\n\n' >&2
+                _warn "▸ Directive reconciliation? Committed files overlap with:
+${_matched_directives}  Review open directives and update checkboxes if this work advances them."
             fi
         fi
     fi
+fi
+
+# Emit ONE object. No warnings => no stdout at all (nothing to show, nothing to mis-parse).
+if [[ -n "$WARNINGS" ]]; then
+    jq -n --arg msg "$WARNINGS" '{systemMessage: $msg}'
 fi
 
 exit 0

@@ -21,6 +21,10 @@ project-specific pre-ship checks). Read in order; later files extend or override
 1. `~/.config/borg/extensions/skill-extensions/borg-assimilate/01-context.md`
 2. `<project root>/.borg/skill-extensions/borg-assimilate/01-context.md`
 
+**Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
+asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
+Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+
 If neither exists, skip silently — do not mention extensions, do not warn, do not change behavior.
 
 ## Step 0: Run /simplify First
@@ -49,13 +53,25 @@ If tests or linting fail, that's a blocker — the project is not ready to ship.
 Before evaluating acceptance criteria, check whether any directives in `docs/plans/directives/`
 carry a `*Parent plan:*` line whose slug matches this plan.
 
-1. Derive the plan's slug: the intended archived filename without `.md`. If the slug is not yet
-   known, compute it as `<established-date>-<slugified-objective>` using the `*Established:*` date
-   and `## Objective` text from `PROJECT_PLAN.md`.
-2. Search `docs/plans/directives/*.md` for files containing `^\*Parent plan: <slug>\*` (the slug
-   only, not a path). Ignore `docs/plans/assimilated/` and `docs/plans/severed/` — those are
-   already resolved.
-3. **If any matches are found**, stop immediately and report:
+**Do not compute the slug.** Run the helper; it reads the slug the plan declares about itself:
+
+```
+source lib/promote-next.sh
+slug=$(_borg_plan_declared_slug PROJECT_PLAN.md) || {
+    echo "cannot check for child directives: PROJECT_PLAN.md declares no \`- Plan-slug:\` annotation."
+    echo "Add one (see /borg-plan's Output section) and re-run. Do NOT proceed: this is 'I could not"
+    echo "tell', not 'there is nothing to find'."
+    exit 1
+}
+_borg_child_directives docs/plans/directives "$slug"
+```
+
+`_borg_child_directives` prints one path per still-parented directive and exits 0 with zero or more
+lines; it exits **2** on an empty slug, which is "I could not check" and must never be read as
+"nothing to find". Only `docs/plans/directives/` is scanned — `assimilated/` and `severed/` are
+resolved by definition.
+
+**If it printed ANY paths, STOP.** Report them exactly like this and go no further:
 
 ```
 ✗ Blocked: un-resolved child directives (move to severed/ or ship them first):
@@ -65,9 +81,24 @@ carry a `*Parent plan:*` line whose slug matches this plan.
 
 Do NOT proceed to criteria evaluation or shipping. The developer must either ship the child
 directive or `git mv` it to `docs/plans/severed/` with a one-line "why severed" comment before
-assimilation can continue.
+assimilation can continue. **If it printed nothing**, proceed to Step 1 without comment — do not
+mention the check.
 
-4. **If no matches are found**, proceed to Step 1 without comment — do not mention the check.
+**THE BLOCK ABOVE WAS DELETED ONCE AND MUST NOT BE AGAIN.** The first draft of this rewrite replaced
+the whole step and dropped the `✗ Blocked` format and the "Do NOT proceed" sentence with it, leaving
+a step that computed the right answer and then did nothing with it — on this repository, listing
+nine blocking directives and shipping anyway. Fixing the measurement while deleting the action is
+the same defect one layer over: the old version passed because it measured nothing, that one would
+have passed because it acted on nothing.
+
+**THE OLD INSTRUCTION HERE WAS TO COMPUTE THE SLUG FROM THE OBJECTIVE PROSE, AND NO COMPUTATION
+CAN.** The archived filename is a hand-written condensation. Measured 2026-09-15 on this repository:
+the computed form ran 268 characters against a real slug of
+`2026-08-24-one-front-door-link-derived-fact-surface`, and the plan *title* does not yield it either
+— the real slug drops `borg` and `as-the`. So this gate searched for a string no directive carried,
+found nothing, and was specified to proceed to Step 1 without comment — while **nine** directives
+named the plan. It did not fail; it certified. The slug is now declared once by `/borg-plan` and read
+by everyone, and a missing declaration is a refusal rather than a silent pass.
 
 ## Step 1: Load the Plan
 
@@ -133,6 +164,10 @@ earlier ones.
 1. `~/.config/borg/extensions/skill-extensions/borg-assimilate/02-output.md`
 2. `<project root>/.borg/skill-extensions/borg-assimilate/02-output.md`
 
+**Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
+asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
+Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+
 If neither exists, skip silently. Fold any extension instructions into the shipping action list
 below before presenting it for confirmation.
 
@@ -149,6 +184,30 @@ below before presenting it for confirmation.
 3. Only execute after explicit confirmation. Execute each step, reporting results.
 4. After shipping, verify: PR merged, plan archived, working tree clean.
 
+#### Close the manifest row
+
+After the merge succeeds and before plan archival, close the row for the ref just merged:
+
+```
+PYTHONPATH=<borg source dir> python3 -m borg_core.manifest.cli resolve --repository <project root>
+PYTHONPATH=<borg source dir> python3 -m borg_core.manifest.cli close \
+    --repository <project root> --name <the stem resolve printed> \
+    --ref <owner/repo#N> --status merged
+```
+
+`resolve` prints the manifest stem; a non-zero exit (`no manifest declared`, `ambiguous`) means there is no row to close, so say so and carry on. `close` requires `--repository` and `--name` (omitting either exits 2).
+
+Unconditional, and the ref is **the one just merged** — read it from the `gh pr merge` you executed,
+never from memory.
+
+**A refusal is REPORTED, not repaired.** `no row declares <ref>` means either link-up never ran for
+this PR or the ref is wrong, and both are things the developer needs told. State which ref was
+refused and carry on with archival — a failed close never rolls back a merge.
+
+**Never fall back to `add-row`.** Adding the row here manufactures the very record `close` was meant
+to verify: it would report success while proving nothing, and the chain would gain a row that no
+link-up ever declared. If there is no row to close, say so.
+
 #### Local Extensions: 03-followup
 
 After the merge has succeeded but before plan archival, check for local extension files. Read
@@ -159,6 +218,10 @@ override earlier ones.
 1. `~/.config/borg/extensions/skill-extensions/borg-assimilate/03-followup.md`
 2. `<project root>/.borg/skill-extensions/borg-assimilate/03-followup.md`
 
+**Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
+asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
+Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+
 If neither exists, skip silently. If a follow-up action fails (e.g. JIRA API down), report the
 failure but do not roll back the merge — proceed with archival and surface the failure to the
 developer to resolve manually.
@@ -166,7 +229,11 @@ developer to resolve manually.
 ### Plan Archival Format
 
 When archiving PROJECT_PLAN.md:
-- Copy to `docs/plans/assimilated/<established-date>-<slugified-objective>.md`
+- Copy to `docs/plans/assimilated/<slug>.md`, where `<slug>` is the plan's **declared**
+  `- Plan-slug:` value — the same `_borg_plan_declared_slug PROJECT_PLAN.md` read Step 0.75 made.
+  Do NOT compute it from the objective: Step 0.75 gated on the declared slug, so archiving under a
+  computed one renames the plan out from under the nine directives that point at it, and the
+  `*Parent plan:*` lineage silently dangles.
 - Add `*Shipped: <today's date> — PR #<number> merged to main*` below the established date
 - Mark all acceptance criteria checkboxes as `[x]`
 - Append an "Additional Work Shipped" section if significant work happened beyond the criteria
