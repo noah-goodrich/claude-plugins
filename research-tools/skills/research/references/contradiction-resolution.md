@@ -78,7 +78,7 @@ preserves variety. For each, the trade-off version is what the current skill wou
 
 ## When the resolution can be tested — empirical probe
 
-If a resolved option has a CHEAP real-world test that measures the actual poles, a Task agent runs
+If a resolved option has a CHEAP real-world test that measures the actual poles, a `research-tools:research-verifier` agent runs
 the probe and commits the harness; the council then scores on the MEASURED result, not the argument.
 The probe is only trustworthy if it passes a validity check FIRST: **"Is this probe decisive, and
 does it measure the contradiction's actual poles?"** A probe that measures a proxy is validation

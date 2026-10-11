@@ -29,8 +29,8 @@ Three modes, kept separate. Pick one at Phase 0:
 - `/deep-research` → **evidence**. `/brainstorm` → **decision-design**. `/research` → use table above;
   if genuinely ambiguous ask ONE clarifying question, then proceed.
 - High-stakes and unsure between evidence vs. decision-design → **hybrid** (safe superset).
-- Decision-design and hybrid delegate research to `borg-researcher` agent (Sonnet, lean-return) and
-  review to `borg-reviewer` agent. Never use `general-purpose` for this work.
+- Decision-design and hybrid delegate research to the `research-tools:research-analyst` agent (Opus, lean-return) and
+  review to the `research-tools:research-verifier` agent. Never use `general-purpose` for this work.
 
 ---
 
@@ -240,7 +240,7 @@ Quote(s)` section or with paraphrases instead of verbatim text has not satisfied
 
 ## Phase 3.5: Independent Citation Verification
 
-Spawn an independent verification subagent — a fresh Task-tool agent with no shared context from the
+Spawn an independent verification subagent — a fresh `research-tools:research-verifier` agent (`subagent_type`, or `agentType` in a Workflow `agent()` call) with no shared context from the
 synthesis work. Give it ONLY:
 - Read access to `docs/research/[date]/sources/`
 - The verification protocol below
@@ -265,7 +265,7 @@ cards total, verify ALL. Random sample — not weighted toward "important" sourc
 **Per-card outcome:** exactly one of `verified` / `failed` / `inaccessible`. No partial credit.
 Borderline cases default to `failed`.
 
-**Verification report.** Write to `docs/research/[date]/verification-report.md`:
+**Verification report.** The `research-tools:research-verifier` has no Write tool: it returns the report body in its reply and you persist it verbatim (do not edit it) to `docs/research/[date]/verification-report.md`:
 - `**Synthesis agent ID:** <id>` and `**Verifier agent ID:** <id>` — both required, MUST differ;
   missing or duplicate ID hard-blocks the run (Assertion 4).
 - Sample size, sample-selection method, list of sampled card filenames.
@@ -313,7 +313,7 @@ On failure, exits non-zero; Stop hook injects blocking `NOT fact-checked` messag
 - **W2** — `>3:1` agree:disagree in Bias-Guard Summary; footnotes whether Phase 2 falsification query
   and Phase 4 `### Steel-man the contrarian` are present. W1 and W2 are advisory — do NOT block.
 
-**Honest fallback.** If you cannot spawn a fresh Task-tool verification subagent, stamp the deliverable
+**Honest fallback.** If you cannot spawn a fresh `research-tools:research-verifier` subagent, stamp the deliverable
 `UNVERIFIED — self-check only` in BOTH §6 Methodology Source Evaluation AND the Deliverable Manifest's
 verification-report item. Never copy the synthesis ID into the verifier field. The ground gate exits
 non-zero on any attempt to print `Gate result: PASS` without a distinct verifier ID.
@@ -456,14 +456,14 @@ it is · where it lives · what it gets right · what it gets wrong. File under 
 Wall it off. State explicitly: *"Prior work catalogued and quarantined; options below were generated
 from zero."*
 
-## D2: Parallel From-Zero Research Tracks (delegate to `borg-researcher`)
+## D2: Parallel From-Zero Research Tracks (delegate to `research-tools:research-analyst`)
 
 Decompose into **2–5 independent research tracks** (cap the fan-out; name the cap). Typical tracks:
 user/behavioral, technical-feasibility, market/precedent, domain-specific. Each is a question, not a
 foregone conclusion.
 
-Delegate each track to the `borg-researcher` agent (Sonnet, web-enabled, lean-return) via the Task
-tool — one per track, in parallel. Each returns distilled findings (conclusions + source records).
+Delegate each track to the `research-tools:research-analyst` agent (Opus, web-enabled, lean-return) via the Task
+tool (`subagent_type`; in a Workflow `agent()` call set `agentType` to the same type) — one per track, in parallel. Each returns distilled findings (conclusions + source records).
 Never use `general-purpose`. Load-bearing factual claims → route through the evidence citation pipeline.
 
 ## D3: Neutral Candidate Options (generate from zero)
@@ -508,9 +508,9 @@ OTHER than effort/feasibility.
 
 The Recommender's pick is the **draft recommendation** — not final until it survives D5.
 
-## D5: Blind Adversarial Review of the Recommendation (delegate to `borg-reviewer`)
+## D5: Blind Adversarial Review of the Recommendation (delegate to `research-tools:research-verifier`)
 
-Spawn the `borg-reviewer` agent (Sonnet, read-only, lean-return) via the Task tool. Give it the
+Spawn the `research-tools:research-verifier` agent (Opus, read-only, lean-return) via the Task tool. Give it the
 problem statement, the option set, and the chosen option — but **NOT the council's reasoning for why
 it won** (no-refeed). The reviewer tries to REFUTE the choice across three lenses:
 
@@ -521,7 +521,7 @@ it won** (no-refeed). The reviewer tries to REFUTE the choice across three lense
 Record the reviewer's verdict (uphold / revise / overturn) and its strongest objection verbatim. If it
 overturns or forces a revision, loop back to D3/D4, then re-review.
 
-**Honest gate.** The blind review MUST run and its verdict MUST be recorded. If the `borg-reviewer`
+**Honest gate.** The blind review MUST run and its verdict MUST be recorded. If the `research-tools:research-verifier`
 pass did not run, stamp `NOT design-reviewed` at the top of §Recommendation.
 
 ## D6: Output Document (Reading-Deliverable Standard — MANDATORY)
