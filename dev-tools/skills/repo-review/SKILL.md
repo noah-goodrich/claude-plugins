@@ -25,7 +25,9 @@ These defaults apply unless the user explicitly overrides them:
 
 ## Phase 1: Explore
 
-Launch up to 5 Explore subagents in parallel. Each subagent gets a specific focus area. Pass each subagent the exploration checklist from `references/exploration-checklist.md` relevant to their focus.
+Launch up to 5 read-only scout subagents (`subagent_type: "borg-collective:borg-scout"`, Haiku) in parallel. Each subagent gets a specific focus area. Pass each subagent the exploration checklist from `references/exploration-checklist.md` relevant to their focus.
+
+Requires the `borg-collective` plugin for the scout agent type. If borg-collective is not installed, launch the subagents with `subagent_type: "general-purpose"` and `model: "haiku"` instead, and tell each one to stay read-only.
 
 ### Subagent 1: Project Identity
 - Read root directory listing

@@ -111,6 +111,9 @@ jobs:
       - name: Run design-doc validator suite
         run: bash noah-content-tools/skills/design-doc/test/run-tests.sh
 
+      - name: Run repo-review scout-routing check
+        run: bash dev-tools/skills/repo-review/test/run-tests.sh
+
   # ---------------------------------------------------------------------------
   # Job 4: marketplace <-> plugin manifest guard
   # A plugin listed in marketplace.json with no .claude-plugin/plugin.json is
