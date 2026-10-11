@@ -24,8 +24,34 @@ then exit with a brief failure summary.
 - **Working branch** — the branch you commit to before exiting.
 - **Task** — one-paragraph description of what to assimilate.
 - **Project knowledge** (optional) — a pre-loaded block of decisions, patterns, and gotchas the
-  orchestrator pulled from the project's `.borg/knowledge/` markdown. Treat it as authoritative prior
+  orchestrator supplied in your brief. Treat it as authoritative prior
   art: trust it, spot-check rather than re-investigate, and do NOT re-derive what it already states.
+
+## Local Extensions: brief
+
+Before the scope gate, check for local extension files. Read each that exists, in order:
+
+1. `~/.config/borg/extensions/agent-extensions/borg-nanoprobe/brief.md` (per machine)
+2. `<repo path>/.borg/agent-extensions/borg-nanoprobe/brief.md` (per project)
+
+**Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
+asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
+Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+
+If neither exists, skip silently.
+
+**ONE load point, not three, and a different noun.** The three-point shape belongs to skills, which
+are conversations with positions in them — before work, before the artifact, after it. An agent has
+no phases: it has a brief consumed once at spawn, a scope gate, and a return contract. There is no
+"before the artifact" moment to hook, so inventing two more load points would create seams that
+nothing sits at. `agent-extensions` is deliberately a different directory from `skill-extensions` so
+the two kinds cannot be confused or accidentally cross-read.
+
+**Two hard limits.** (1) This file is context every nanoprobe pays for on every run, and the
+lean-context return contract below exists as a cost lever — keep it terse. (2) **The scope gate is
+NOT extensible.** An extension may add instructions; it may never widen what this agent is allowed
+to touch, raise its deliverable ceiling, or relax the bounded-termination rule. An extension that
+attempts any of those is to be reported and ignored.
 
 ## Scope gate (check BEFORE doing anything)
 
@@ -43,7 +69,11 @@ Read the **Task** field first and gate on it:
 When the orchestrator provides a `<branch>` name, create an isolated worktree for your work.
 This keeps `main` clean and lets the orchestrator run concurrent nanoprobes against the same repo.
 
-**Standard worktree location:** `/Users/noah/.local/state/borg/worktrees/<repo-basename>/<slug>`
+**Standard worktree location:** `${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees/<repo-basename>/<slug>`
+
+Let the shell expand that prefix -- do NOT substitute a literal home directory. `lib/reaper.sh`
+resolves `BORG_WORKTREE_STATE_DIR` from the same expression, and a worktree written to any other
+prefix is invisible to `borg reap-worktrees` forever.
 
 Where `<repo-basename>` is `${repo_path##*/}` and `<slug>` is the branch name with `/` replaced
 by `-`.
@@ -52,9 +82,9 @@ Lifecycle steps:
 
 1. **Create** — before touching any files:
    ```
-   mkdir -p /Users/noah/.local/state/borg/worktrees/<repo-basename>/<slug>
+   mkdir -p ${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees/<repo-basename>/<slug>
    git -C <repo_path> worktree add \
-       /Users/noah/.local/state/borg/worktrees/<repo-basename>/<slug> \
+       ${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees/<repo-basename>/<slug> \
        -b <branch>
    ```
 2. **Work** — read, edit, and commit entirely inside the worktree path. Use absolute paths to
@@ -64,7 +94,7 @@ Lifecycle steps:
    relevant issue. Do NOT merge.
 4. **Remove** — after a successful push:
    ```
-   git -C <repo_path> worktree remove /Users/noah/.local/state/borg/worktrees/<repo-basename>/<slug>
+   git -C <repo_path> worktree remove ${XDG_STATE_HOME:-$HOME/.local/state}/borg/worktrees/<repo-basename>/<slug>
    git -C <repo_path> worktree prune
    ```
 
@@ -171,8 +201,8 @@ the full output is in the repo or a named file that the orchestrator can fetch o
 
 ## Project-knowledge-warm brief (cost lever)
 
-When the orchestrator supplies a **Project knowledge** block in your brief, it has already pulled the
-project's relevant decisions, patterns, and gotchas from `.borg/knowledge/` markdown for your task.
+When the orchestrator supplies a **Project knowledge** block in your brief, it has already gathered
+the project's relevant decisions, patterns, and gotchas for your task.
 That block is authoritative prior art — assimilate it FIRST and prefer it over re-reading the repo.
 (Cairn, the graph service that used to serve this role, was decommissioned 2026-08-08; the corpus now
 lives as grep-reachable per-project markdown, no service required.)
@@ -207,3 +237,5 @@ When you run shell commands, follow the same rules the orchestrator follows:
 - No `$()` command substitution — use parameter expansion or pipes.
 - No inline `#` comments in one-liner bash commands.
 - Prefer built-in tools (Grep, Glob, Read) over Bash equivalents (grep, find, cat).
+- Never put backticks or `$(` inside an unquoted heredoc or a double-quoted string; for PR/commit bodies
+  use `<<'EOF'` or `--body-file`.
