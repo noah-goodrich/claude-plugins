@@ -360,6 +360,28 @@ grep -qF 'tables: rows ≤72 columns' "$HOOKS/../skills/research/SKILL.md" \
     || bad "(g) SKILL.md Phase 6 language rules lost the table rule"
 
 # ---------------------------------------------------------------------------
+# (h) pinned research agents: every spawn site names a research-tools:* type
+PLUGIN="$(cd "$HOOKS/.." && pwd)"
+A="$PLUGIN/agents/research-analyst.md"
+V2="$PLUGIN/agents/research-verifier.md"
+fm() { sed -n '2,/^---$/p' "$1"; }
+[[ -f "$A" ]] && fm "$A" | grep -qx 'model: opus' && fm "$A" | grep -qx 'effort: high' \
+    && ok "(h) research-analyst is opus/high" || bad "(h) research-analyst missing or not opus/high"
+[[ -f "$V2" ]] && fm "$V2" | grep -qx 'model: opus' && fm "$V2" | grep -qx 'effort: xhigh' \
+    && ok "(h) research-verifier is opus/xhigh" || bad "(h) research-verifier missing or not opus/xhigh"
+[[ -f "$V2" ]] && ! fm "$V2" | grep -E '^tools:' | grep -qE 'Write|Edit' \
+    && ok "(h) research-verifier has no Write/Edit (Bash only for the probe)" || bad "(h) research-verifier has Write/Edit"
+SPAWN="$(grep -rEn 'borg-(researcher|reviewer)|fresh Task-tool|a Task agent|Task-tool verification subagent' \
+    "$PLUGIN/skills" "$PLUGIN/README.md" 2>/dev/null || true)"
+[[ -z "$SPAWN" ]] && ok "(h) no bare borg-* or unpinned Task spawn wording remains" \
+    || bad "(h) unpinned spawn wording remains :: $(printf '%s' "$SPAWN" | head -3)"
+grep -q 'research-tools:research-verifier' "$PLUGIN/skills/research/SKILL.md" \
+    && grep -q 'research-tools:research-analyst' "$PLUGIN/skills/research/SKILL.md" \
+    && grep -q 'research-tools:research-verifier' "$PLUGIN/skills/research/references/contradiction-resolution.md" \
+    && ok "(h) SKILL.md and contradiction-resolution name the pinned types" \
+    || bad "(h) pinned types missing from a spawn site"
+
+# ---------------------------------------------------------------------------
 echo
 if [[ "$fails" -eq 0 ]]; then
     printf '\033[32mALL TESTS PASSED\033[0m\n'

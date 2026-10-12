@@ -21,7 +21,7 @@ through rigorous evidence synthesis.
 - **decision-design** — open-ended problems where the implementation approach can't be specified
   before the options are known. Walls off prior work, runs parallel from-zero research tracks,
   synthesizes 3–5 distinct options, convenes a 5-persona council, and subjects the recommendation
-  to a BLIND adversarial review (`borg-reviewer`). Carries a self-enforced design-review gate.
+  to a BLIND adversarial review (`research-tools:research-verifier`). Carries a self-enforced design-review gate.
   (This is the former `brainstorm` design council, absorbed.)
 - **hybrid** — evidence first, then decision-design, with the evidence synthesis fed in as
   load-bearing input. The safe superset for high-stakes decisions.
@@ -36,8 +36,8 @@ Both — evidence base, then a decision      → /research (hybrid)
 
 ## How it fits together
 
-Decision-design and hybrid delegate their research to the `borg-researcher` agent and their
-recommendation review to the `borg-reviewer` agent (both Sonnet, lean-return — never
+Decision-design and hybrid delegate their research to the `research-tools:research-analyst` agent and their
+recommendation review to the `research-tools:research-verifier` agent (both pinned Opus, lean-return — never
 `general-purpose`). The output document feeds into `/borg-plan` for implementation planning. The
 typical flow for a vague, high-stakes problem is: research (decision-design or hybrid) → borg-plan
 → implementation.
