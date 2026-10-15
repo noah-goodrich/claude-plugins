@@ -296,7 +296,7 @@ _borg_state_read() {
 _borg_resolve_proj_dir() {
     local repository="$1" cwd="$2" rp
     if [[ -f "$BORG_REGISTRY" ]]; then
-        rp=$(jq -r --arg p "$repository" '.projects[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
+        rp=$(jq -r --arg p "$repository" "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
         [[ -n "$rp" && "$rp" != "null" && -d "$rp" ]] && { printf '%s\n' "$rp"; return; }
     fi
     printf '%s\n' "$cwd"
@@ -313,7 +313,7 @@ _borg_proj_repo() {
     unset _REPO
     [[ -f "${BORG_REGISTRY:-}" ]] || return 0
     _r=$(jq -r --arg p "$1" --arg d "$2" \
-        '.projects[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
+        "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
         "$BORG_REGISTRY" 2>/dev/null) || return 0
     [[ -n "$_r" ]] && _REPO="${_r#R}"
     return 0
@@ -578,8 +578,31 @@ _borg_reap_worktrees() {
         [ -e "$1" ] || rmdir "$wt_base" 2>/dev/null || true
     fi
 }
+
+# ── Registry top-level key (projects -> repositories, EXPAND phase) ───────────
+#
+# The registry file's entry map is mid-rename from `projects` to `repositories`. Readers accept either
+# and writers still write `projects`. THE shell-side decision lives here (the Python side's is
+# borg_core.paths.normalize_registry): this jq filter maps a document that has `repositories` onto
+# `.projects`, so every downstream filter keeps reading `.projects` and every writer round-trips to the
+# old key. `repositories` wins when both are present. It lives in this file only because this is the one
+# file already sourced by the zsh CLI, the bash hooks and (inlined) the plugin build.
+#
+# Direct-file readers prefix their filter:  jq "$BORG_REGISTRY_NORM_JQ | .projects[...]" "$file"
+BORG_REGISTRY_NORM_JQ='if type == "object" and has("repositories") then (.projects = .repositories | del(.repositories)) else . end'
+
+# Print <file> (default $BORG_REGISTRY) as JSON with the entry map under `.projects`. Byte-identical to
+# `cat` unless the file mentions "repositories", so the common (old-key) path forks nothing extra.
+borg_registry_normalized() {
+    local _f="${1:-$BORG_REGISTRY}"
+    case "$(< "$_f")" in
+        *'"repositories"'*) jq "$BORG_REGISTRY_NORM_JQ" "$_f" ;;
+        *) /bin/cat "$_f" ;;
+    esac
+}
 # ── End inlined helpers ─────────────────────────────────────────────────────
 
+declare -F _borg_session_mode >/dev/null || exit 0
 
 MODE=$(_borg_session_mode "$CWD")
 [[ "$MODE" == "orchestrator" ]] && exit 0

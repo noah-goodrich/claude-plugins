@@ -158,6 +158,16 @@
         ]
       },
       {
+        "matcher": "Skill|Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/borg-nanoprobe-guard.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Agent|Workflow",
         "hooks": [
           {
