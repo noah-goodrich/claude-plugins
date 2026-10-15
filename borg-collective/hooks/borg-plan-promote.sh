@@ -4,8 +4,8 @@ command -v borg >/dev/null 2>&1 || exit 0
 
 # borg-plan-promote.sh — PreToolUse hook: auto-promote in-session plan to PROJECT_PLAN.md
 #
-# Fires on Edit, Write, NotebookEdit tool calls. When Claude Code exits plan mode
-# (ExitPlanMode) and the user proceeds to implementation, this hook captures the plan
+# Fires on Edit, Write, NotebookEdit tool calls (and Cortex Code CLI's lowercase edit, write).
+# When Claude Code exits plan mode (ExitPlanMode) and the user proceeds to implementation, this hook captures the plan
 # and writes it to docs/plans/PROJECT_PLAN.md before the first file edit — silently,
 # without blocking.
 #
@@ -406,7 +406,7 @@ _borg_should_reap() {
 # hourly LaunchAgent was a no-op for ~3.5 months while 15 real worktrees accumulated under the
 # correct path. Nothing in borg.zsh, install.sh or any hook sets this variable: the only
 # assignments in the tree are in tests, which is precisely why the suite stayed green. Same class
-# as the BORG_REGISTRY and XDG_CONFIG_HOME entries under Learned in CLAUDE.md -- a test that
+# as the BORG_REGISTRY and XDG_CONFIG_HOME entries in docs/agents/learned.md and hooks/CLAUDE.md -- a test that
 # supplies the value the production path is supposed to derive proves nothing about production.
 #
 # The expression is byte-identical to the one install.sh uses for its usage-watch paths and to
@@ -611,7 +611,8 @@ MODE=$(_borg_session_mode "$CWD")
 
 _target_path=""
 case "$TOOL_NAME" in
-    Edit|Write)
+    # Claude Code names its tools Edit/Write; Cortex Code CLI names them in lowercase (edit/write).
+    Edit|Write|edit|write)
         _target_path=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null || true)
         ;;
     NotebookEdit)
