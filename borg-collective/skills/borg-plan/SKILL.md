@@ -38,11 +38,11 @@ and treat its contents as additional instructions for this phase. Read in order;
 extend or override earlier ones.
 
 1. `~/.config/borg/extensions/skill-extensions/borg-plan/01-context.md`
-2. `<project root>/.borg/skill-extensions/borg-plan/01-context.md`
+2. `<repository root>/.borg/skill-extensions/borg-plan/01-context.md`
 
 **Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
 asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
-Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+Everything else is repository policy and the repository layer wins. Full rules: `docs/extensions.md`.
 
 If neither exists, skip silently — do not mention extensions, do not warn, do not change behavior.
 
@@ -116,7 +116,7 @@ Name 2-3 specific risks you see in the code. Don't ask "what could go wrong?" �
 ## Follow-Up Directives During an Active Plan
 
 When the developer requests a new directive *while a `PROJECT_PLAN.md` already exists* in the
-project root (i.e. we are mid-plan, not starting from scratch), write the directive file to
+repository root (i.e. we are mid-plan, not starting from scratch), write the directive file to
 `docs/plans/directives/<date>-<slug>.md` with a `*Parent plan: <plan-slug>*` italic metadata line
 immediately below the H1 heading.
 
@@ -151,15 +151,15 @@ and treat its contents as additional instructions for shaping the plan being wri
 order; later files extend or override earlier ones.
 
 1. `~/.config/borg/extensions/skill-extensions/borg-plan/02-output.md`
-2. `<project root>/.borg/skill-extensions/borg-plan/02-output.md`
+2. `<repository root>/.borg/skill-extensions/borg-plan/02-output.md`
 
 **Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
 asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
-Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+Everything else is repository policy and the repository layer wins. Full rules: `docs/extensions.md`.
 
 If neither exists, skip silently.
 
-After the conversation, write `PROJECT_PLAN.md` in the project root.
+After the conversation, write `PROJECT_PLAN.md` in the repository root.
 
 **`- Plan-slug:` is the plan's own name for its archived copy, and it is chosen HERE — once, by a
 person, at plan time.** It is `<established-date>-<short-slug>`, where the short slug is a 3-6 word
@@ -218,19 +218,17 @@ not a question, and not something the developer opts into:
 ```
 command -v borg | xargs readlink -f | xargs dirname
 PYTHONPATH=<that dir> python3 -m borg_core.manifest.cli scaffold \
-    --repository <project root> --name <the Plan-slug> --desc "<the confirmed Objective, one line>"
+    --repository <repository root> --name <the Plan-slug> --desc "<the confirmed Objective, one line>"
 ```
 
 - **`--name` is the `- Plan-slug:` you just declared**, byte for byte. Same string, same session.
 - **Never pass `--apex`.** A plan has no PR yet. Rows arrive at link-up, which is the ratified split.
-- **Scaffold picks the folder, and you tell the developer which and why.** A new manifest goes in
-  `.stacks/` (the tool-neutral root) or `.borg/chains/`: `.stacks/` if it exists, else borg's own
-  directory (`.borg/chains/`, or legacy `.borg/programs/`) if it exists, else `.stacks/` when git ignores `.borg/`
-  (a manifest there could never be shared), else `.borg/chains/`. When it creates one, the output
+- **Scaffold picks the folder, and you tell the developer which and why.** A new manifest always goes in
+  `.stacks/`, the one manifest root (`.borg/chains/` and `.borg/programs/` are no longer read, and scaffold
+  refuses to create inside a `.stacks/` that git ignores). When it creates one, the output
   ends with `root: <folder> (<reason>)`; relay it in one sentence. An `exists:` line means nothing was created;
   say so instead. Do not choose the folder yourself.
-- **`--root stacks|borg` is the override**, for when the developer names a folder. Pass it only on their say-so,
-  never to second-guess the derived choice.
+- **`--root stacks` is the only override**, and it is the default anyway. `--root borg` is refused by name.
 - **It never clobbers.** `scaffold` is idempotent: an existing manifest is reported at exit 0 and
   left untouched. Re-running `/borg-plan` on a repository that already has one is the ordinary case.
 - **A non-zero exit is reported, never worked around.** Say what failed and carry on writing the
@@ -243,11 +241,11 @@ exists and treat its contents as additional instructions for follow-up actions (
 plan to an external ticket). Read in order; later files extend or override earlier ones.
 
 1. `~/.config/borg/extensions/skill-extensions/borg-plan/03-followup.md`
-2. `<project root>/.borg/skill-extensions/borg-plan/03-followup.md`
+2. `<repository root>/.borg/skill-extensions/borg-plan/03-followup.md`
 
 **Precedence has one exception, and it inverts the order:** a file declaring `- Prefer-tool:`
 asserts something about THIS MACHINE, so when both layers declare it the MACHINE layer wins.
-Everything else is project policy and the repository layer wins. Full rules: `docs/extensions.md`.
+Everything else is repository policy and the repository layer wins. Full rules: `docs/extensions.md`.
 
 If neither exists, skip silently.
 

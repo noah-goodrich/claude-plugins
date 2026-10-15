@@ -1,14 +1,14 @@
 ---
 name: borg-link
 description: >
-  Project intelligence — the neural link to the collective. Scope decides the page. In the Queen
+  The front door — the neural link to the collective. Scope decides the page. In the Queen
   session (the orchestrator, at BORG_ORCHESTRATOR_ROOT) it is the cross-repository overview with
   directives and recent ships. Anywhere else (a repository or a linked worktree, or an explicit
-  project name) it is a page about exactly that one directory: identity, live session and status,
+  repository name) it is a page about exactly that one directory: identity, live session and status,
   its own latest checkpoint, its own waiting row and its next action. Runs the `borg link`
   engine and synthesizes its output; falls back to reading the bind-mounted borg files directly
   only when the engine cannot run. Use when the user asks for status, overview, briefing,
-  "what's going on", or project details.
+  "what's going on", or repository details.
 user-invocable: true
 ---
 
@@ -21,25 +21,31 @@ Do not hard-wrap output; the terminal soft-wraps.
 
 ## What this is (one breath)
 
-One `borg link --json` call returns the whole board: every project's live status, how long since each was touched, what's queued (directives), what shipped (assimilated), and whether you're over capacity. **Scope decides which part of it you present**, and `scope.kind` is the engine's answer, not yours: in the Queen session (`scope.kind == "orchestrator"`, the session at `BORG_ORCHESTRATOR_ROOT`) you give the cross-repository overview, the Queen view. Anywhere else (`scope.kind == "repository"`: a repository, a linked worktree registered on its own, or an explicit project name) you give a page about exactly that one directory and nothing else. Your job is to turn the document into an answer, not to re-render it.
+One `borg link --json` call returns the whole board: every repository's live status, how long since each was touched, what's queued (directives), what shipped (assimilated), and whether you're over capacity. **Scope decides which part of it you present**, and `scope.kind` is the engine's answer, not yours: in the Queen session (`scope.kind == "orchestrator"`, the session at `BORG_ORCHESTRATOR_ROOT`) you give the cross-repository overview, the Queen view. Anywhere else (`scope.kind == "repository"`: a repository, a linked worktree registered on its own, or an explicit repository name) you give a page about exactly that one directory and nothing else. Your job is to turn the document into an answer, not to re-render it.
 
 Vocabulary: a *repository* is the git repo; a *worktree* is a linked checkout registered on its own, and each carries a project. "Queen" is the user-facing name for the orchestrator session; the contract names (`scope.kind` value `orchestrator`, `BORG_ORCHESTRATOR_ROOT`, every `--json` key) are unchanged.
 
 ## Step 1 — Run the engine, then branch on `scope.kind`
 
-ONE call serves every scope. Run it once, with the project name appended only when the user gave one:
+ONE call serves every scope. Run it once, with the repository name appended only when the user gave one:
 
 ```bash
-bash -c 'set -o pipefail; borg link --json [<project>] | jq "if .scope.unregistered == true
+borg link --json [<repository>] | jq -c 'if .scope.unregistered == true
   then {version, generated_at, scope}
-  elif .scope.kind == \"orchestrator\"
+  elif .scope.kind == "orchestrator"
   then (.directives |= (group_by(.project) | map({project: .[0].project, n: length,
-    titles: [limit(5; .[].title)]})))
-  else (.scope.repository as \$r | {version, generated_at, scope,
+    titles: [limit(5; .[].title)]}))
+    | del(.projects[] | .claude_session_id, .path, .repo, .clock_divergence, .tmux_session,
+      .source, .notify_origin, .last_activity))
+  else (.scope.repository as $r | (.compass // {}) as $c
+    | ($c.repositories[$r] // {}) as $m | {version, generated_at, scope,
     entry: (.focus.entry | del(.summary)),
-    waiting: {rows: [.waiting.rows[] | select(.project == \$r and .item == \"session\")],
+    compass: {found: $c.found, map_dir: $c.map_dir, leg: $c.leg,
+      repository: $m, destinations: [$c.destinations[]?
+        | select(.id == $m.destination)]},
+    waiting: {rows: [.waiting.rows[] | select(.project == $r and .item == "session")],
       degraded: .waiting.degraded}})
-  end"'
+  end'
 ```
 
 Then branch, and only on this:
@@ -48,9 +54,16 @@ Then branch, and only on this:
 - `.scope.kind == "orchestrator"` → the **Queen view**. Follow `## Queen view` below.
 - `.scope.kind == "repository"` → the **repository page**. Follow `## Repository scope` below. Stop reading the Queen view sections; they do not apply.
 
-**The `.borg-project` marker is NOT the mode decision.** It never was a reliable one: linked worktrees never get a marker, so a marker walk sent them into the overview. The engine resolves scope from the cwd (or from an explicit project name, which wins), and you believe it. The marker is read only in the `## Fallback`, where the engine cannot run. Do not write an ad hoc find/ls to detect the project.
+**The `.borg-project` marker is NOT the mode decision.** It never was a reliable one: linked worktrees never get a marker, so a marker walk sent them into the overview. The engine resolves scope from the cwd (or from an explicit repository name, which wins), and you believe it. The marker is read only in the `## Fallback`, where the engine cannot run. Do not write an ad hoc find/ls to detect the repository.
 
-The repository-scope arm of the jq is a whitelist on purpose. `--json` stays registry-wide on every call (`order`, `projects`, `directives`, `assimilated`, `grid`), and `focus` carries a plan and directives, which are repository-level. Its checkpoint list, head and `entry.summary` were read across the whole repo group until 2026-10-13 and are now the directory's own, but an older engine still sends the union. The repository page reads its own directory itself and may use none of that, so the pipe never lets it reach you.
+The repository-scope arm of the jq is a whitelist on purpose. `--json` stays registry-wide on every call (`order`, `projects`, `directives`, `assimilated`, `grid`), and `focus` carries a plan and directives, which are repository-level. Its checkpoint list, head and `entry.summary` were read across the whole repo group until 2026-10-13 and are now the directory's own, but an older engine still sends the union. The repository page reads its own directory itself and may use none of that, so the pipe never lets it reach you. The one thing added to the whitelist is `compass`, cut down to this repository's own slice: the leg, this repository's `{destination, on_leg}` and the one destination it maps to. The Queen arm leaves the whole block in place.
+
+**Reading `.compass`** (the owner's plain-file map; additive, so the version gate below is unchanged and an engine that predates it simply has no `.compass` (on the repository page `found` is null), which you say nothing about):
+- `.compass.found` false → one line, "no map at `<map_dir>`", and move on. Never invent a leg, a destination or a date.
+- `.compass.leg.text` is today's leg; a null `leg` means none was chosen. Each destination's `state` is `on-track`, `at-risk`, `late` or `undated` for an active one, else its status (`done`, `killed`, `frozen`, `proposed`). In the Queen view give the tally of the active ones and lead with `late`.
+- **Off route**: `.compass.repositories[<name>]` is `{destination, on_leg}`. A repository whose destination is not on the leg is off route, said as "off route: `<repository>` is not on today's leg", and only when a leg exists. A repository with no destination is simply unmapped, never off route.
+- **Parking due**: `.compass.parking[]` items with `due == true` wait on the user, so list them last in WAITING ON YOU as "parking: `<text>` (look again `<look>`, seen `<seen>`)". The Queen view only; the repository page has no parking rows.
+- A non-empty `.compass.warnings` is a map file the reader skipped; say so once.
 
 **Version gate — read `.version` first.**
 - `== 2` → proceed silently.
@@ -67,8 +80,8 @@ keeps it host-only. If the user asks for either, tell them to run `borg link --b
 `borg link --refresh` from the host. You already have the document; you never need `--brief` to
 narrate it.
 
-**`--all`.** `borg link --json --all` includes archived projects. Needed only when the user asks
-*which* projects are archived; the count alone is `total_projects - (.order | length)`.
+**`--all`.** `borg link --json --all` includes archived repositories. Needed only when the user asks
+*which* repositories are archived; the count alone is `total_projects - (.order | length)`.
 
 If the Step 1 command fails, go to `## Fallback` below — the trigger lives there, verbatim.
 
@@ -93,7 +106,7 @@ mean paying for a network round trip and then rendering the same overview as bef
   `.resolved` (refs that came back with a usable answer). As with `.grid.sources[].status`,
   `failed` and `degraded` mean the states below them are DECLARED rather than OBSERVED — treat
   them the same way.
-- `.grid.picture_width` is the widest `▸ CHAINS` picture row this document would draw, in VISIBLE
+- `.grid.picture_width` is the widest `▸ STACKS` picture row this document would draw, in VISIBLE
   columns (SGR and OSC-8 bytes excluded). Compare it to `PICTURE_BUDGET` (68). Over budget means the
   topology will wrap in a narrow pane and should be reported as a manifest problem — a ref is long
   or a level is too wide — not as a rendering bug. The human page says the same thing in
@@ -148,7 +161,7 @@ mean paying for a network round trip and then rendering the same overview as bef
   chooser's own `+N more decisions` / `+N agent tasks` / `+N stale drafts` text; `.waiting.degraded` is a
   note when the sweep or rows failed (say it once). Under `--local` there is no sweep, so no PR rows. Then
   add every `yours` manifest decision (the `gates[].kind == "decision"` routing above) whose ref is not
-  already a row. Print the block LAST, one line per item: the project, the `next_step`, the `item`, and
+  already a row. Print the block LAST, one line per item: the repository, the `next_step`, the `item`, and
   `unblocks N` (`len(.nodes[ref].children)`) for manifest items; then the `hidden_lines` verbatim. No age
   invention. **It is ALWAYS present**: with no rows and every manifest `known`, print the single line
   `nothing waits on you`; if a manifest with refs is `unlooked` and nothing else qualified, say "nobody
@@ -156,7 +169,7 @@ mean paying for a network round trip and then rendering the same overview as bef
 
 **Why the jq.** The Queen arm (`.directives |= (...)`) does not enumerate a field — it transforms one
 key in place, so anything the document gains later passes through untouched. It collapses the one
-uncapped array (directives, ~121 items live) from 27,298 bytes raw to ~13,935. The repository arm is
+uncapped array (directives, ~121 items live) from 27,298 bytes raw to ~13,935. `-c` drops the pretty-print whitespace, which costs context and tells a model reader nothing, and the named `del()` removes eight per-repository fields the Queen view never reads (`claude_session_id`, `path`, `repo`, `clock_divergence`, `tmux_session`, `source`, `notify_origin`, `last_activity`); it names what to drop rather than what to keep, so a field the document gains later still passes through. The repository arm is
 the opposite: an explicit whitelist, and a field the document gains later is invisible until it is
 added there. That is the point of it — it keeps registry-wide data off a page that must be about one
 directory. If `jq` is missing, drop the pipe and read the raw document, and still render only what the
@@ -168,13 +181,13 @@ The engine already sorted, already applied the staleness overlay, already counte
 one level deeper:
 
 - **Capacity is a finding, not a field.** `capacity.over_limit` true → lead with it and name which
-  projects are eating the budget (the `waiting` and `active` rows, in `.order`).
-- **Empty summaries are the normal case, not an error.** `summary` comes from the project's latest
-  checkpoint (its tl;dr, else the first Accomplished bullet), so it is null only when the project has
+  repositories are eating the budget (the `waiting` and `active` rows, in `.order`).
+- **Empty summaries are the normal case, not an error.** `summary` comes from the repository's latest
+  checkpoint (its tl;dr, else the first Accomplished bullet), so it is null only when the repository has
   no checkpoint. Degrade in this order: `summary` → `waiting_reason` →
   `relative_activity` → `focus.checkpoint_head`. Never print "(no summary)" for a whole column; if
-  the board has no summaries, say so once and suggest `/borg-link-up` in those projects to write a checkpoint; `--refresh` no longer fills `summary`.
-- **Collapse, don't transcribe.** 121 directives across 9 projects is a number plus the top few
+  the board has no summaries, say so once and suggest `/borg-link-up` in those repositories to write a checkpoint; `--refresh` no longer fills `summary`.
+- **Collapse, don't transcribe.** 121 directives across 9 repositories is a number plus the top few
   titles, not a list.
 - **`scope` decides the page; it does not filter the document.** `{kind: repository|orchestrator,
   repository, local}` records which repository the invocation resolved to. In the Queen view
@@ -188,13 +201,13 @@ one level deeper:
 Skeleton:
 
 ```
-## The collective — <N> projects, <A> need attention   (limit <L>)   ← the capacity line, only if it bites
-### ● <project>  [<status>]  · <relative_activity>
-<one plain-language line: what this project is mid-way through, from summary/waiting_reason/checkpoint>
+## The collective — <N> repositories, <A> need attention   (limit <L>)   ← the capacity line, only if it bites
+### ● <repository>  [<status>]  · <relative_activity>
+<one plain-language line: what this repository is mid-way through, from summary/waiting_reason/checkpoint>
 Queued: <n> directives (top: <title>, <title>)          ← omit the line when n is 0
-> <contradiction or capacity note>                       ← only when this project has one
+> <contradiction or capacity note>                       ← only when this repository has one
 ...
-Recently shipped: <title> (<project>, <ship_date>)       ← the global newest-3, one line each
+Recently shipped: <title> (<repository>, <ship_date>)       ← the global newest-3, one line each
 Hidden: <total_projects - (order|length)> archived — run `borg link --all` to see them.   ← omit when 0
 ```
 
@@ -202,37 +215,35 @@ The skeleton ENDS with the WAITING ON YOU block described above (see the `.ready
 last thing the user reads.
 
 Sort by `.order` and nothing else. If `.order` is empty and `total_projects` is 0, say "No
-projects registered — run `borg scan`." and stop. If `.order` is empty and `total_projects > 0`,
-say "All <N> projects are archived — run `borg link --all`." and stop. Those are two different
+repositories registered — run `borg scan`." and stop. If `.order` is empty and `total_projects > 0`,
+say "All <N> repositories are archived — run `borg link --all`." and stop. Those are two different
 sentences and getting them backwards is the known trap.
 
 ## Repository scope (`scope.kind == "repository"`)
 
 This page is about exactly ONE directory: `.entry.path`, the directory the engine resolved. It is the directory of a repository or of a linked worktree registered on its own (borg-probes is a worktree of borg-collective; each carries its own project). Say what is true of THIS directory and stop.
 
-**Never render, even though `--json` carries it:** the registry-wide board (`order`, `projects`, capacity, other projects), any other worktree or repository, and every repo-level section: plan, QUEUED/SHIPPED (`directives`, `assimilated`), chains and the `grid`, repository PRs. The Step 1 pipe already withheld them; if you ran without the pipe, ignore them anyway. A page that blends the repository's other checkouts into this directory's page is the exact defect this scope exists to prevent.
+**Never render, even though `--json` carries it:** the registry-wide board (`order`, `projects`, capacity, other repositories), any other worktree or repository, and every repo-level section: plan, QUEUED/SHIPPED (`directives`, `assimilated`), stacks and the `grid`, repository PRs. The Step 1 pipe already withheld them; if you ran without the pipe, ignore them anyway. A page that blends the repository's other checkouts into this directory's page is the exact defect this scope exists to prevent.
 
 **Read in this order, then write the page.**
 
 1. **Identity.** `.entry.path` plus branch and worktree relationship, from git on that path (one call):
 
 ```bash
-bash -c 'git -C "<entry.path>" rev-parse --abbrev-ref HEAD; git -C "<entry.path>" rev-parse --path-format=absolute --git-dir --git-common-dir; git -C "<entry.path>" rev-parse --short HEAD'
+git -C "<entry.path>" rev-parse --abbrev-ref HEAD
+git -C "<entry.path>" rev-parse --path-format=absolute --git-dir --git-common-dir
+git -C "<entry.path>" rev-parse --short HEAD
 ```
 
 The first line is the branch; when it is `HEAD` the checkout is detached, so write `detached at <short sha>` using the fourth line (the short sha) instead of a branch name. The two paths on the next two lines are equal for a main checkout; when they differ this directory is a linked worktree, and the worktree-of path is the common dir without its trailing `/.git` (`.entry.repo` is the same common dir as the registry recorded it). If git fails (the path is missing or not a repository), print the path and say identity is unavailable. Do not look the parent up in the registry.
 
 2. **Session and status**, all from `.entry`: `status`, `relative_activity`, `waiting_reason` when present, `has_uncommitted_changes`, `has_live_window` when present (null or absent means unknown, not false), and `tmux_window`. One or two plain lines.
 
-3. **This directory's own checkpoints, read by you from `<entry.path>/.borg/checkpoints` and from nowhere else.** An older engine's `focus.checkpoints`, `focus.checkpoint_head` and `entry.summary` are read across every checkout of the repository, so they describe other worktrees too; the pipe drops them either way and you must not reconstruct them. List the directory, newest filename first (a NAME sort, the same as the engine's):
-
-```bash
-bash -c 'ls -1 "<entry.path>/.borg/checkpoints" 2>/dev/null | grep "[.]md$" | sort -r | head -3'
-```
+3. **This directory's own checkpoints, read by you from `<entry.path>/.borg/checkpoints` and from nowhere else.** An older engine's `focus.checkpoints`, `focus.checkpoint_head` and `entry.summary` are read across every checkout of the repository, so they describe other worktrees too; the pipe drops them either way and you must not reconstruct them. List the directory with the Glob tool on `<entry.path>/.borg/checkpoints/*.md` (or Read the directory), then sort the names newest first yourself (a NAME sort, the same as the engine's) and keep the first 3. A missing directory is an empty listing.
 
 Read the newest file with the Read tool at `<entry.path>/.borg/checkpoints/<newest>`. The summary is its tl;dr, else its first Accomplished bullet; give the 2-3 things that matter. The "recent" line is the up-to-3 names from the listing. An empty listing or a missing directory is the normal case for a fresh worktree: say "no checkpoint here yet" and suggest `/borg-link-up` in this directory. Never fall back to a checkpoint from another directory.
 
-4. **This directory's waiting row**, from `.waiting.rows`. The engine labels EVERY waiting row with this directory's project name, including the repository's open-PR rows (`merge #N`, `fix #N CI`), which belong to the whole repository and show up identically on every worktree page. The pipe therefore kept only the directory's own session row (`item` is `session`, `ref` null). If you ran without the pipe, keep only that row and drop every row with a `ref`. Print it as the `next_step`, the `item` and `age`. `.waiting.degraded` is a note when the sweep failed; say it once. Add nothing else to the block: no PR rows, no manifest decisions, no `hidden_lines`, no other project's rows. With no session row print `nothing waits on you here`.
+4. **This directory's waiting row**, from `.waiting.rows`. The engine labels EVERY waiting row with this directory's name, including the repository's open-PR rows (`merge #N`, `fix #N CI`), which belong to the whole repository and show up identically on every worktree page. The pipe therefore kept only the directory's own session row (`item` is `session`, `ref` null). If you ran without the pipe, keep only that row and drop every row with a `ref`. Print it as the `next_step`, the `item` and `age`. `.waiting.degraded` is a note when the sweep failed; say it once. Add nothing else to the block: no PR rows, no manifest decisions, no `hidden_lines`, no other repository's rows. With no session row print `nothing waits on you here`.
 
 5. **Next action, one line.** The session row's `next_step`; else, when `status` is `waiting`, the `waiting_reason`; else the newest checkpoint's own next-steps line; else "nothing pending here". If the checkpoint claims in-flight work but `relative_activity` shows this directory has gone idle, name that disagreement in the same line and recommend the fix, the way `/borg-recon` does. Use judgment on `relative_activity` — there is no fixed day threshold in the data.
 
@@ -262,18 +273,15 @@ one. `RepositoryNotFound` is only raised when a repository name is passed (in `_
 a probe that drops the argument makes that row unreachable. If Step 1's failing call was the overview
 (no repository), that row simply won't fire for it — that is correct, not a bug.
 
-Capture every branch input in one call (no `$()`, per repo rule). Substitute `<project>` with the
-same argument (or nothing, for an overview) that Step 1 used:
+Run the engine once more as a plain command. Substitute `<repository>` with the same argument (or nothing, for an overview) that Step 1 used:
 
 ```bash
-bash -c 'borg link --json <project> >/tmp/borg-link.out 2>/tmp/borg-link.err
-echo "rc=$?"
-wc -c </tmp/borg-link.out
-grep -c "not in registry" /tmp/borg-link.err
-head -3 /tmp/borg-link.err'
+borg link --json <repository>
 ```
 
-On `rc=0`, read `.version` from `/tmp/borg-link.out` with `jq .version /tmp/borg-link.out`.
+The tool result shows the exit status, stdout and stderr; no redirect or capture is needed. Call the exit status `rc` below, and check stderr for `not in registry` or `jq:`.
+
+On `rc=0`, read `.version` from the JSON it printed.
 
 | what you saw                    | what to do                                                              |
 | -------------------------------- | ------------------------------------------------------------------------ |
@@ -299,9 +307,9 @@ Why each row:
 **`has_live_window` is `null` here — never `false`.** Inside a drone there is no tmux server, so
 `tmux list-windows` fails exactly the way it fails when a window is merely absent. No-tmux and
 no-window are indistinguishable. Therefore: set `has_live_window: null` (unknown) for every
-project, do not run the tmux probe at all, and **apply NO staleness downgrade** — report the
+repository, do not run the tmux probe at all, and **apply NO staleness downgrade** — report the
 `status` you read from `state.json` / the registry as-is. A fallback that reads unknown liveness
-as "no window" marks every active and waiting project stale; the whole board goes idle and the
+as "no window" marks every active and waiting repository stale; the whole board goes idle and the
 reading is worthless.
 
 **Say you are degraded, once, at the top**, carrying the captured error, location-agnostic:
@@ -311,7 +319,7 @@ install."
 
 **Where the data is.** Registry at `${XDG_CONFIG_HOME:-$HOME/.config}/borg/registry.json` —
 derive the path, never hardcode `~/.config/borg` (`BORG_DIR`, `BORG_REGISTRY` and a non-default
-`XDG_CONFIG_HOME` all move it). Per-project volatile status at `<workspace>/.borg/state.json`,
+`XDG_CONFIG_HOME` all move it). Per-repository volatile status at `<workspace>/.borg/state.json`,
 overlaid on the registry row. Checkpoints at `<workspace>/.borg/checkpoints/*.md`, plan at
 `<workspace>/PROJECT_PLAN.md`, directives at `<workspace>/docs/plans/directives/*.md`, assimilated
 at `<workspace>/docs/plans/assimilated/*.md`. Test every path with `test -e` before reading and
@@ -321,7 +329,7 @@ degrade silently — a missing file is the normal case here, not an error.
 
 1. Walk up from `$PWD` looking for a `.borg-project` marker file with the MARKER-WALK block below. This
    is the ONLY place the marker is read: the engine is gone, so there is no `scope.kind` to believe,
-   and the marker stands in for it. If found, read its single line — that's the *current project
+   and the marker stands in for it. If found, read its single line — that's the *current repository
    name* — and the directory containing the marker is the *current workspace*. This works both on the
    host and inside a drone.
 
@@ -334,16 +342,16 @@ Bash: dir="$PWD"; while [[ "$dir" != "/" ]]; do
 ```
 <!-- MARKER-WALK-END -->
 
-2. For the **current project**, always use the resolved workspace from step 1 — never the
+2. For the **current repository**, always use the resolved workspace from step 1 — never the
    registry's `path` field, which may be a host path. Marker found means a repository-scope page: the
    Repository scope rules apply (identity, session and status from `state.json`, the checkpoints in
    `<workspace>/.borg/checkpoints` only, the Queen pointer line, the next action last) and no other
-   project is shown.
-3. Marker found: do NOT read other projects at all; the page is about this workspace alone. The
-   registry's `path` for another project resolves on the host and usually not inside a drone, and
+   repository is shown.
+3. Marker found: do NOT read other repositories at all; the page is about this workspace alone. The
+   registry's `path` for another repository resolves on the host and usually not inside a drone, and
    either way it is out of scope.
 4. If no `.borg-project` marker is found (e.g. the Queen session at `~`), there is no current
-   project — fall back to registry paths for everyone, and skip workspace-dependent reads that do not
+   repository — fall back to registry paths for everyone, and skip workspace-dependent reads that do not
    resolve (checkpoints, directives, assimilated, PROJECT_PLAN.md), showing the registry row only.
 
 The registry is bind-mounted into every drone **started by `drone up`** (the `borg` compose
@@ -358,7 +366,7 @@ the question in prose; it does not imitate `borg link`'s frame.
 
 - Read `.order` for display order. Never derive order from `.projects`' keys — jq's `keys` sorts
   alphabetically and would silently reorder the board.
-- Never branch "no projects" off `(.order | length)`. `total_projects` is the unfiltered count; an
+- Never branch "no repositories" off `(.order | length)`. `total_projects` is the unfiltered count; an
   all-archived registry emits `order: []` with a non-zero `total_projects`.
 - `pinned` and `display_name` are OPTIONAL ABSENT keys, not null-valued ones. Treat missing as
   absent.
@@ -366,10 +374,10 @@ the question in prose; it does not imitate `borg link`'s frame.
 - No raw dumps. Every line is a synthesized takeaway. Never paste the JSON, and never re-render
   the CLI's table — if the user wants the table, they should run `borg link`.
 - Read-only in spirit: this skill never writes `registry.json` or any `state.json`. Note the one
-  unavoidable exception: `borg link --json` with no project runs the CLI's Claude Desktop
+  unavoidable exception: `borg link --json` with no repository runs the CLI's Claude Desktop
   pre-pass, which merges into the registry — that is the CLI's normal behavior, not something to
   work around.
-- One `borg link --json [<project>]` call serves every scope. Do not call twice.
+- One `borg link --json [<repository>]` call serves every scope. Do not call twice.
 - Scope is the engine's `scope.kind`, never the `.borg-project` marker and never your own guess from
   the cwd. The repository page names no other worktree, repository or project, and ends on the
   next-action line, after the Queen pointer.
