@@ -1,12 +1,6 @@
 ---
 name: research
-description: "The single research front door. Routes to one of three modes — evidence (cited
-  literature synthesis), decision-design (explore options and recommend), or hybrid (evidence
-  then design). Use when the user asks for deep research, a literature review, source evaluation,
-  or evidence synthesis (→ evidence mode); to ideate, explore approaches, brainstorm, or solve an
-  open design problem with no obvious answer (→ decision-design mode); or says /research,
-  /deep-research, or /brainstorm. Also trigger when building a defensible evidence base or making
-  a high-stakes product/design decision."
+description: "The single research front door, three modes: evidence (cited literature synthesis), decision-design (explore options, recommend one), hybrid. Use for deep research, literature review, source evaluation, evidence synthesis, brainstorm, ideate, explore approaches, open design problems with no obvious answer, or /research."
 ---
 
 # Research — The Research Front Door
@@ -26,7 +20,7 @@ Three modes, kept separate. Pick one at Phase 0:
 | Both — establish evidence base, then decide what to do | **hybrid** | [Hybrid Mode](#hybrid-mode) |
 
 **Routing rules:**
-- `/deep-research` → **evidence**. `/brainstorm` → **decision-design**. `/research` → use table above;
+- Requests for deep research, literature review or evidence synthesis → **evidence**. Brainstorm, ideate or explore-approaches requests → **decision-design**. Otherwise use the table above;
   if genuinely ambiguous ask ONE clarifying question, then proceed.
 - High-stakes and unsure between evidence vs. decision-design → **hybrid** (safe superset).
 - Decision-design and hybrid delegate research to the `research-tools:research-analyst` agent (Opus, lean-return) and
