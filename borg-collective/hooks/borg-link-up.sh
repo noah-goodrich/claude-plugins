@@ -280,7 +280,7 @@ _borg_state_read() {
 _borg_resolve_proj_dir() {
     local repository="$1" cwd="$2" rp
     if [[ -f "$BORG_REGISTRY" ]]; then
-        rp=$(jq -r --arg p "$repository" "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
+        rp=$(jq -r --arg p "$repository" '.repositories[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
         [[ -n "$rp" && "$rp" != "null" && -d "$rp" ]] && { printf '%s\n' "$rp"; return; }
     fi
     printf '%s\n' "$cwd"
@@ -297,7 +297,7 @@ _borg_proj_repo() {
     unset _REPO
     [[ -f "${BORG_REGISTRY:-}" ]] || return 0
     _r=$(jq -r --arg p "$1" --arg d "$2" \
-        "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
+        '.repositories[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
         "$BORG_REGISTRY" 2>/dev/null) || return 0
     [[ -n "$_r" ]] && _REPO="${_r#R}"
     return 0
@@ -563,27 +563,33 @@ _borg_reap_worktrees() {
     fi
 }
 
-# ── Registry top-level key (projects -> repositories, EXPAND phase) ───────────
+# ── Registry top-level key (contract: only `repositories` is read) ────────────
 #
-# The registry file's entry map is mid-rename from `projects` to `repositories`. Readers accept either
-# and writers keep the key the file already has (MIGRATE phase; a new file starts with `projects`). THE
-# shell-side decision lives here (the Python side's is borg_core.paths.normalize_registry): this jq filter
-# maps a document that has `repositories` onto `.projects`, so every downstream filter keeps reading
-# `.projects`, and the one zsh writer (`_borg_registry_write`) renames back to the key on disk.
-# `repositories` wins when both are present. It lives in this file only because this is the one
-# file already sourced by the zsh CLI, the bash hooks and (inlined) the plugin build.
-#
-# Direct-file readers prefix their filter:  jq "$BORG_REGISTRY_NORM_JQ | .projects[...]" "$file"
-BORG_REGISTRY_NORM_JQ='if type == "object" and has("repositories") then (.projects = .repositories | del(.repositories)) else . end'
+# The registry file's entry map is `repositories`. The retired `projects` key is no longer read anywhere
+# (contract step of the expand -> migrate -> contract rename). A file that still has ONLY `projects` must
+# never read as an empty registry (a later write would then replace it and lose every entry), so the
+# readers that can fail loudly call borg_registry_guard first. The Python side's twin is
+# borg_core.paths.require_registry_key; `python3 -m borg_core.registry.cli migrate-key` (run by
+# `borg setup`) is the way out. It lives in this file only because this is the one file already sourced by
+# the zsh CLI, the bash hooks and (inlined) the plugin build.
 
-# Print <file> (default $BORG_REGISTRY) as JSON with the entry map under `.projects`. Byte-identical to
-# `cat` unless the file mentions "repositories", so the common (old-key) path forks nothing extra.
-borg_registry_normalized() {
+# True (0) when <file> (default $BORG_REGISTRY) is a registry that has `projects` and not `repositories`.
+# Forks nothing extra unless the file mentions "projects" at all.
+borg_registry_legacy_key() {
     local _f="${1:-$BORG_REGISTRY}"
+    [ -f "$_f" ] || return 1
     case "$(< "$_f")" in
-        *'"repositories"'*) jq "$BORG_REGISTRY_NORM_JQ" "$_f" ;;
-        *) /bin/cat "$_f" ;;
+        *'"projects"'*) jq -e 'type == "object" and has("projects") and (has("repositories") | not)' "$_f" >/dev/null 2>&1 ;;
+        *) return 1 ;;
     esac
+}
+
+# Print the one-line error and return 1 when <file> still has only the retired key; 0 otherwise.
+borg_registry_guard() {
+    local _f="${1:-$BORG_REGISTRY}"
+    borg_registry_legacy_key "$_f" || return 0
+    printf "borg: registry file (%s) still uses the retired 'projects' key, which is no longer read; run \`borg setup\` or \`python3 -m borg_core.registry.cli migrate-key\` to rename it to 'repositories'\n" "$_f" >&2
+    return 1
 }
 # ── End inlined helpers ─────────────────────────────────────────────────────
 

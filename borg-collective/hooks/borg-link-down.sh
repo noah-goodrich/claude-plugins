@@ -288,7 +288,7 @@ _borg_state_read() {
 _borg_resolve_proj_dir() {
     local repository="$1" cwd="$2" rp
     if [[ -f "$BORG_REGISTRY" ]]; then
-        rp=$(jq -r --arg p "$repository" "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
+        rp=$(jq -r --arg p "$repository" '.repositories[$p].path // ""' "$BORG_REGISTRY" 2>/dev/null || true)
         [[ -n "$rp" && "$rp" != "null" && -d "$rp" ]] && { printf '%s\n' "$rp"; return; }
     fi
     printf '%s\n' "$cwd"
@@ -305,7 +305,7 @@ _borg_proj_repo() {
     unset _REPO
     [[ -f "${BORG_REGISTRY:-}" ]] || return 0
     _r=$(jq -r --arg p "$1" --arg d "$2" \
-        "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
+        '.repositories[$p] | select((.path // "") == $d) | "R" + (.repo // "" | if type == "string" then . else "" end)' \
         "$BORG_REGISTRY" 2>/dev/null) || return 0
     [[ -n "$_r" ]] && _REPO="${_r#R}"
     return 0
@@ -571,27 +571,33 @@ _borg_reap_worktrees() {
     fi
 }
 
-# ── Registry top-level key (projects -> repositories, EXPAND phase) ───────────
+# ── Registry top-level key (contract: only `repositories` is read) ────────────
 #
-# The registry file's entry map is mid-rename from `projects` to `repositories`. Readers accept either
-# and writers keep the key the file already has (MIGRATE phase; a new file starts with `projects`). THE
-# shell-side decision lives here (the Python side's is borg_core.paths.normalize_registry): this jq filter
-# maps a document that has `repositories` onto `.projects`, so every downstream filter keeps reading
-# `.projects`, and the one zsh writer (`_borg_registry_write`) renames back to the key on disk.
-# `repositories` wins when both are present. It lives in this file only because this is the one
-# file already sourced by the zsh CLI, the bash hooks and (inlined) the plugin build.
-#
-# Direct-file readers prefix their filter:  jq "$BORG_REGISTRY_NORM_JQ | .projects[...]" "$file"
-BORG_REGISTRY_NORM_JQ='if type == "object" and has("repositories") then (.projects = .repositories | del(.repositories)) else . end'
+# The registry file's entry map is `repositories`. The retired `projects` key is no longer read anywhere
+# (contract step of the expand -> migrate -> contract rename). A file that still has ONLY `projects` must
+# never read as an empty registry (a later write would then replace it and lose every entry), so the
+# readers that can fail loudly call borg_registry_guard first. The Python side's twin is
+# borg_core.paths.require_registry_key; `python3 -m borg_core.registry.cli migrate-key` (run by
+# `borg setup`) is the way out. It lives in this file only because this is the one file already sourced by
+# the zsh CLI, the bash hooks and (inlined) the plugin build.
 
-# Print <file> (default $BORG_REGISTRY) as JSON with the entry map under `.projects`. Byte-identical to
-# `cat` unless the file mentions "repositories", so the common (old-key) path forks nothing extra.
-borg_registry_normalized() {
+# True (0) when <file> (default $BORG_REGISTRY) is a registry that has `projects` and not `repositories`.
+# Forks nothing extra unless the file mentions "projects" at all.
+borg_registry_legacy_key() {
     local _f="${1:-$BORG_REGISTRY}"
+    [ -f "$_f" ] || return 1
     case "$(< "$_f")" in
-        *'"repositories"'*) jq "$BORG_REGISTRY_NORM_JQ" "$_f" ;;
-        *) /bin/cat "$_f" ;;
+        *'"projects"'*) jq -e 'type == "object" and has("projects") and (has("repositories") | not)' "$_f" >/dev/null 2>&1 ;;
+        *) return 1 ;;
     esac
+}
+
+# Print the one-line error and return 1 when <file> still has only the retired key; 0 otherwise.
+borg_registry_guard() {
+    local _f="${1:-$BORG_REGISTRY}"
+    borg_registry_legacy_key "$_f" || return 0
+    printf "borg: registry file (%s) still uses the retired 'projects' key, which is no longer read; run \`borg setup\` or \`python3 -m borg_core.registry.cli migrate-key\` to rename it to 'repositories'\n" "$_f" >&2
+    return 1
 }
 # ── End inlined helpers ─────────────────────────────────────────────────────
 
@@ -622,15 +628,24 @@ Full guide: docs/agent-routing.md in the borg-collective repo."
 # When CWD is the workspace root (default $HOME/dev), render a scannable
 # cross-repository overview AS additionalContext. Write nothing to the registry —
 # the orchestrator session is not a repository session.
-_orch_humanize_age() {
-    local ts="$1"
-    [[ -z "$ts" ]] && { printf 'never'; return; }
-    local epoch_now epoch_ts delta
+# Idle repositories older than this many days are counted, not listed. Override with BORG_QUEEN_IDLE_DAYS.
+BORG_QUEEN_IDLE_DAYS_DEFAULT=30
+
+# Age in whole seconds of an ISO-8601 UTC timestamp; unparseable input reads as age 0 (listed, not hidden).
+_orch_age_secs() {
+    local ts="$1" epoch_now epoch_ts
     epoch_now=$(date -u +%s)
     # macOS BSD date and GNU date both accept ISO-8601 with -j -f / -d respectively.
     epoch_ts=$(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null \
         || date -u -d "$ts" +%s 2>/dev/null || echo "$epoch_now")
-    delta=$(( epoch_now - epoch_ts ))
+    printf '%d' $(( epoch_now - epoch_ts ))
+}
+
+_orch_humanize_age() {
+    local ts="$1"
+    [[ -z "$ts" ]] && { printf 'never'; return; }
+    local delta
+    delta=$(_orch_age_secs "$ts")
     (( delta < 60 ))    && { printf '%ds ago' "$delta"; return; }
     (( delta < 3600 ))  && { printf '%dm ago' $(( delta / 60 )); return; }
     (( delta < 86400 )) && { printf '%dh ago' $(( delta / 3600 )); return; }
@@ -669,8 +684,8 @@ if [[ "$MODE" == "orchestrator" ]]; then
     if [[ -f "$BORG_REGISTRY" ]]; then
         # Read registry for identity fields, then overlay state.json for each repository.
         # Build TSV: name, status, last_activity, path — sorted by last_activity desc.
-        _raw_tsv=$(jq -r "${BORG_REGISTRY_NORM_JQ:-.} | "'
-            .projects // {} | to_entries
+        _raw_tsv=$(jq -r '
+            .repositories // {} | to_entries
             | map(select(.value.archived // false | not))
             | .[]
             | [.key, (if (.value.path // "") == "" then "-" else .value.path end), (.value.repo // "")]
@@ -702,14 +717,24 @@ if [[ "$MODE" == "orchestrator" ]]; then
 
         _proj_count=$(printf '%s' "$_repositories_tsv" | grep -c . 2>/dev/null || echo 0)
         OVERVIEW+="You are the QUEEN (${_proj_count} repositories)"$'\n\n'
+        _idle_days="${BORG_QUEEN_IDLE_DAYS:-$BORG_QUEEN_IDLE_DAYS_DEFAULT}"
+        [[ "$_idle_days" =~ ^[0-9]+$ ]] || _idle_days="$BORG_QUEEN_IDLE_DAYS_DEFAULT"
+        _hidden=0
         if [[ -n "$_repositories_tsv" ]]; then
             while IFS=$'\t' read -r _name _status _last _path; do
                 [[ -z "$_name" ]] && continue
                 [[ "$_last" == "-" ]] && _last=""
+                # Waiting and active always show; anything else older than the cutoff (or never active) is counted.
+                if [[ "$_status" != "waiting" && "$_status" != "active" ]] \
+                    && { [[ -z "$_last" ]] || (( $(_orch_age_secs "$_last") > _idle_days * 86400 )); }; then
+                    _hidden=$(( _hidden + 1 ))
+                    continue
+                fi
                 _age=$(_orch_humanize_age "$_last")
                 _hint=$(_orch_next_hint "$_path")
                 OVERVIEW+="  • ${_name} [${_status}] — ${_age} — ${_hint}"$'\n'
             done <<< "$_repositories_tsv"
+            (( _hidden > 0 )) && OVERVIEW+="  + ${_hidden} idle ${_idle_days}+ days (borg link for all)"$'\n'
         else
             OVERVIEW+="  (no repositories registered — run 'borg add <path>' or 'borg scan')"$'\n'
         fi
@@ -863,7 +888,7 @@ if [[ -f "$BORG_REGISTRY" ]]; then
         fi
         _borg_should_reap "$_s" "$_last" "$_live" && continue
         _active_count=$(( _active_count + 1 ))
-    done < <(jq -r "${BORG_REGISTRY_NORM_JQ:-.} | "'.projects | to_entries[]
+    done < <(jq -r '.repositories | to_entries[]
         | [.key,
            (if (.value.path // "") == "" then "-" else .value.path end),
            (if (.value.tmux_window // "") == "" then "-" else .value.tmux_window end),
