@@ -9,28 +9,26 @@ through rigorous evidence synthesis.
 | Skill | Trigger | When to use |
 |-------|---------|-------------|
 | `research` | `/research` | The single research front door. Picks a **mode** at Phase 0 and runs the matching pipeline. |
-| `deep-research` | `/deep-research` | Thin alias → `research` in **evidence** mode. |
-| `brainstorm` | `/brainstorm` | Thin alias → `research` in **decision-design** mode. |
 
 ### The three modes of `/research`
 
 - **evidence** — evidence synthesis with academic rigor. Full pipeline: design, discovery,
   10-dimension source evaluation, citation verification, inclusion/exclusion decisions, synthesis,
   and documentation. Carries an executable citation gate. Use when you need a defensible evidence
-  base, not just a recommendation. (This is the original `deep-research` pipeline, unchanged.)
+  base, not just a recommendation. (This is the original deep-research pipeline.)
 - **decision-design** — open-ended problems where the implementation approach can't be specified
   before the options are known. Walls off prior work, runs parallel from-zero research tracks,
   synthesizes 3–5 distinct options, convenes a 5-persona council, and subjects the recommendation
   to a BLIND adversarial review (`research-tools:research-verifier`). Carries a self-enforced design-review gate.
-  (This is the former `brainstorm` design council, absorbed.)
+  (This is the former brainstorm design council.)
 - **hybrid** — evidence first, then decision-design, with the evidence synthesis fed in as
   load-bearing input. The safe superset for high-stakes decisions.
 
 ## When to use which
 
 ```
-"What does the evidence say?"              → /research (evidence)    [or the /deep-research alias]
-"What should we build/do?"                 → /research (decision-design) [or the /brainstorm alias]
+"What does the evidence say?"              → /research (evidence)
+"What should we build/do?"                 → /research (decision-design)
 Both — evidence base, then a decision      → /research (hybrid)
 ```
 
@@ -42,34 +40,19 @@ recommendation review to the `research-tools:research-verifier` agent (both pinn
 typical flow for a vague, high-stakes problem is: research (decision-design or hybrid) → borg-plan
 → implementation.
 
-## Redundancy between the two skills (Directive 04)
+## Ownership between the modes (Directive 04)
 
-The two skills deliberately share machinery, and a few controls used to be DUPLICATED across
-them with diverging rigor. Directive 04 collapsed that overlap to a single owner each:
+The two pipelines share machinery, and Directive 04 collapsed the overlap to a single owner each:
 
-- **Novelty probe ("is this worth a full run?")** lives ONLY in `deep-research` now (Phase 1.0),
-  as a universal pre-flight gate for any direct `/deep-research`. It was previously inlined in
-  `brainstorm` (firing only for "evidence-backed" tracks, which never fired), so a direct
-  `/deep-research` had no "should I even run this?" gate at all. It is promoted to where it
-  belongs.
-- **Evidence rigor / freshness** is OWNED by `deep-research`. `brainstorm` no longer runs a
-  second, lower-rigor research pipeline. Its tracks return ONE unified finding shape (a discrete
-  claim + a minimal source record: author/outlet, title, URL, access date) — the same minimal
-  evidentiary record a deep-research source card carries — so one brainstorm no longer carries
-  two incompatible evidentiary standards side by side. The old ~85-line evidence-backed-track /
-  recency-band / recursive-`/deep-research` apparatus (0% utilization across the corpus) is
-  demoted to a single escape-hatch line: *if a track's correctness is load-bearing and your
-  model knowledge is stale, run `/deep-research` separately and feed its §1–§2 back in.*
-- **Triage screen + rapid tier + lazy reference loading** (below) are `deep-research`
-  mechanisms; `brainstorm` reaches them only via the escape hatch.
+- **Novelty probe ("is this worth a full run?")** lives only in evidence mode (Phase 1.0), as a pre-flight gate for any direct evidence run.
+- **Evidence rigor / freshness** is owned by evidence mode. Decision-design runs no second, lower-rigor research pipeline: its tracks return ONE unified finding shape (a discrete claim + a minimal source record: author/outlet, title, URL, access date), the same minimal evidentiary record an evidence-mode source card carries. Escape hatch: if a track's correctness is load-bearing and your model knowledge is stale, run `/research` in evidence mode separately and feed its §1–§2 back in.
+- **Triage screen + rapid tier + lazy reference loading** (below) are evidence-mode mechanisms; decision-design reaches them only via the escape hatch.
 
-Net: `brainstorm` stays fast and owns option-generation + the council; `deep-research` owns
-evidence rigor, verification, and the freshness probe. There is no longer a parallel
-mini-pipeline in `brainstorm`.
+Net: decision-design stays fast and owns option-generation + the council; evidence mode owns evidence rigor, verification, and the freshness probe.
 
 ## Triage Screen + Rapid Tier + Lazy Loading (Directive 04)
 
-`deep-research` no longer taxes every run with an all-or-nothing protocol:
+Evidence mode no longer taxes every run with an all-or-nothing protocol:
 
 - **Triage screen (Phase 3.0).** A fast keep/cut screen runs against ALL discovered sources
   first (on-topic? minimally credible? non-redundant?); full 10-dimension source cards are
@@ -88,7 +71,7 @@ mini-pipeline in `brainstorm`.
 
 ## Fail-Closed Ground Gate
 
-`deep-research` ships with a no-model, deterministic verifier (`hooks/deep-research-verify.sh`)
+Evidence mode ships with a no-model, deterministic verifier (`hooks/deep-research-verify.sh`)
 run by a `Stop` hook (`hooks/deep-research-stop.sh`, registered in `plugin.json`). It physically
 blocks a research deliverable from being presented as fact-checked until six falsifiable on-disk
 integrity facts pass: (1) a `verification-report.md` exists; (2) §6 carries sample N, failure
@@ -136,7 +119,7 @@ assertions read, so promotion is a one-line change with no detection-logic rewri
 
 ## Scholarly-Source Adapter (optional)
 
-deep-research has no web-scale corpus of its own — discovery rides the host's general
+Evidence mode has no web-scale corpus of its own — discovery rides the host's general
 WebSearch/WebFetch. To close the academic-reach gap WITHOUT an unwinnable indexing war and
 WITHOUT third-party MCP supply-chain risk in a trust-first pipeline, the plugin ships a thin,
 **first-party** HTTP adapter (`hooks/scholarly-adapter.sh`, ~one screen of `curl` + `jq`) that
@@ -162,7 +145,7 @@ into the SAME inspectable source-card pipeline.
 
 **The honest boundary: we are not Elicit-scale; this adds a free academic backend, not a
 138M-paper index.** It lifts the cheap-to-card peer-reviewed share (raising the thin
-primary-evidence floor) — it does not turn deep-research into a quality-filtered academic
+primary-evidence floor) — it does not turn evidence mode into a quality-filtered academic
 search engine.
 
 ## Prior Art
