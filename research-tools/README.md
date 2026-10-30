@@ -1,6 +1,6 @@
 # Research Tools
 
-Research and ideation methodology plugin for Claude Code. One front door — `/research` — routes
+Research and ideation methodology plugin for Claude Code and Cortex Code. One front door — `/research` — routes
 to the right pipeline by **mode**, covering the full spectrum from open-ended problem exploration
 through rigorous evidence synthesis.
 

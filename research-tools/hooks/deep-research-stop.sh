@@ -66,20 +66,39 @@ if [[ -n "$STOP_HOOK_ACTIVE" ]]; then
 fi
 
 # Did THIS session actually run the evidence-mode research skill? The reliable, automatic,
-# and specific signal is a `Skill` tool_use entry in the Stop hook's own transcript whose
-# skill field is the unified research front door (`research`) or its evidence-mode alias
-# (`deep-research`) — in plugin-namespaced (`research-tools:research`) or bare form. This is
-# the literal JSON the harness logs for a Skill invocation; it does NOT match a mere prose
-# mention of "deep research" (the same transcript carries both, so a naive word grep would
-# false-positive). decision-design runs also match `research` but produce no .gate-armed
-# marker, so they hit the non-blocking advisory branch below — never a hard block.
+# and specific signal is the literal JSON the harness logs when the unified research front
+# door (`research`) or its evidence-mode alias (`deep-research`) is invoked, in
+# plugin-namespaced (`research-tools:research`) or bare form. Three shapes count:
+#   1. Claude Code, model-invoked:  "name":"Skill","input":{"skill":"research-tools:research"
+#   2. Cortex Code, model-invoked:  "name":"skill","input":{"command":"research-tools:research"
+#   3. Either harness, user-typed:  a message whose text STARTS with the harness's
+#      <command-name> (optionally preceded by <command-message>) naming the skill.
+#      Anchoring to the start of the JSON string keeps prose that merely mentions the tag
+#      from arming.
+# None of these match a mere prose mention of "deep research" (the same transcript carries
+# both, so a naive word grep would false-positive). decision-design runs also match
+# `research` but produce no .gate-armed marker, so they hit the non-blocking advisory branch
+# below — never a hard block.
+#
+# Where to look: Claude Code passes the message log itself as transcript_path. Cortex Code
+# passes <session>.json, a metadata snapshot, and appends the messages to the sibling
+# <session>.history.jsonl, so that file is scanned too when the path ends in .json.
 # Absent / empty / unreadable transcript -> NOT armed (stay dormant, never block).
-TRANSCRIPT_ARMED=""
-if [[ -n "$TRANSCRIPT" && -r "$TRANSCRIPT" ]]; then
-    if grep -Eq '"name":"Skill","input":\{"skill":"(research-tools:)?(deep-research|research)"' "$TRANSCRIPT"; then
-        TRANSCRIPT_ARMED="1"
-    fi
+ARM_SKILL='(research-tools:)?(deep-research|research)'
+ARM_RE='"name":"Skill","input":\{"skill":"'"$ARM_SKILL"'"'
+ARM_RE+='|"name":"skill","input":\{"command":"'"$ARM_SKILL"'"'
+ARM_RE+='|"(content|text)":"(<command-message>[^<]{0,200}</command-message>(\\n)?[[:space:]]*)?<command-name>/?'"$ARM_SKILL"'</command-name>'
+HISTORY=""
+if [[ "$TRANSCRIPT" == *.json ]]; then
+    HISTORY="${TRANSCRIPT%.json}.history.jsonl"
 fi
+TRANSCRIPT_ARMED=""
+for LOG in "$TRANSCRIPT" "$HISTORY"; do
+    if [[ -n "$LOG" && -r "$LOG" ]] && grep -Eq "$ARM_RE" "$LOG"; then
+        TRANSCRIPT_ARMED="1"
+        break
+    fi
+done
 
 # Honor an explicit target dir for testing / manual runs. Always engages, unchanged.
 TARGET="${DEEP_RESEARCH_DIR:-}"

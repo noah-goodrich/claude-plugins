@@ -2,7 +2,7 @@
 name: research-verifier
 description: Independent blind verifier for the research-tools plugin. Used for the Phase 3.5 citation verification, the blind adversarial review of a recommendation, and the contradiction probe. Read-only plus web, with Bash reserved for the probe.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Bash
-model: opus
+model: claude-opus-5-5
 effort: xhigh
 ---
 

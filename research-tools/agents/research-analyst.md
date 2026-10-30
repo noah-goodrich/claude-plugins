@@ -2,7 +2,7 @@
 name: research-analyst
 description: Research track worker for the research-tools plugin. Investigates one question from zero using web search and source reading, writes source records to disk, and returns distilled findings only.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Write
-model: opus
+model: claude-opus-5-5
 effort: high
 ---
 
