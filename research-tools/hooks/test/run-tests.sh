@@ -365,10 +365,11 @@ PLUGIN="$(cd "$HOOKS/.." && pwd)"
 A="$PLUGIN/agents/research-analyst.md"
 V2="$PLUGIN/agents/research-verifier.md"
 fm() { sed -n '2,/^---$/p' "$1"; }
-[[ -f "$A" ]] && fm "$A" | grep -qx 'model: opus' && fm "$A" | grep -qx 'effort: high' \
-    && ok "(h) research-analyst is opus/high" || bad "(h) research-analyst missing or not opus/high"
-[[ -f "$V2" ]] && fm "$V2" | grep -qx 'model: opus' && fm "$V2" | grep -qx 'effort: xhigh' \
-    && ok "(h) research-verifier is opus/xhigh" || bad "(h) research-verifier missing or not opus/xhigh"
+# Full model ID, not the `opus` alias: Cortex Code ignores bare aliases and the agent silently inherits the session model.
+[[ -f "$A" ]] && fm "$A" | grep -qx 'model: claude-opus-5-5' && fm "$A" | grep -qx 'effort: high' \
+    && ok "(h) research-analyst is claude-opus-5-5/high" || bad "(h) research-analyst missing or not claude-opus-5-5/high"
+[[ -f "$V2" ]] && fm "$V2" | grep -qx 'model: claude-opus-5-5' && fm "$V2" | grep -qx 'effort: xhigh' \
+    && ok "(h) research-verifier is claude-opus-5-5/xhigh" || bad "(h) research-verifier missing or not claude-opus-5-5/xhigh"
 [[ -f "$V2" ]] && ! fm "$V2" | grep -E '^tools:' | grep -qE 'Write|Edit' \
     && ok "(h) research-verifier has no Write/Edit (Bash only for the probe)" || bad "(h) research-verifier has Write/Edit"
 SPAWN="$(grep -rEn 'borg-(researcher|reviewer)|fresh Task-tool|a Task agent|Task-tool verification subagent' \
@@ -380,6 +381,67 @@ grep -q 'research-tools:research-verifier' "$PLUGIN/skills/research/SKILL.md" \
     && grep -q 'research-tools:research-verifier' "$PLUGIN/skills/research/references/contradiction-resolution.md" \
     && ok "(h) SKILL.md and contradiction-resolution name the pinned types" \
     || bad "(h) pinned types missing from a spawn site"
+
+# ---------------------------------------------------------------------------
+echo "== 8. CORTEX CODE ARMING — sibling history file, Cortex skill call, typed commands =="
+
+# Cortex Code passes <session>.json (a metadata snapshot) as transcript_path and appends the
+# messages to the sibling <session>.history.jsonl; Claude Code passes the .jsonl log itself.
+# Every case targets a genuinely failing deliverable (no verification-report.md, so A1 fails)
+# through a .gate-armed marker, so the verdict shows whether the logged line armed the gate:
+# armed -> block (rc != 0), dormant -> rc 0 with no block decision.
+gate_case() {  # $1 label, $2 armed|dormant, $3 claude|cortex|cortex-nosibling, $4 one log line
+    rm -rf "$TMP/gc"; mkdir -p "$TMP/gc/conv" "$TMP/gc/proj/docs/research/run/sources"
+    cp "$PASS/sources/"*.md "$TMP/gc/proj/docs/research/run/sources/"
+    cp "$PASS/deliverable.md" "$TMP/gc/proj/docs/research/run/"
+    printf '%s/docs/research/run\n' "$TMP/gc/proj" > "$TMP/gc/proj/docs/research/.gate-armed"
+    case "$3" in
+        claude) TP="$TMP/gc/conv/s1.jsonl"; printf '%s\n' "$4" > "$TP" ;;
+        cortex) TP="$TMP/gc/conv/s1.json"; printf '{"session_id":"s1"}\n' > "$TP"
+                printf '%s\n' "$4" > "$TMP/gc/conv/s1.history.jsonl" ;;
+        cortex-nosibling) TP="$TMP/gc/conv/s1.json"; printf '{"session_id":"s1"}\n' > "$TP"
+                printf '%s\n' "$4" > "$TMP/gc/conv/other.history.jsonl" ;;
+    esac
+    OUT="$(printf '{"cwd":"%s","transcript_path":"%s"}' "$TMP/gc/proj" "$TP" | bash "$STOP" 2>&1)"; RC=$?
+    if [[ "$2" == "armed" ]]; then
+        [[ "$RC" -ne 0 ]] && printf '%s' "$OUT" | grep -q '"decision": *"block"' \
+            && ok "(i) $1: armed (blocks the failing deliverable)" \
+            || bad "(i) $1: did not arm (rc=$RC) :: $(printf '%s' "$OUT" | tail -1)"
+    else
+        [[ "$RC" -eq 0 ]] && ! printf '%s' "$OUT" | grep -q '"decision": *"block"' \
+            && ok "(i) $1: stays dormant" \
+            || bad "(i) $1: armed when it must not (rc=$RC) :: $(printf '%s' "$OUT" | tail -1)"
+    fi
+}
+
+# Shapes the harnesses really log (Cortex lines copied from a Cortex 1.2.24 history file).
+gate_case "Cortex model-invoked skill call" armed cortex \
+    '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"tool_use_id":"t1","type":"skill","name":"skill","input":{"command":"research-tools:research"},"client_side_execute":true}}]}'
+gate_case "Cortex user-typed command" armed cortex \
+    '{"role":"user","content":[{"type":"text","text":"<command-message>User is invoking the \"research-tools:research\" skill</command-message>\n<command-name>research-tools:research</command-name>"}]}'
+gate_case "Claude Code user-typed /research-tools:research" armed claude \
+    '{"type":"user","message":{"role":"user","content":"<command-name>/research-tools:research</command-name>\n            <command-message>research</command-message>"}}'
+gate_case "Claude Code user-typed /deep-research, message tag first" armed claude \
+    '{"type":"user","message":{"role":"user","content":"<command-message>deep-research</command-message>\n<command-name>/deep-research</command-name>"}}'
+
+# Must NOT arm: another skill, a mid-prose mention of the tag, the arming JSON quoted inside a
+# tool input (escaped, as when a session edits these very tests), a near-miss skill name, and
+# a Cortex session whose own sibling history file is missing.
+gate_case "Cortex session that ran a different skill" dormant cortex \
+    '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"type":"skill","name":"skill","input":{"command":"borg-link"}}}]}'
+gate_case "tag mentioned mid-prose" dormant cortex \
+    '{"role":"assistant","content":[{"type":"text","text":"Typing /research logs <command-name>research-tools:research</command-name> in Cortex."}]}'
+gate_case "arming JSON quoted inside a tool input" dormant cortex \
+    '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"type":"tool","name":"bash","input":{"command":"printf {\"name\":\"skill\",\"input\":{\"command\":\"research\"}}"}}}]}'
+gate_case "near-miss skill name research-verifier" dormant cortex \
+    '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"type":"skill","name":"skill","input":{"command":"research-tools:research-verifier"}}}]}'
+gate_case "Cortex .json path with no sibling history" dormant cortex-nosibling \
+    '{"role":"assistant","content":[{"type":"tool_use","tool_use":{"type":"skill","name":"skill","input":{"command":"research-tools:research"}}}]}'
+
+# (j) The skill must tell a Cortex session how its agents are named, or every spawn fails.
+grep -qF 'Cortex Code registers plugin agents under their bare names' "$PLUGIN/skills/research/SKILL.md" \
+    && ok "(j) SKILL.md gives the Cortex bare-agent-name fallback" \
+    || bad "(j) SKILL.md lost the Cortex bare-agent-name fallback"
 
 # ---------------------------------------------------------------------------
 echo

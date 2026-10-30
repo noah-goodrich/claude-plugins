@@ -25,6 +25,10 @@ Three modes, kept separate. Pick one at Phase 0:
 - High-stakes and unsure between evidence vs. decision-design → **hybrid** (safe superset).
 - Decision-design and hybrid delegate research to the `research-tools:research-analyst` agent (Opus, lean-return) and
   review to the `research-tools:research-verifier` agent. Never use `general-purpose` for this work.
+- Agent names differ by harness. Claude Code registers the agents as `research-tools:research-analyst` and
+  `research-tools:research-verifier`. Cortex Code registers plugin agents under their bare names `research-analyst`
+  and `research-verifier`. If the namespaced type returns "not found", retry once with the bare name. Never fall back
+  to `general-purpose`.
 
 ---
 
