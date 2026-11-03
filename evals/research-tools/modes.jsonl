@@ -1,6 +1,12 @@
-{"id":"M1","prompt":"What does the published research say about whether code review reduces production incidents? I want cited sources.","expect_mode":"evidence","note":"evidence"}
-{"id":"M2","prompt":"Do a literature review on the effects of sleep deprivation on decision making, with source quality ratings.","expect_mode":"evidence","note":"evidence"}
-{"id":"M3","prompt":"Brainstorm ways we could structure feature flags in a small team's codebase, then recommend one.","expect_mode":"decision-design","note":"decision-design"}
-{"id":"M4","prompt":"I have an open design problem: how should we handle schema migrations across three services? Explore the options and recommend one.","expect_mode":"decision-design","note":"decision-design"}
-{"id":"M5","prompt":"Before we pick a database for our event pipeline, find out what the evidence says about each option's failure modes, then recommend what we should do.","expect_mode":"hybrid","note":"hybrid"}
-{"id":"M6","prompt":"This is a high-stakes call: should we move our support team to async-only communication? Look at what the research says and then design and recommend an approach.","expect_mode":"hybrid","note":"hybrid"}
+{"id":"M1","prompt":"What does the published research say about whether code review reduces production incidents? I want cited sources.","expect_mode":"evidence","split":"train","note":"evidence"}
+{"id":"M2","prompt":"Do a literature review on the effects of sleep deprivation on decision making, with source quality ratings.","expect_mode":"evidence","split":"train","note":"evidence"}
+{"id":"M3","prompt":"Brainstorm ways we could structure feature flags in a small team's codebase, then recommend one.","expect_mode":"decision-design","split":"train","note":"decision-design"}
+{"id":"M4","prompt":"I have an open design problem: how should we handle schema migrations across three services? Explore the options and recommend one.","expect_mode":"decision-design","split":"train","note":"decision-design"}
+{"id":"M5","prompt":"Before we pick a database for our event pipeline, find out what the evidence says about each option's failure modes, then recommend what we should do.","expect_mode":"hybrid","split":"train","note":"hybrid"}
+{"id":"M6","prompt":"This is a high-stakes call: should we move our support team to async-only communication? Look at what the research says and then design and recommend an approach.","expect_mode":"hybrid","split":"train","note":"hybrid"}
+{"id":"M7","prompt":"Summarize what peer-reviewed studies show about the effect of remote work on employee retention, with citations.","expect_mode":"evidence","split":"heldout","note":"evidence"}
+{"id":"M8","prompt":"I need a source-checked review of the evidence on whether microlearning improves skill retention.","expect_mode":"evidence","split":"heldout","note":"evidence"}
+{"id":"M9","prompt":"We need a way to handle secrets across our dev, staging and prod environments and nothing obvious fits. Generate options and recommend one.","expect_mode":"decision-design","split":"heldout","note":"decision-design"}
+{"id":"M10","prompt":"Ideate approaches for letting customers export their data without hammering our primary database, then pick one.","expect_mode":"decision-design","split":"heldout","note":"decision-design"}
+{"id":"M11","prompt":"Should we adopt a monorepo? Check what the evidence says about monorepo outcomes at scale, then design our migration options and recommend one.","expect_mode":"hybrid","split":"heldout","note":"hybrid"}
+{"id":"M12","prompt":"We are choosing between rewriting our billing service and refactoring it step by step. Research what is known about rewrite failure rates, then recommend an approach.","expect_mode":"hybrid","split":"heldout","note":"hybrid"}

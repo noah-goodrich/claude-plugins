@@ -129,11 +129,11 @@ offline_tier() {
     else bad "fire queries do not cover all three phrasing families"; fi
 
     echo "== offline: modes.jsonl =="
-    [ "$(jq -s 'length' "$MODES")" -eq 6 ] && ok "6 mode prompts" || bad "mode prompt count is not 6"
-    if jq -s -e '(map(.id)|unique|length)==6 and all(.[]; (keys|sort)==["expect_mode","id","note","prompt"])
-                 and ([.[]|select(.expect_mode=="evidence")]|length)==2
-                 and ([.[]|select(.expect_mode=="decision-design")]|length)==2
-                 and ([.[]|select(.expect_mode=="hybrid")]|length)==2' "$MODES" >/dev/null 2>&1; then
+    [ "$(jq -s 'length' "$MODES")" -eq 12 ] && ok "12 mode prompts" || bad "mode prompt count is not 12"
+    if jq -s -e '(map(.id)|unique|length)==12 and all(.[]; (keys|sort)==["expect_mode","id","note","prompt","split"] and (.split|IN("train","heldout")))
+                 and ([.[]|select(.expect_mode=="evidence")]|length)==4 and ([.[]|select(.split=="train")]|length)==6 and ([.[]|select(.split=="heldout")]|length)==6
+                 and ([.[]|select(.expect_mode=="decision-design")]|length)==4 and ([.[]|select(.split=="train")]|length)==6 and ([.[]|select(.split=="heldout")]|length)==6
+                 and ([.[]|select(.expect_mode=="hybrid")]|length)==4 and ([.[]|select(.split=="train")]|length)==6 and ([.[]|select(.split=="heldout")]|length)==6' "$MODES" >/dev/null 2>&1; then
         ok "modes: unique ids, schema, 2 evidence / 2 decision-design / 2 hybrid"
     else bad "modes.jsonl breaks its schema or its 2/2/2 balance"; fi
 
