@@ -17,8 +17,8 @@ deliver an incomplete document.
       also defined inline on first use in the body.
 - [ ] **`noah-voice` + `ai-scoring` passes run** on the final text; `ai-scoring` ≥ 75; the score is
       recorded in the header line. (See `../../reading-deliverable-standard.md`.)
-- [ ] **Epub generated** by default (pandoc, date in `--metadata date=`) and saved under
-      `~/Documents/Claude/<Project>/` or `~/Documents/Personal/<area>/`; both paths told to the user —
+- [ ] **Epub only if the user asked for one** (pandoc, date in `--metadata date=`), saved under
+      `~/Documents/Claude/<Project>/` or `~/Documents/Personal/<area>/`; every path told to the user —
       unless the user opted out.
 - [ ] **§1 Recommendations** present and is the first top-level section.
 - [ ] **§2 Summary** present and is the second top-level section.

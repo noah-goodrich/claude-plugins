@@ -35,9 +35,9 @@ Three modes, kept separate. Pick one at Phase 0:
 ## Evidence Mode (Phases 1–6)
 
 **Reading-Deliverable Standard is MANDATORY** (four clauses): first line `Generated: YYYY-MM-DD`;
-ELI10 + Glossary + `noah-voice` then `ai-scoring` ≥ 75 (record `AI-scoring: NN/100`); epub by
-default via pandoc; markdown in repo, epub to `~/Documents/Claude/<Project>/`. A defensible-but-
-unreadable report is a failed deliverable.
+ELI10 + Glossary + `noah-voice` then `ai-scoring` ≥ 75 (record `AI-scoring: NN/100`); epub only
+when the user asks (pandoc); markdown in repo, a requested epub to `~/Documents/Claude/<Project>/`.
+A defensible-but-unreadable report is a failed deliverable.
 
 ## Before You Begin — Lazy Reference Loading
 
@@ -367,10 +367,12 @@ Produce the final deliverable at `[project]/docs/research/<YYYY-MM-DD>-<slug>/an
 2. **Readability + two passes.** ELI10, define every term/acronym inline, top-of-document Glossary
    (≤~12 terms). Run `noah-voice` then `ai-scoring` on FINAL text. Score **≥ 75**; revise if not.
    Record `AI-scoring: NN/100`.
-3. **Epub by default.** `pandoc analysis.md -o "<title>.epub" --metadata title="..." --metadata
-   author="Claude (deep-research)" --metadata date=<YYYY-MM-DD> --toc` unless user opted out.
-4. **Pathing.** Markdown in repo. Epub to `~/Documents/Claude/<Project>/<Human Readable Title>.epub`
-   or `~/Documents/Personal/<area>/`. Tell the user both paths.
+3. **Epub only on request.** Default output is the markdown alone. If the user asks for an epub:
+   `pandoc analysis.md -o "<title>.epub" --metadata title="..." --metadata
+   author="Claude (deep-research)" --metadata date=<YYYY-MM-DD> --toc`.
+4. **Pathing.** Markdown in repo. A requested epub goes to
+   `~/Documents/Claude/<Project>/<Human Readable Title>.epub` or `~/Documents/Personal/<area>/`.
+   Tell the user every path written.
 
 **Document structure — top-level headings in this exact order:**
 1. `## 1. Recommendations` — actionable bullets starting with a verb, each referencing the analysis
@@ -407,8 +409,8 @@ in Phase 2, and (b) `### Steel-man the contrarian` in Phase 4. W2 — advisory, 
 - [ ] `[project]/docs/research/<YYYY-MM-DD>-<slug>/analysis.md` with §1–§7 in order.
 - [ ] Reading-Deliverable Standard: `Generated: YYYY-MM-DD` first line; terms/acronyms defined;
       Glossary; `noah-voice` applied; `ai-scoring` **≥ 75** (recorded as `AI-scoring: NN/100`).
-- [ ] Epub via pandoc (`--metadata date=`) under `~/Documents/Claude/<Project>/` or
-      `~/Documents/Personal/<area>/`. Both paths told to user. (Unless user opted out.)
+- [ ] Only if the user asked for one: epub via pandoc (`--metadata date=`) under
+      `~/Documents/Claude/<Project>/` or `~/Documents/Personal/<area>/`, path told to user.
 - [ ] One source-card file per evaluated source at `[project]/docs/research/sources/<topic>-<slug>.md`.
       Inline summaries do NOT count.
 - [ ] §6 contains: search-log table, evidence-level distribution, source-category distribution,
@@ -526,13 +528,13 @@ pass did not run, stamp `NOT design-reviewed` at the top of §Recommendation.
 
 Save markdown to `docs/research/YYYY-MM-DD-[slug]/recommendation.md` (or `docs/brainstorms/`). All
 four clauses apply before presenting:
-1. **Date header** — `Generated: YYYY-MM-DD`; same date into epub metadata.
+1. **Date header** — `Generated: YYYY-MM-DD`; same date into epub metadata if one is made.
 2. **Readability + two passes** — ELI10, define every term/acronym, top-of-doc Glossary; run
    `noah-voice` then `ai-scoring`. Score **≥ 75**; record `AI-scoring: NN/100`.
-3. **Epub by default** — `pandoc <file>.md -o "<title>.epub" --metadata author="Claude (research)"
-   --toc` unless user opts out.
-4. **Pathing** — markdown in repo; epub to `~/Documents/Claude/<Project>/<Title>.epub` (or
-   `~/Documents/Personal/<area>/`). Tell the user both paths.
+3. **Epub only on request** — markdown alone by default. If the user asks: `pandoc <file>.md -o
+   "<title>.epub" --metadata author="Claude (research)" --toc`.
+4. **Pathing** — markdown in repo; a requested epub to `~/Documents/Claude/<Project>/<Title>.epub`
+   (or `~/Documents/Personal/<area>/`). Tell the user every path written.
 
 Document order: §Recommendation (verdict or `NOT design-reviewed` stamp) · §Options · §Council +
 Dissent · §Track Findings · §Prior Work.

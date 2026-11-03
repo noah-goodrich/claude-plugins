@@ -56,24 +56,24 @@ silently skipped.
 
 ---
 
-## 2. Date — `Generated:` line at the very top, and in epub metadata
+## 2. Date — `Generated:` line at the very top, and in epub metadata when one is made
 
 - **Every produced document MUST begin with a `Generated: YYYY-MM-DD` line at the very top** (first or
   second line, above or just under the title). Use today's date. A reader must be able to tell, at a
   glance, how fresh the document is — the missing date is exactly what made the failed reveal report
   untrustworthy.
-- **The same date MUST go into the epub metadata** via `pandoc --metadata date=YYYY-MM-DD` (see clause
-  3). The on-page date and the epub metadata date must match.
+- **If an epub is made, the same date MUST go into its metadata** via `pandoc --metadata
+  date=YYYY-MM-DD` (see clause 3). The on-page date and the epub metadata date must match.
 
 ---
 
-## 3. Epub by default — generate an epub unless the user opts out
+## 3. Epub only on request — markdown is the default deliverable
 
-Any skill producing a reading deliverable generates an epub from the final markdown **by default**.
-Noah reads long-form on an e-reader; a markdown file in a repo is not how he reads. Skip epub
-generation ONLY if the user explicitly opts out (e.g. "no epub", "markdown only").
+The default deliverable is the markdown file alone. Do NOT generate an epub unless the user asks for
+one (e.g. "make an epub", "I want this on my e-reader"). Do not offer one unprompted at the end.
 
-Generate it with pandoc after the markdown is finalized and has passed the readability passes:
+When the user asks, generate it with pandoc after the markdown is finalized and has passed the
+readability passes:
 
 ```bash
 pandoc "<markdown-path>" \
@@ -85,11 +85,12 @@ pandoc "<markdown-path>" \
 ```
 
 `pandoc` is installed (`/opt/homebrew/bin/pandoc`). If for some reason it is unavailable, say so
-explicitly and offer to install it (`brew install pandoc`) rather than silently skipping the epub.
+explicitly and offer to install it (`brew install pandoc`) rather than silently skipping the epub
+the user asked for.
 
 ---
 
-## 4. Pathing — markdown in the repo, epub under `~/Documents/`
+## 4. Pathing — markdown in the repo, a requested epub under `~/Documents/`
 
 State this explicitly to the user when you save.
 
@@ -98,7 +99,8 @@ State this explicitly to the user when you save.
   - brainstorm → `<repo>/docs/brainstorms/<YYYY-MM-DD>-<slug>.md`
   The markdown is the source of record and is version-controlled with the project.
 
-- **Epubs live under `~/Documents/`**, mirroring the EXISTING convention (do not invent a new one):
+- **Requested epubs live under `~/Documents/`**, mirroring the EXISTING convention (do not invent a
+  new one):
   - **Project work → `~/Documents/Claude/<Project>/<Human Readable Title>.epub`.** Example: reveal
     research already lands at `~/Documents/Claude/reveal/People Photo First Principles.epub`. Match the
     capitalization of the existing `~/Documents/Claude/<Project>/` folder for the project.
@@ -119,7 +121,7 @@ than guessing.
 - [ ] `noah-voice` pass applied to the final text.
 - [ ] `ai-scoring` pass run on the final text; score ≥ 75; score recorded in the document.
 - [ ] Markdown saved to the repo path for this skill (`docs/research/...` or `docs/brainstorms/...`).
-- [ ] Epub generated with pandoc (date in `--metadata date=`) UNLESS the user opted out.
-- [ ] Epub saved under `~/Documents/Claude/<Project>/` (project) or `~/Documents/Personal/<area>/`
-      (personal), with a human-readable title.
-- [ ] You told the user both paths (markdown + epub).
+- [ ] No epub unless the user asked for one. If they did: generated with pandoc (date in
+      `--metadata date=`), saved under `~/Documents/Claude/<Project>/` (project) or
+      `~/Documents/Personal/<area>/` (personal), with a human-readable title.
+- [ ] You told the user every path you wrote.
