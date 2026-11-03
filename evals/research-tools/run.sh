@@ -56,7 +56,7 @@ TRIGGERS="$SCRIPT_DIR/triggers.jsonl"
 MODES="$SCRIPT_DIR/modes.jsonl"
 
 DO_OFFLINE=0; DO_TRIGGERS=0; DO_MODES=0; DO_BEHAVIOR=0; DO_SUMMARY=0; DRY=0; RESUME=0
-SPLIT=all; REPS=2; ONLY=""; JOBS=4
+SPLIT=all; REPS=2; ONLY=""; JOBS=4; TAG=""; DO_RESCORE=0
 PLUGIN="$REPO/research-tools"
 CAP="${EVAL_MAX_BUDGET_USD:-0.50}"
 BCAP="${EVAL_BEHAVIOR_BUDGET_USD:-4.00}"
@@ -73,6 +73,8 @@ while [ $# -gt 0 ]; do
         --resume)     RESUME=1 ;;
         --split)      SPLIT="${2:-}"; shift ;;
         --reps)       REPS="${2:-}"; shift ;;
+        --tag)        TAG="${2:-}"; shift ;;
+        --rescore)    DO_RESCORE=1 ;;
         --only)       ONLY="$(printf '%s' "${2:-}" | tr ',' ' ')"; shift ;;
         --plugin-dir) PLUGIN="${2:-}"; shift ;;
         --jobs)       JOBS="${2:-}"; shift ;;
@@ -254,6 +256,7 @@ analyze_stream() {
       | [ $blocks[] | select(.type=="tool_use") ] as $tu
       | ([ $blocks[] | select(.type=="text") | .text ] | join("\n")) as $text
       | ([ $init.plugins[]? | select(.name=="research-tools") ]) as $copies
+      | ($text | [match("(?im)^[ >*_`]*mode[*_`]*:[ *_`]*(evidence|decision[- ]design|hybrid)";"g")] | first | .captures[0].string // null) as $m0
       | ($text | [match("(?i)mode[^a-zA-Z]{0,30}(evidence|decision[- ]design|hybrid)";"g")] | first | .captures[0].string // null) as $m1
       | ($text | [match("\\*\\*(evidence|decision-design|hybrid)\\*\\*";"gi")] | first | .captures[0].string // null) as $m2
       | ($text | [match("(evidence|decision[- ]design|hybrid)[ -]mode";"gi")] | first | .captures[0].string // null) as $m3
@@ -277,8 +280,9 @@ analyze_stream() {
                           | (.input|tojson) ],
           epub_paths: [ $tu[] | select(.name=="Write" or .name=="Edit") | (.input.file_path // "") | select(test("\\.epub$";"i")) ],
           text_last: ($text | .[-400:]),
+          declared_line: ($m0 != null),
           epub_text: ($text | test("pandoc|epub";"i")),
-          declared: ((((($m1 // $m2) // $m3) // "undeclared") | ascii_downcase) | sub(" ";"-"))
+          declared: (((((($m0 // $m1) // $m2) // $m3) // "undeclared") | ascii_downcase) | sub(" ";"-"))
         }
       | .fired = (.skills | map(alias) | any(. == "research"))
       | .others = (.skills | map(alias) | map(select(. != "research")) | unique)
@@ -304,8 +308,8 @@ run_one() {
     elif jq -e '.is_error and (.subtype == "success")' "$dir/analysis.json" >/dev/null; then
         status=error; err="claude reported an error: $(jq -r '.result_text' "$dir/analysis.json" | head -c 160 | tr '\n' ' ')"
     fi
-    jq -c --arg kind "$kind" --arg id "$id" --argjson rep "$rep" --arg status "$status" --arg err "$err" --argjson meta "$meta" \
-        '. + $meta + {kind:$kind, id:$id, rep:$rep, status:$status, error:$err}' "$dir/analysis.json" > "$dir/verdict.json"
+    jq -c --arg kind "$kind" --arg id "$id" --argjson rep "$rep" --arg status "$status" --arg err "$err" --arg tag "$TAG" --argjson meta "$meta" \
+        '. + $meta + {kind:$kind, id:$id, rep:$rep, status:$status, error:$err, tag:$tag}' "$dir/analysis.json" > "$dir/verdict.json"
     printf '%s\t%s\t%s\t%s\n' "$kind" "$id" "$rep" "$(jq -r '.cost' "$dir/analysis.json")" >> "$OUT/spend.tsv"
 }
 
@@ -323,8 +327,8 @@ trigger_tasks() {
 mode_tasks() {
     local rep
     for rep in $(seq 1 "$REPS"); do
-        jq -r --argjson rep "$rep" --arg only "$ONLY" \
-            'select($only=="" or (.id as $q | $only|split(" ")|any(. == $q))) | [.id, $rep, .prompt, ({expect_mode}|tojson)] | @tsv' "$MODES"
+        jq -r --arg split "$SPLIT" --argjson rep "$rep" --arg only "$ONLY" \
+            'select(($split=="all" or .split==$split) and ($only=="" or (.id as $q | $only|split(" ")|any(. == $q)))) | [.id, $rep, .prompt, ({expect_mode,split}|tojson)] | @tsv' "$MODES"
     done
 }
 B_COMMON="Rapid tier, scope confirmed, proceed without asking me anything. I confirm the Phase 0 mode (evidence) and the Phase 1.2 research design in this message, so do not ask me to validate them. Question: does drinking a glass of water before a meal reduce how much adults eat at that meal? Keep it tiny: at most 3 sources. Write the finished deliverable into this repository under docs/research/ and stop."
@@ -393,12 +397,12 @@ run_kind() {
         return 0
     fi
     [ "$count" -gt 0 ] || { echo "no $kind runs selected" >&2; return 0; }
-    [ "$RESUME" -eq 1 ] || { [ -d "$OUT/$kind" ] && rm -rf "$OUT/$kind"; }
-    mkdir -p "$OUT/$kind"
+    [ "$RESUME" -eq 1 ] || { [ -d "$OUT/$kind${TAG:+-$TAG}" ] && rm -rf "$OUT/$kind${TAG:+-$TAG}"; }
+    mkdir -p "$OUT/$kind${TAG:+-$TAG}"
     echo "== $kind: $count runs, per-call cap \$$budget, total cap \$$TOTAL (recorded so far \$$(spent_total))"
     while IFS=$'\t' read -r id rep prompt meta; do
         [ -n "$id" ] || continue
-        dir="$OUT/$kind/$id-r$rep"; fx="$dir/fx"
+        dir="$OUT/$kind${TAG:+-$TAG}/$id-r$rep"; fx="$dir/fx"
         if [ "$RESUME" -eq 1 ] && [ -s "$dir/verdict.json" ]; then continue; fi
         # Wait for in-flight runs before judging the cap, so the check sees their real cost.
         if awk -v s="$(spent_total)" -v i="$inflight" -v b="$budget" -v t="$TOTAL" 'BEGIN{exit !(s+(i+1)*b>t)}'; then
@@ -444,7 +448,7 @@ meanci() {
 summary() {
     command -v jq >/dev/null 2>&1 || { echo "jq missing" >&2; exit 2; }
     local files
-    files="$(find "$OUT/triggers" "$OUT/modes" "$OUT/behavior" -name verdict.json 2>/dev/null | sort)"
+    files="$(find "$OUT" -name verdict.json 2>/dev/null | sort)"
     [ -n "$files" ] || { echo "no verdicts under $OUT" >&2; exit 1; }
     local all
     all="$(printf '%s\n' "$files" | xargs cat | jq -s '.')"
@@ -508,15 +512,32 @@ summary() {
         | "| \(.[0].id) | \(.[0].split) | \(.[0].expect) | \(.[0].near_miss) | \(map(select(.fired))|length)/\(length) | \(map(.others[])|unique|join(", ")) |"'
 
     echo
-    echo "## Mode declaration (Phase 0)"
-    read -r n correct < <(printf '%s' "$all" | jq -r '[.[]|select(.kind=="modes" and .status=="ok")] as $r | [($r|length), ($r|map(select(.declared==.expect_mode))|length)]|@tsv')
+    echo "## Mode declaration (Phase 0): declared and routed, scored separately"
     echo
-    echo "- Mode accuracy: $(wilson "$correct" "$n")"
+    echo "declared = the run states a mode at all. routed = the declared mode is the expected one (undeclared counts as not routed). Mode: line first, regex fallback."
+    local tg sp decl rout rdecl lines
+    for tg in $(printf '%s' "$all" | jq -r '[.[]|select(.kind=="modes")|.tag // ""]|unique|.[]'); do
+        for sp in train heldout; do
+            read -r n decl rout rdecl lines < <(printf '%s' "$all" | jq -r --arg t "$tg" --arg s "$sp" '
+                [.[]|select(.kind=="modes" and .status=="ok" and ((.tag // "")==$t) and .split==$s)] as $r
+                | [ ($r|length), ($r|map(select(.declared!="undeclared"))|length),
+                    ($r|map(select(.declared==.expect_mode))|length),
+                    ($r|map(select(.declared!="undeclared" and .declared==.expect_mode))|length),
+                    ($r|map(select(.declared_line))|length) ] | @tsv')
+            [ "$n" -gt 0 ] || continue
+            echo
+            echo "### variant: ${tg:-untagged}, split: $sp ($n runs)"
+            echo "- Declared rate: $(wilson "$decl" "$n")"
+            echo "- Routed accuracy (of all runs): $(wilson "$rout" "$n")"
+            echo "- Routed among declared runs: $(wilson "$rdecl" "$decl")"
+            echo "- Runs with the fixed Mode: line: $lines of $n"
+        done
+    done
     echo
-    echo "| id | expected | declared per run | skill fired |"
+    echo "| variant | id | expected | declared per run |"
     echo "|---|---|---|---|"
-    printf '%s' "$all" | jq -r '[.[]|select(.kind=="modes" and .status=="ok")] | group_by(.id)[]
-        | "| \(.[0].id) | \(.[0].expect_mode) | \(map(.declared)|join(", ")) | \(map(select(.fired))|length)/\(length) |"'
+    printf '%s' "$all" | jq -r '[.[]|select(.kind=="modes" and .status=="ok")] | group_by([(.tag // ""),.id])[]
+        | "| \(.[0].tag // "-") | \(.[0].id) | \(.[0].expect_mode) | \(map(.declared)|join(", ")) |"'
 
     echo
     echo "## Behavior (rapid tier)"
@@ -525,12 +546,29 @@ summary() {
         | "- \(.id): \(if .status=="error" then "ERROR " + .error else .behavior.verdict end). Evidence: \(.behavior.evidence // "n/a"). Reasons: \(.behavior.reasons // "n/a"). Cost $\(.cost), \(.turns) turns, stop \(.subtype)."'
 }
 
+# Re-run the CURRENT detector over recorded mode streams, so old and new runs are scored identically. Spends nothing.
+# Keeps status and the recorded variant verification; takes tag from the directory name and split from modes.jsonl.
+rescore() {
+    local v d base tag id
+    for v in "$OUT"/modes*/*/verdict.json; do
+        [ -s "$v" ] || continue
+        d="${v%/verdict.json}"; base="${d%/*}"; base="${base##*/}"; id="${d##*/}"; id="${id%-r*}"
+        tag=""; case "$base" in modes-*) tag="${base#modes-}" ;; esac
+        analyze_stream "$d/stream.jsonl" "$d/rescore.json"
+        [ -s "$d/rescore.json" ] || { echo "rescore failed: $d" >&2; continue; }
+        jq -c --slurpfile a "$d/rescore.json" --arg tag "$tag" --argjson split "$(jq -c --arg id "$id" 'select(.id==$id)|.split' "$MODES")" \
+            '. + ($a[0]|del(.variant_ok,.copies,.model,.cost,.turns,.tokens)) + {tag:$tag, split:$split}' "$v" > "$d/verdict.tmp" && mv "$d/verdict.tmp" "$v"
+    done
+    echo "rescored with the current detector"
+}
+
 # ── dispatch ─────────────────────────────────────────────────────────────────────────────────────────────────────
 RC=0
 if [ "$DO_OFFLINE" -eq 1 ]; then
     offline_tier
     [ "$FAIL" -eq 0 ] || RC=1
 fi
+if [ "$DO_RESCORE" -eq 1 ]; then live_setup; rescore; exit $?; fi
 if [ "$DO_SUMMARY" -eq 1 ]; then summary; exit $?; fi
 if [ $((DO_TRIGGERS+DO_MODES+DO_BEHAVIOR)) -gt 0 ]; then
     live_setup
