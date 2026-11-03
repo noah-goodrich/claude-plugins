@@ -7,6 +7,7 @@ on:
       - "noah-content-tools/**"
       - "noah-writing-voice/**"
       - "evals/**"
+      - "evals/research-tools/**"
       - "**/test/**"
       - "build-plugins.sh"
       - "check-version-bumps.sh"
@@ -24,6 +25,7 @@ on:
       - "noah-content-tools/**"
       - "noah-writing-voice/**"
       - "evals/**"
+      - "evals/research-tools/**"
       - "**/test/**"
       - "build-plugins.sh"
       - "check-version-bumps.sh"
@@ -161,6 +163,12 @@ jobs:
       # be a gate nothing ever invokes, which is the defect it was relocated here to stop being.
       - name: Run pr-description eval floors — guards only, never the model cases
         run: bash evals/pr-description/floor-tests.sh
+
+      # evals/research-tools/run.sh has live modes (--triggers, --modes, --behavior) that call `claude`, spend money and
+      # need credentials CI does not hold; they must never be added here. Only --skip-model runs: harness self-tests
+      # plus the static epub contract, no model and no network. jq is preinstalled on ubuntu-latest.
+      - name: Run research-tools eval offline tier — never the live modes
+        run: bash evals/research-tools/run.sh --skip-model
 
   # ---------------------------------------------------------------------------
   # Job 6: version-bump guard
