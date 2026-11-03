@@ -168,6 +168,16 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scout-readonly-guard.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Skill|Write|Edit|MultiEdit|NotebookEdit|Bash",
         "hooks": [
           {
@@ -184,6 +194,18 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/borg-resume-hook.sh\" PreToolUse",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/borg-precompact-checkpoint.sh",
+            "timeout": 10
           }
         ]
       }
@@ -216,6 +238,16 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/borg-prefer-tool-log.sh",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/large-output-nudge.sh",
+            "timeout": 5
           }
         ]
       },
