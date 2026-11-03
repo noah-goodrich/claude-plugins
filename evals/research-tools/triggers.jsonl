@@ -1,0 +1,40 @@
+{"id":"F01","prompt":"What does the published research say about whether pair programming actually reduces defect rates? I want sources I can cite.","expect":"fire","near_miss":false,"split":"train","note":"evidence"}
+{"id":"F02","prompt":"Do a literature review on spaced repetition and long-term retention in adult learners, with credibility ratings on the sources.","expect":"fire","near_miss":false,"split":"train","note":"evidence"}
+{"id":"F03","prompt":"I need a cited synthesis of the evidence on four-day work weeks and productivity. Fact-check the claims you find.","expect":"fire","near_miss":false,"split":"heldout","note":"evidence"}
+{"id":"F04","prompt":"Can you dig through the studies on intermittent fasting and muscle retention and tell me what holds up and what doesn't?","expect":"fire","near_miss":false,"split":"train","note":"evidence"}
+{"id":"F05","prompt":"Evaluate the quality of the sources behind the claim that open-plan offices hurt focus, and summarize what the evidence supports.","expect":"fire","near_miss":false,"split":"train","note":"evidence, source evaluation"}
+{"id":"F06","prompt":"I have an open problem: how should we structure alert routing for a three-person on-call team? Explore the options and recommend one.","expect":"fire","near_miss":false,"split":"heldout","note":"decision-design"}
+{"id":"F07","prompt":"Brainstorm architectures for syncing offline-first mobile data with a Postgres backend, then pick the one you would bet on.","expect":"fire","near_miss":false,"split":"train","note":"decision-design"}
+{"id":"F08","prompt":"We do not have an obvious answer for how to version our public API. Generate a few distinct approaches and recommend one.","expect":"fire","near_miss":false,"split":"train","note":"decision-design"}
+{"id":"F09","prompt":"Help me think through approaches to onboarding new engineers remotely. Lay out the options and tell me which you would choose.","expect":"fire","near_miss":false,"split":"heldout","note":"decision-design"}
+{"id":"F10","prompt":"Ideate on ways to cut our CI time in half without buying more runners, then recommend the best direction.","expect":"fire","near_miss":false,"split":"train","note":"decision-design"}
+{"id":"F11","prompt":"Before we decide whether to adopt event sourcing, find out what the evidence says about its failure modes, then recommend what we should do.","expect":"fire","near_miss":false,"split":"heldout","note":"hybrid"}
+{"id":"F12","prompt":"This is a high-stakes call: should our clinic move to a four-day schedule? Look at what the research says, then explore options and recommend one.","expect":"fire","near_miss":false,"split":"train","note":"hybrid"}
+{"id":"F13","prompt":"Look at what the literature shows on microservice migrations going wrong, and then work out the best approach for our monolith.","expect":"fire","near_miss":false,"split":"heldout","note":"hybrid"}
+{"id":"F14","prompt":"Do deep research on the effects of microplastics on gut health.","expect":"fire","near_miss":true,"split":"train","note":"deep-research phrasing; anthropic-skills:deep-research firing instead is a competitor miss"}
+{"id":"F15","prompt":"I would like deep research on how cities have designed congestion pricing and what the results were.","expect":"fire","near_miss":true,"split":"train","note":"deep-research phrasing; competitor deep-research"}
+{"id":"F16","prompt":"Please do some deep research into whether standing desks improve long-term health outcomes.","expect":"fire","near_miss":true,"split":"heldout","note":"deep-research phrasing; competitor deep-research"}
+{"id":"N01","prompt":"Research how authentication is handled in this codebase and tell me which files are involved.","expect":"no-fire","near_miss":true,"split":"train","note":"code question phrased with research"}
+{"id":"N02","prompt":"Investigate why the checkout tests in this repo might be flaky.","expect":"no-fire","near_miss":true,"split":"heldout","note":"code question phrased with investigate"}
+{"id":"N03","prompt":"Explore the src/ directory and describe how the modules fit together.","expect":"no-fire","near_miss":true,"split":"train","note":"code question phrased with explore"}
+{"id":"N04","prompt":"Look into where we parse config in this project and explore whether the logic is duplicated.","expect":"no-fire","near_miss":true,"split":"train","note":"code question phrased with explore"}
+{"id":"N05","prompt":"What year was Rust 1.0 released?","expect":"no-fire","near_miss":true,"split":"heldout","note":"quick factual lookup"}
+{"id":"N06","prompt":"What is the default port for PostgreSQL?","expect":"no-fire","near_miss":true,"split":"train","note":"quick factual lookup"}
+{"id":"N07","prompt":"Who wrote the paper that introduced the transformer architecture?","expect":"no-fire","near_miss":true,"split":"train","note":"quick factual lookup"}
+{"id":"N08","prompt":"How many ounces are in a cup?","expect":"no-fire","near_miss":true,"split":"heldout","note":"quick factual lookup"}
+{"id":"N09","prompt":"Brainstorm a good name for a boolean variable that tracks whether the user has verified their email.","expect":"no-fire","near_miss":true,"split":"train","note":"brainstorm for a trivial thing"}
+{"id":"N10","prompt":"Brainstorm a few names for a helper that trims trailing slashes from URLs.","expect":"no-fire","near_miss":true,"split":"heldout","note":"brainstorm for a trivial thing"}
+{"id":"N11","prompt":"Ideate a nicer name for the branch I am about to create for the login fix.","expect":"no-fire","near_miss":true,"split":"train","note":"brainstorm for a trivial thing"}
+{"id":"N12","prompt":"Write a design doc for adding rate limiting to our API.","expect":"no-fire","near_miss":true,"split":"train","note":"design-doc skill owns this"}
+{"id":"N13","prompt":"Draft a directive for migrating us from Jenkins to GitHub Actions.","expect":"no-fire","near_miss":true,"split":"heldout","note":"design-doc skill owns directives"}
+{"id":"N14","prompt":"Turn this idea into an RFC with the usual sections: we want to cache session lookups in Redis.","expect":"no-fire","near_miss":true,"split":"train","note":"design-doc skill owns RFCs"}
+{"id":"N15","prompt":"Write an executive brief on whether we should build or buy a feature flag system.","expect":"no-fire","near_miss":true,"split":"train","note":"noah-strategy:strategic-brief owns build-vs-buy"}
+{"id":"N16","prompt":"Do a build-vs-buy evaluation of Datadog versus self-hosting Grafana, written for the board.","expect":"no-fire","near_miss":true,"split":"heldout","note":"noah-strategy:strategic-brief owns build-vs-buy"}
+{"id":"N17","prompt":"Summarize the file docs/notes.md in five bullets.","expect":"no-fire","near_miss":true,"split":"train","note":"summarize one given file"}
+{"id":"N18","prompt":"Read README.md and tell me what this project does.","expect":"no-fire","near_miss":true,"split":"heldout","note":"summarize one given file"}
+{"id":"N19","prompt":"Fix the typo in the main heading of README.md.","expect":"no-fire","near_miss":false,"split":"train","note":"clear negative"}
+{"id":"N20","prompt":"Write a Python function that reverses a string.","expect":"no-fire","near_miss":false,"split":"heldout","note":"clear negative"}
+{"id":"N21","prompt":"Draft a short LinkedIn post announcing our version 2 release.","expect":"no-fire","near_miss":false,"split":"train","note":"clear negative"}
+{"id":"N22","prompt":"Write a commit message for my staged changes.","expect":"no-fire","near_miss":false,"split":"heldout","note":"clear negative"}
+{"id":"N23","prompt":"Rename the variable foo to bar across main.py.","expect":"no-fire","near_miss":false,"split":"train","note":"clear negative"}
+{"id":"N24","prompt":"Format the JSON in config.json with two-space indentation.","expect":"no-fire","near_miss":false,"split":"heldout","note":"clear negative"}

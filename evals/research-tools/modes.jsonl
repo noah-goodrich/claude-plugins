@@ -1,0 +1,6 @@
+{"id":"M1","prompt":"What does the published research say about whether code review reduces production incidents? I want cited sources.","expect_mode":"evidence","note":"evidence"}
+{"id":"M2","prompt":"Do a literature review on the effects of sleep deprivation on decision making, with source quality ratings.","expect_mode":"evidence","note":"evidence"}
+{"id":"M3","prompt":"Brainstorm ways we could structure feature flags in a small team's codebase, then recommend one.","expect_mode":"decision-design","note":"decision-design"}
+{"id":"M4","prompt":"I have an open design problem: how should we handle schema migrations across three services? Explore the options and recommend one.","expect_mode":"decision-design","note":"decision-design"}
+{"id":"M5","prompt":"Before we pick a database for our event pipeline, find out what the evidence says about each option's failure modes, then recommend what we should do.","expect_mode":"hybrid","note":"hybrid"}
+{"id":"M6","prompt":"This is a high-stakes call: should we move our support team to async-only communication? Look at what the research says and then design and recommend an approach.","expect_mode":"hybrid","note":"hybrid"}
