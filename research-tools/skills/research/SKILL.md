@@ -13,6 +13,8 @@ Three modes, kept separate. Pick one at Phase 0:
 
 ## Phase 0: Mode Selection (run FIRST, always)
 
+**Before any other action, print exactly one line: `Mode: <evidence|decision-design|hybrid> — <one-line reason>`.** Print it before reading references, calling any tool, or asking anything. Then route by the table below.
+
 | If the goal is… | Mode | Section |
 |---|---|---|
 | "What does the evidence say?" — cited, fact-checked synthesis | **evidence** | [Evidence Mode](#evidence-mode-phases-16) |
@@ -21,7 +23,7 @@ Three modes, kept separate. Pick one at Phase 0:
 
 **Routing rules:**
 - Requests for deep research, literature review or evidence synthesis → **evidence**. Brainstorm, ideate or explore-approaches requests → **decision-design**. Otherwise use the table above;
-  if genuinely ambiguous ask ONE clarifying question, then proceed.
+  if genuinely ambiguous, print your best-fit `Mode:` line first, then ask ONE clarifying question, then proceed.
 - High-stakes and unsure between evidence vs. decision-design → **hybrid** (safe superset).
 - Decision-design and hybrid delegate research to the `research-tools:research-analyst` agent (Opus, lean-return) and
   review to the `research-tools:research-verifier` agent. Never use `general-purpose` for this work.
