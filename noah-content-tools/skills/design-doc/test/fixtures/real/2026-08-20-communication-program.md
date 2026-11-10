@@ -16,8 +16,6 @@ Three measured facts and one observed one:
   typing feedback, and loses his place if he submits early. Terminal eyes land at the bottom (same finding as
   viz-1's landing-region rule).
 - Web dashboards pull him out of terminal context; four viz PRs shipped supply with zero consumers.
-- The same problem reproduced on the work machine (TRD/PR tooling, 2026-08-19): format alone did not fix
-  surfacing.
 
 ## Solution
 

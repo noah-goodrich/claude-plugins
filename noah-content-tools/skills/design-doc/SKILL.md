@@ -1,13 +1,11 @@
 ---
 name: design-doc
-description: "Design-doc authoring and review. Use whenever writing, scaffolding, or reviewing a design doc, TRD, RFC, technical proposal, ADR, or directive: any document that proposes a change and asks a reader to approve it. Trigger on 'write a design doc', 'draft a TRD', 'write an RFC', 'file a directive', 'turn this into a proposal', or a request to check whether an existing proposal is missing sections. Enforces the locked template (tl;dr lead line, Problem, Solution, Non-Goals, Alternatives Considered, plus Goals or Acceptance criteria) and runs scripts/validate.sh before delivery. Loads the brevity skill for prose rules, never noah-voice."
+description: "Design-doc authoring and review. Use whenever writing, scaffolding, or reviewing a design doc, RFC, technical proposal, ADR, or directive: any document that proposes a change and asks a reader to approve it. Trigger on 'write a design doc', 'write an RFC', 'file a directive', 'turn this into a proposal', or a request to check whether an existing proposal is missing sections. Enforces the locked template (tl;dr lead line, Problem, Solution, Non-Goals, Alternatives Considered, plus Goals or Acceptance criteria) and runs scripts/validate.sh before delivery. Loads the brevity skill for prose rules, never noah-voice."
 ---
 
 # Design-Doc Skill
 
-Produces and reviews the documents Noah triages: design docs, directives, RFCs, technical proposals. "TRD" is his
-spoken alias for the same artifact. Elsewhere in the industry TRD means a requirements spec, which is a different
-thing, so the skill is named `design-doc` and answers to both.
+Produces and reviews the documents Noah triages: design docs, directives, RFCs, technical proposals.
 
 The reader gives this document about two minutes. Everything below serves that fact.
 
