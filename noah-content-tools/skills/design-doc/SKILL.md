@@ -5,8 +5,7 @@ description: "Design-doc authoring and review. Use whenever writing, scaffolding
 
 # Design-Doc Skill
 
-Produces and reviews the documents Noah triages: design docs, directives, RFCs, technical proposals. Ontra TRDs
-are out of scope: they follow the org Notion template and belong to `doc-writing:write-tech-doc`.
+Produces and reviews the documents Noah triages: design docs, directives, RFCs, technical proposals.
 
 The reader gives this document about two minutes. Everything below serves that fact.
 

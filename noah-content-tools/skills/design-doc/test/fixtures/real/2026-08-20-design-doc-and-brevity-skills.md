@@ -9,12 +9,11 @@ generator.
 
 ## Problem
 
-Noah's work tooling (2026-08-19) converged on a template — Problem, Solution, Goals, Non-Goals, Alternatives
+Noah's proposals (2026-08-19) converged on a template — Problem, Solution, Goals, Non-Goals, Alternatives
 Considered — and a tl;dr discipline: one sentence of problem, one of solution, readable without context.
-Nothing on the personal side encodes either. Naming note from research: the industry calls this shape a
-**design doc** (Google lineage) or **RFC**; "TRD" elsewhere means a requirements spec, a different artifact
-(industrialempathy.com/posts/design-docs-at-google, rust-lang.github.io/rfcs). Keep "TRD" as Noah's spoken
-alias; name the skill `design-doc`.
+No skill encodes either. Naming note from research: the industry calls this shape a **design doc** (Google
+lineage) or **RFC** (industrialempathy.com/posts/design-docs-at-google, rust-lang.github.io/rfcs). Name the
+skill `design-doc`.
 
 ## Solution
 
@@ -58,5 +57,5 @@ Three skills, one plugin family:
   shipping) and a single skill would load its full weight on every turn.
 - **Encode the rules only in CLAUDE.md/memory**: rejected; the audit showed volunteered discipline decays.
   Skills load mechanically at the moment of use.
-- **Adopt an off-the-shelf TRD generator**: none found that encodes reading mechanics (tl;dr placement,
+- **Adopt an off-the-shelf design-doc generator**: none found that encodes reading mechanics (tl;dr placement,
   landing region) rather than section headings alone.
